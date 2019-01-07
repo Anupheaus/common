@@ -1,0 +1,32 @@
+{
+    "compilerOptions": {
+        "alwaysStrict": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "experimentalDecorators": true,
+        "importHelpers": true,
+        "noEmitHelpers": true,
+        "emitDecoratorMetadata": true,
+        "removeComments": true,
+        "noImplicitAny": false,
+        "module": "commonjs",
+        "resolveJsonModule": true,
+        "lib": [
+            "es2018",
+            "dom",
+        ],
+        "target": "es2018",
+        "sourceMap": true,
+        "noEmit": true,
+        "jsx": "react"
+    },
+    "awesomeTypescriptLoaderOptions": {
+        "reportFiles": [
+            "./src/**/*.{ts,tsx}",
+            "./tests/**/*.{ts,tsx}"
+        ],
+    },
+    "exclude": [
+        "node_modules"
+    ]
+}
