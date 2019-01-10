@@ -1,9 +1,14 @@
 const { CheckerPlugin } = require('awesome-typescript-loader')
 const nodeExternals = require('webpack-node-externals');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const CleanWebpackPlugin = require('clean-webpack-plugin');
 
 module.exports = {
   target: 'node',
   devtool: 'source-map',
+  entry: {
+    index: './src/index.ts',
+  },
   resolve: {
     extensions: ['.ts', '.tsx', '.js']
   },
@@ -17,6 +22,10 @@ module.exports = {
   },
   externals: [nodeExternals()],
   plugins: [
-    new CheckerPlugin()
+    new CleanWebpackPlugin(['dist']),
+    new CheckerPlugin(),
+    new CopyWebpackPlugin([
+      { from: './src/extensions/global.ts', to: './extensions', },
+    ]),
   ],
 };

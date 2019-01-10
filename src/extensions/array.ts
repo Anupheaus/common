@@ -50,7 +50,31 @@ export interface IMergeWithOptions<T, P> extends ISyncWithOptions<T, P> {
   matchOrder?: boolean;
 }
 
-class ArrayExtensions<T> {
+function performUpsert<T>(target: T[], foundIndex: number, found: UpdateDelegate<T>, notFound: () => T, index: number): T[] {
+  const array = target.slice();
+  let item: T = null;
+  if (foundIndex !== -1) {
+    const originalItem = target[foundIndex];
+    item = found(target[foundIndex], foundIndex) as any;
+    const isPrimitive = is.primitive(originalItem);
+    const isIndexChanged = !(index == null || foundIndex === index);
+    if (isPrimitive) {
+      if (originalItem === item && !isIndexChanged) { return target; }
+    } else {
+      Object.merge(item, Object.merge({}, originalItem, item));
+      if (Reflect.areShallowEqual(item, originalItem) && !isIndexChanged) { return target; } // no change
+    }
+    array.splice(foundIndex, 1);
+  } else {
+    if (!is.function(notFound)) { return target; }
+    item = notFound();
+  }
+  if (typeof (index) !== 'number') { index = foundIndex === -1 ? target.length : foundIndex; }
+  array.splice(index, 0, item);
+  return array;
+}
+
+export class ArrayExtensions<T> {
 
   /**
    * Takes the values returned, which are expected to be an array and returns a flat array of all the returned values, in the order that they are provided in.
@@ -147,16 +171,17 @@ class ArrayExtensions<T> {
     return this.find(item => item && item['id'] === id);
   }
 
-  public upsert(item: UpsertableItem<T>): T[]
+  public upsert(item: UpsertableItem<T>): T[];
   public upsert(item: UpsertableItem<T>, index: number): T[];
   public upsert(item: UpsertableItem<T>, index: number): T[];
   public upsert(this: T[], item: UpsertableItem<T>, index?: number): T[] {
     const isLiteral = typeof (item) === 'string' || typeof (item) === 'number';
     const foundIndex = item && !isLiteral && item['id'] ? this.indexOfId(item['id']) : this.indexOf(item as T);
-    return this.performUpsert(this, foundIndex, () => item as T, () => item as T, index);
+    return performUpsert(this, foundIndex, () => item as T, () => item as T, index);
   }
 
-  public upsertMany<T>(this: T[], items: T[], newIndex?: number): T[] {
+  public upsertMany(this: T[], items: T[], newIndex?: number): T[] {
+    // tslint:disable-next-line:no-this-assignment
     let self = this;
     items.forEach((item, index) => self = self.upsert(item as any, newIndex == null ? undefined : newIndex + index));
     return self;
@@ -166,14 +191,15 @@ class ArrayExtensions<T> {
   public replace(item: T, index: number): T[];
   public replace(this: T[], item: T, index?: number): T[] {
     const isLiteral = typeof (item) === 'string' || typeof (item) === 'number';
-    let foundIndex = item && !isLiteral && item['id'] ? this.indexOfId(item['id']) : (index || -1);
+    const foundIndex = item && !isLiteral && item['id'] ? this.indexOfId(item['id']) : (index || -1);
     if (foundIndex === -1) { return this; }
-    return this.performUpsert(this, foundIndex, () => item, undefined, index);
+    return performUpsert(this, foundIndex, () => item, undefined, index);
   }
 
   public replaceMany(items: T[]): T[];
   public replaceMany(items: T[], index: number): T[];
   public replaceMany(this: T[], items: T[], index?: number): T[] {
+    // tslint:disable-next-line:no-this-assignment
     let self = this;
     items.forEach((item, innerIndex) => self = self.replace(item, index == null ? undefined : index + innerIndex));
     return self;
@@ -187,7 +213,7 @@ class ArrayExtensions<T> {
       if (filter(this[index], index)) {
         hasUpdated = true;
         if (!array) { array = this.slice(); }
-        array = this.performUpsert(array, index, update, undefined, index);
+        array = performUpsert(array, index, update, undefined, index);
       }
     }
     if (!hasUpdated) { return this; }
@@ -388,12 +414,10 @@ class ArrayExtensions<T> {
     return result;
   }
 
-  public ids(): string[]
+  public ids(): string[];
   public ids(this: T[]): string[] {
     const results: string[] = [];
-    for (let index = 0; index < this.length; index++) {
-      if (this[index] && this[index]['id']) { results.push(this[index]['id']); }
-    }
+    for (const item of this) { if (item && item['id']) { results.push(item['id']); } }
     return results;
   }
 
@@ -484,30 +508,6 @@ class ArrayExtensions<T> {
     const clone = this.clone();
     clone.length = count;
     return clone;
-  }
-
-  private performUpsert(target: T[], foundIndex: number, found: UpdateDelegate<T>, notFound: () => T, index: number): T[] {
-    const array = target.slice();
-    let item: T = null;
-    if (foundIndex !== -1) {
-      const originalItem = target[foundIndex];
-      item = found(target[foundIndex], foundIndex) as any;
-      const isPrimitive = is.primitive(originalItem);
-      const isIndexChanged = !(index == null || foundIndex === index);
-      if (isPrimitive) {
-        if (originalItem === item && !isIndexChanged) { return target; }
-      } else {
-        Object.merge(item, Object.merge({}, originalItem, item));
-        if (Reflect.areShallowEqual(item, originalItem) && !isIndexChanged) { return target; } // no change
-      }
-      array.splice(foundIndex, 1);
-    } else {
-      if (!is.function(notFound)) { return target; }
-      item = notFound();
-    }
-    if (typeof (index) !== 'number') { index = foundIndex === -1 ? target.length : foundIndex; }
-    array.splice(index, 0, item);
-    return array;
   }
 
 }
