@@ -3,7 +3,7 @@ import './object';
 
 const originalRound = Math.round;
 
-class MathExtensions {
+export class MathExtensions {
 
     public emptyId(): string;
     public emptyId(this: Math): string {
@@ -30,5 +30,6 @@ class MathExtensions {
 
 }
 
+// tslint:disable-next-line:interface-name
 declare global { export interface Math extends MathExtensions { } }
 Object.extendPrototype(Math, MathExtensions.prototype);

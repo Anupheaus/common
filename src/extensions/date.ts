@@ -127,8 +127,8 @@ Object.addMethods(Date.prototype, [
 if (!Date.periods) {
 
     function applyFractionTo(period: IDatePeriod, timeUnit: TimeUnits): void {
-        const from = moment(period.from);
-        const endOfFullPeriod = from.clone().add(1, TimeUnits.toMomentUnits(timeUnit)).valueOf();
+        const fromPeriod = moment(period.from);
+        const endOfFullPeriod = fromPeriod.clone().add(1, TimeUnits.toMomentUnits(timeUnit)).valueOf();
         if (endOfFullPeriod === period.to) { return; }
         const fullPeriod = endOfFullPeriod - period.from;
         const thisPeriod = period.to - period.from;
@@ -141,18 +141,18 @@ if (!Date.periods) {
             .reduce((newPeriods, period) => {
                 const absFrom = moment(period.from);
                 const absTo = moment(period.to);
-                const from = absFrom.clone().startOf(timeUnit);
+                const fromPeriod = absFrom.clone().startOf(timeUnit);
                 const to = absTo.clone().startOf(timeUnit);
                 if (to < absTo) { to.add(1, timeUnit); }
-                const length = to.diff(from, timeUnit, true);
-                const first: IDatePeriod = { from: absFrom.valueOf(), to: from.clone().add(1, timeUnit).valueOf(), fraction: 1 };
+                const length = to.diff(fromPeriod, timeUnit, true);
+                const first: IDatePeriod = { from: absFrom.valueOf(), to: fromPeriod.clone().add(1, timeUnit).valueOf(), fraction: 1 };
                 const last: IDatePeriod = { from: to.clone().add(-1, timeUnit).valueOf(), to: absTo.valueOf(), fraction: 1 };
                 applyFractionTo(first, toTimeUnits);
                 applyFractionTo(last, toTimeUnits);
                 const middle = length < 2 ? [] : Array.ofSize(length - 2)
                     .map((_ignore, index): IDatePeriod => ({
-                        from: from.clone().add(index + 1, timeUnit).valueOf(),
-                        to: from.clone().add(index + 2, timeUnit).valueOf(),
+                        from: fromPeriod.clone().add(index + 1, timeUnit).valueOf(),
+                        to: fromPeriod.clone().add(index + 2, timeUnit).valueOf(),
                         fraction: 1,
                     }));
                 return newPeriods.concat(first, ...middle, last);
@@ -160,9 +160,9 @@ if (!Date.periods) {
     }
 
     function extents(periods: IDatePeriod[]): IDateExtents {
-        const from = moment(Math.min(...periods.map(period => period.from))).valueOf();
-        const to = moment(Math.max(...periods.map(period => period.to))).valueOf();
-        return { from, to };
+        const fromPeriod = moment(Math.min(...periods.map(period => period.from))).valueOf();
+        const toPeriod = moment(Math.max(...periods.map(period => period.to))).valueOf();
+        return { from: fromPeriod, to: toPeriod };
     }
 
     function validatePeriod(period: IDatePeriod): IDatePeriod {
@@ -175,18 +175,18 @@ if (!Date.periods) {
 
     function from(activePeriods: IDatePeriod[], toTimeUnits?: TimeUnits): IFromPeriodsResult {
         activePeriods = activePeriods.map(validatePeriod).orderBy(period => period.from);
-        const extents = Date.periods.extents(activePeriods);
+        const extentsPeriod = Date.periods.extents(activePeriods);
         let joinedPeriods: IDatePeriod[] = [];
-        let from = extents.from;
-        let to = from;
+        let fromPeriod = extentsPeriod.from;
+        let toPeriod = fromPeriod;
         activePeriods.forEach((period, index) => {
-            if (period.from <= to) {
-                if (period.to > to) { to = period.to; }
-                if (index === activePeriods.length - 1) { joinedPeriods.push({ from, to, fraction: 1 }); }
+            if (period.from <= toPeriod) {
+                if (period.to > toPeriod) { toPeriod = period.to; }
+                if (index === activePeriods.length - 1) { joinedPeriods.push({ from: fromPeriod, to: toPeriod, fraction: 1 }); }
             } else {
-                joinedPeriods.push({ from, to, fraction: 1 });
-                from = period.from;
-                to = period.to;
+                joinedPeriods.push({ from: fromPeriod, to: toPeriod, fraction: 1 });
+                fromPeriod = period.from;
+                toPeriod = period.to;
             }
         });
         let inactivePeriods = joinedPeriods.reduce((inactive, period, index) => {
@@ -204,7 +204,7 @@ if (!Date.periods) {
         joinedPeriods = joinedPeriods.orderBy(period => period.from);
 
         return {
-            extents,
+            extents: extentsPeriod,
             joinedPeriods,
             activePeriods,
             inactivePeriods,

@@ -17,8 +17,11 @@
         ],
         "target": "es2018",
         "sourceMap": true,
+        "jsx": "react",
         "noEmit": true,
-        "jsx": "react"
+        "declarationMap": true,
+        "declaration": true,
+        "declarationDir": "./dist",
     },
     "awesomeTypescriptLoaderOptions": {
         "reportFiles": [
@@ -27,6 +30,12 @@
         ],
     },
     "exclude": [
-        "node_modules"
-    ]
+        "node_modules",
+        "dist"
+    ],
+    "typeAcquisition": {
+        "exclude": [
+            "/dist"
+        ]
+    }
 }
