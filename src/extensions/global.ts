@@ -21,7 +21,7 @@ export type Upsert<T extends IRecord, TKey extends keyof T = keyof T> = (Pick<T,
 
 export type EnsureId<T> = T extends IRecord ? T : never;
 
-export type PromiseMaybe<T> = T | Promise<T>;
+export type PromiseMaybe<T = void> = T | Promise<T>;
 
 export type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends (infer U)[]
