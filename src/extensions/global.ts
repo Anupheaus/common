@@ -31,3 +31,7 @@ export type DeepPartial<T> = {
   ? ReadonlyArray<DeepPartial<U>>
   : DeepPartial<T[P]>
 };
+
+export interface IDisposable {
+  dispose(): void;
+}

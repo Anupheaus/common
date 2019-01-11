@@ -1,17 +1,5 @@
-import { IRecord } from './global';
+import { IRecord, IDisposable } from './global';
 import { is } from './is';
-
-interface IDisposable {
-  dispose(): void;
-}
-
-/*type Diff<T extends string, U extends string> = (
-  & {[P in T]: P }
-  & {[P in U]: never }
-  & { [x: string]: never }
-)[T];
-
-type Omit<T, K extends keyof T> = Pick<T, Diff<keyof T, K>>;*/
 
 // tslint:disable-next-line:no-namespace
 declare global {
