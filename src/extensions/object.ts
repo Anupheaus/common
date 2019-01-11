@@ -77,7 +77,7 @@ if (!Object.addMethods) {
 }
 
 function isOverridableItemArray<T>(items: T[]): items is (T & IRecord)[] {
-  return items.every((item: any) => !is.null(item) && is.stringAndNotEmpty(item.id));
+  return items.every((item: any) => item != null && typeof (item.id) === 'string' && item.id.length > 0);
 }
 
 function parseObject<T>(existingObject: T, newObject: T, checkForOverridableItems: boolean): T {
