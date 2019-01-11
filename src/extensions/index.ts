@@ -1,9 +1,9 @@
 import 'datejs';
+import './object';
 import * as AllArrayExports from './array';
 import './date';
 import './function';
 import * as AllMathExports from './math';
-import './object';
 import './promise';
 import './reflect';
 import './string';

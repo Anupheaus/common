@@ -1,7 +1,7 @@
 import { ArgumentInvalidError, InternalError } from '../errors';
-import { SortDirections } from '../models';
+import { SortDirections } from '../models/sort';
 import { DeepPartial, IRecord, TypeOf, Upsert } from './global';
-import { is } from './is';
+import './object';
 import './reflect';
 
 type FilterDelegate<T> = (item: T, index: number) => boolean;
@@ -56,7 +56,7 @@ function performUpsert<T>(target: T[], foundIndex: number, found: UpdateDelegate
   if (foundIndex !== -1) {
     const originalItem = target[foundIndex];
     item = found(target[foundIndex], foundIndex) as any;
-    const isPrimitive = is.primitive(originalItem);
+    const isPrimitive = ['string', 'number', 'boolean'].includes(typeof (originalItem));
     const isIndexChanged = !(index == null || foundIndex === index);
     if (isPrimitive) {
       if (originalItem === item && !isIndexChanged) { return target; }
@@ -66,7 +66,7 @@ function performUpsert<T>(target: T[], foundIndex: number, found: UpdateDelegate
     }
     array.splice(foundIndex, 1);
   } else {
-    if (!is.function(notFound)) { return target; }
+    if (typeof (notFound) !== 'function') { return target; }
     item = notFound();
   }
   if (typeof (index) !== 'number') { index = foundIndex === -1 ? target.length : foundIndex; }
@@ -118,7 +118,7 @@ export class ArrayExtensions<T> {
   public firstOrDefault(filter: FilterDelegate<T>): T;
   public firstOrDefault(this: T[], filter?: FilterDelegate<T>): T {
     if (this.length === 0) { return undefined; }
-    if (!is.function(filter)) { return this[0]; }
+    if (typeof (filter) !== 'function') { return this[0]; }
     return this.find(filter);
   }
 
@@ -126,7 +126,7 @@ export class ArrayExtensions<T> {
   public lastOrDefault(filter: FilterDelegate<T>): T;
   public lastOrDefault(this: T[], filter?: FilterDelegate<T>): T {
     if (this.length === 0) { return undefined; }
-    if (!is.function(filter)) { return this[this.length - 1]; }
+    if (typeof (filter) !== 'function') { return this[this.length - 1]; }
     return this.slice().reverse().find(filter);
   }
 
@@ -149,7 +149,7 @@ export class ArrayExtensions<T> {
 
   public removeByFilter(filter: FilterDelegate<T>): T[];
   public removeByFilter(this: T[], filter: FilterDelegate<T>): T[] {
-    if (!is.function(filter)) { throw new ArgumentInvalidError('filter'); }
+    if (typeof (filter) !== 'function') { throw new ArgumentInvalidError('filter'); }
     let hasRemovedItem = false;
     const clone = this.slice();
     for (let index = clone.length - 1; index >= 0; index--) { if (filter(clone[index], index)) { clone.splice(index, 1); hasRemovedItem = true; } }
@@ -257,8 +257,8 @@ export class ArrayExtensions<T> {
   public orderBy(config: IArrayOrderByConfig<T>[]): T[];
   public orderBy<R>(this: T[], arg: SimpleMapDelegate<T, R> | (IArrayOrderByConfig<T>[]), sortDirection: SortDirections = SortDirections.Ascending): T[] {
     let delegates = arg as IArrayOrderByConfig<T>[];
-    if (is.function(arg)) { delegates = [{ delegate: arg, direction: sortDirection }]; }
-    if (is.array(delegates)) {
+    if (typeof (arg) === 'function') { delegates = [{ delegate: arg, direction: sortDirection }]; }
+    if (delegates instanceof Array) {
       return this
         .slice()
         .sort((a, b) => {
@@ -319,14 +319,14 @@ export class ArrayExtensions<T> {
   public sum(): number;
   public sum(delegate: CalculationDelegate<T>): number;
   public sum(this: T[], delegate?: CalculationDelegate<T>): number {
-    if (!is.function(delegate)) { delegate = item => item as any; }
+    if (typeof (delegate) !== 'function') { delegate = item => item as any; }
     return this.reduce((a, b, i) => a + delegate(b, i, this[i - 1], this[i + 1]), 0);
   }
 
   public min(): number;
   public min(delegate: CalculationDelegate<T>): number;
   public min(this: T[], delegate?: CalculationDelegate<T>): number {
-    if (!is.function(delegate)) { delegate = item => item as any; }
+    if (typeof (delegate) !== 'function') { delegate = item => item as any; }
     return this
       .map((t, i, a) => delegate(t, i, a[i - 1], a[i + 1]))
       .sort((a, b) => a != null && b != null ? a - b : a == null ? 1 : b == null ? -1 : 0)
@@ -336,7 +336,7 @@ export class ArrayExtensions<T> {
   public max(): number;
   public max(delegate: CalculationDelegate<T>): number;
   public max(this: T[], delegate?: CalculationDelegate<T>): number {
-    if (!is.function(delegate)) { delegate = item => item as any; }
+    if (typeof (delegate) !== 'function') { delegate = item => item as any; }
     return this
       .map((t, i, a) => delegate(t, i, a[i - 1], a[i + 1]))
       .sort((a, b) => a != null && b != null ? a - b : a == null ? -1 : b == null ? 1 : 0)
@@ -346,12 +346,12 @@ export class ArrayExtensions<T> {
   public average(): number;
   public average(delegate: CalculationDelegate<T>): number;
   public average(this: T[], delegate?: CalculationDelegate<T>): number {
-    if (!is.function(delegate)) { delegate = item => item as any; }
+    if (typeof (delegate) !== 'function') { delegate = item => item as any; }
     const values: number[] = [];
     for (let index = 0; index < this.length; index++) {
       const item = this[index];
       const value = delegate(item, index, this[index - 1], this[index + 1]);
-      if (is.number(value)) { values.push(value); }
+      if (typeof (value) === 'number') { values.push(value); }
     }
     return values.length > 0 ? values.sum() / values.length : 0;
   }
@@ -390,7 +390,11 @@ export class ArrayExtensions<T> {
   public diff<P extends IRecord>(items: P[]): IArrayDiff<T, P>;
   public diff<P>(items: P[], matcher: DiffMatcherDelegate<T, P>): IArrayDiff<T, P>;
   public diff<P>(this: T[], items: P[], matcher?: DiffMatcherDelegate<T, P>): IArrayDiff<T, P> {
-    matcher = is.function(matcher) ? matcher : (source, target) => source && target && (source['id'] || target['id']) ? source['id'] === target['id'] : source === target as any;
+    matcher = typeof (matcher) === 'function'
+      ? matcher
+      : (source, target) => source && target && (source['id'] || target['id'])
+        ? source['id'] === target['id']
+        : source === target as any;
     const targetItems = items.map((item, index) => ({ item, index }));
     const result: IArrayDiff<T, P> = {
       added: [],

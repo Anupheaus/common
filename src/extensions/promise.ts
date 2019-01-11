@@ -8,5 +8,6 @@ class PromiseExtensions {
 
 }
 
+// tslint:disable-next-line:interface-name
 declare global { interface PromiseConstructor extends PromiseExtensions { } }
 Object.extendPrototype(Promise, PromiseExtensions.prototype);

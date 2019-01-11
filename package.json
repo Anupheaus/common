@@ -8,6 +8,7 @@
   "private": false,
   "scripts": {
     "build": "webpack --mode production",
+    "build:dev": "webpack --mode development",
     "publish": "npm publish"
   },
   "files": [

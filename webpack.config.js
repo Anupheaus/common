@@ -9,6 +9,10 @@ module.exports = {
   entry: {
     index: './src/index.ts',
   },
+  output: {
+    libraryTarget: 'umd',
+    umdNamedDefine: true,
+  },
   resolve: {
     extensions: ['.ts', '.tsx', '.js']
   },

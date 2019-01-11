@@ -141,7 +141,7 @@ describe('Bind Decorator', () => {
     let setTest = test.test;
     setTest('test');
     expect(test.value).to.eq('test');
-    let localValue;
+    let localValue: any;
     test.test = function(value: string) {
       localValue = (this as any).value;
       (this as any).value = value;
@@ -170,6 +170,22 @@ describe('Bind Decorator', () => {
     const setTest = test.test;
     setTest('rebound');
     expect(test.value).to.eq('rebound');
+  });
+
+  it('binds correctly if destructured and called independently of the instance', () => {
+    class DestructureTest {
+      public value: string;
+
+      @bind
+      public test(value: string): void {
+        this.value = value;
+      }
+    }
+    const instance = new DestructureTest();
+    expect(instance.value).to.be.undefined;
+    const { test } = instance;
+    test('something');
+    expect(instance.value).to.eq('something');
   });
 
 });

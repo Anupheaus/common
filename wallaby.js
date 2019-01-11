@@ -3,7 +3,6 @@ module.exports = function () {
     name: 'Anux - Common',
     files: [
       '!src/**/*.tests.ts?(x)',
-      { pattern: 'test-utils/**/*.ts?(x)', load: false },
       { pattern: 'src/**/*.ts?(x)', load: false },
     ],
     tests: [
