@@ -1,6 +1,6 @@
 {
   "name": "anux-common",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "main": "./dist/index.js",
   "repository": "https://github.com/Anupheaus/anux-common.git",
   "author": "Anupheaus <anupheaus@gmail.com>",
