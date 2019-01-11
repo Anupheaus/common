@@ -7,3 +7,4 @@ export * from './notImplemented';
 export * from './validationError';
 export * from './unauthorised';
 export * from './security';
+export * from './objectDisposed';
