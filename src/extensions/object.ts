@@ -52,7 +52,6 @@ declare global {
     values<T= any>(target: object): T[];
     getValueOf<R>(delegate: () => R, defaultValue: R): R;
     getValueOf<T, R>(target: T, delegate: (target: T) => R, defaultValue: R): R;
-    createNamedFunction(name: string, body: (...args: any[]) => any): Function;
     mixin(destinationClass: Function, sourceClass: Function): void;
     using<T extends IDisposable, R>(object: T, use: (object: T) => R): R;
   }
@@ -242,14 +241,6 @@ Object.addMethods(Object, [
       throw error;
     }
     return value != null ? value : defaultValue;
-  },
-
-  function createNamedFunction(name: string, body: (...args: any[]) => any): Function {
-    return {
-      [name](...args: any[]) {
-        return body.apply(this, args);
-      },
-    }[name];
   },
 
   function mixin(destinationClass: Function, sourceClass: Function): void {
