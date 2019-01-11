@@ -141,7 +141,7 @@ describe('Bind Decorator', () => {
     let setTest = test.test;
     setTest('test');
     expect(test.value).to.eq('test');
-    let localValue;
+    let localValue: any;
     test.test = function(value: string) {
       localValue = (this as any).value;
       (this as any).value = value;
