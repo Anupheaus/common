@@ -1,6 +1,6 @@
 import '../extensions/array';
-import { ObjectDisposedError } from '../errors';
-import { PromiseMaybe } from '../extensions';
+import { ObjectDisposedError } from '../errors/objectDisposed';
+import { PromiseMaybe } from '../extensions/global';
 
 export type EventDefinition = (...args: any[]) => PromiseMaybe;
 
