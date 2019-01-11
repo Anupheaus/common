@@ -1,6 +1,6 @@
 // tslint:disable:no-console
 import '../extensions/promise';
-import { createEvent, Unsubscribe } from './events';
+import { createEvent, Unsubscribe } from './createEvent';
 import { PromiseMaybe } from '../extensions';
 
 class EventTesting {
@@ -19,7 +19,7 @@ class EventTesting {
 
 }
 
-describe('events', () => {
+describe('createEvent', () => {
 
   it('can be invoked', () => {
     const a = new EventTesting();
