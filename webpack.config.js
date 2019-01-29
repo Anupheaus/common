@@ -1,6 +1,4 @@
-const { CheckerPlugin } = require('awesome-typescript-loader')
 const nodeExternals = require('webpack-node-externals');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
 const CleanWebpackPlugin = require('clean-webpack-plugin');
 
 module.exports = {
@@ -20,16 +18,12 @@ module.exports = {
     rules: [
       {
         test: /\.tsx?$/,
-        loader: 'awesome-typescript-loader'
-      }
-    ]
+        loader: 'ts-loader'
+      },
+    ],
   },
   externals: [nodeExternals()],
   plugins: [
     new CleanWebpackPlugin(['dist']),
-    new CheckerPlugin(),
-    new CopyWebpackPlugin([
-      { from: './src/extensions/global.ts', to: './extensions', },
-    ]),
   ],
 };
