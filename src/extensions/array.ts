@@ -1,15 +1,12 @@
 import { ArgumentInvalidError, InternalError } from '../errors';
 import { SortDirections } from '../models/sort';
-import { DeepPartial, IRecord, TypeOf, Upsert } from './global';
+import { DeepPartial, IRecord, TypeOf, Upsertable, Updatable } from './global';
 import './object';
 import './reflect';
 
 type FilterDelegate<T> = (item: T, index: number) => boolean;
 type SimpleMapDelegate<T, V = any> = (item: T) => V;
 type MapDelegate<T, V = any> = (item: T, index: number) => V;
-type IfElsePrimitive<T, U> = T extends string | number | boolean ? T : U;
-type UpdatableItem<T, TKey extends keyof T = keyof T> = IfElsePrimitive<T, Upsert<T & IRecord, TKey>>;
-type UpsertableItem<T, TKey extends keyof T = keyof T> = IfElsePrimitive<T, UpdatableItem<T, TKey>>;
 type UpdateDelegate<T> = MapDelegate<T, DeepPartial<T>>;
 type CalculationDelegate<T> = (item: T, index: number, prevItem: T, nextItem: T) => number;
 type DiffMatcherDelegate<T, P> = (sourceItem: T, targetItem: P, sourceIndex: number, targetIndex: number) => boolean;
@@ -45,8 +42,8 @@ export interface ISyncWithOptions<T, P> {
 }
 
 export interface IMergeWithOptions<T, P> extends ISyncWithOptions<T, P> {
-  removeUnmatched?: boolean;
-  addNew?: boolean;
+  removeUnmatched?: boolean | ((item: T) => boolean);
+  addNew?: boolean | ((item: P) => boolean);
   matchOrder?: boolean;
 }
 
@@ -451,8 +448,8 @@ export class ArrayExtensions<T> {
         },
         updateUnmatched: (b): any => { changeFound = true; return options.createBy(b); },
         createBy: (b): any => { changeFound = true; return b; },
-        removeUnmatched: !options.addNew,
-        addNew: !options.removeUnmatched,
+        removeUnmatched: typeof (options.addNew) === 'function' ? options.addNew : !options.addNew,
+        addNew: typeof (options.removeUnmatched) === 'function' ? options.removeUnmatched : !options.removeUnmatched,
         matchOrder: false,
       });
       if (result === items) { return result.slice(); }
@@ -474,7 +471,7 @@ export class ArrayExtensions<T> {
         }
       });
       if (!matchFound) {
-        if (options.removeUnmatched) {
+        if (typeof (options.removeUnmatched) === 'function' ? options.removeUnmatched(a) : options.removeUnmatched) {
           changeFound = true;
         } else {
           const u = options.updateUnmatched(a);
@@ -484,8 +481,9 @@ export class ArrayExtensions<T> {
       }
     });
 
-    if (options.addNew) {
-      const newItems = items.except(matchedItems).map(options.createBy);
+    if (typeof (options.addNew) === 'function' || options.addNew) {
+      const addNewFilter = typeof (options.addNew) === 'function' ? options.addNew : () => true;
+      const newItems = items.except(matchedItems).filter(addNewFilter).map(options.createBy);
 
       if (newItems.length > 0) {
         result.absorb(newItems);
