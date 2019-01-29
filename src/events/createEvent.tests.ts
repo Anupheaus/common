@@ -85,6 +85,13 @@ describe('createEvent', () => {
     expect(() => unsub()).not.to.throw();
   });
 
+  it('does not error if the unsubscribe is called after being disposed', () => {
+    const a = new EventTesting();
+    const unsub = a.subscribe(() => void 0);
+    a.dispose();
+    expect(() => unsub()).not.to.throw();
+  });
+
   it('errors if it has been disposed and we try and subscribe to it', () => {
     const a = new EventTesting();
     a.dispose();
