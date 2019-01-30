@@ -1,5 +1,7 @@
 import './object';
 
+// tslint:disable:interface-name
+
 class PromiseExtensions {
 
   public async delay(ms: number): Promise<void> {
@@ -8,6 +10,5 @@ class PromiseExtensions {
 
 }
 
-// tslint:disable-next-line:interface-name
-declare global { interface PromiseConstructor extends PromiseExtensions { } }
 Object.extendPrototype(Promise, PromiseExtensions.prototype);
+declare global { interface PromiseConstructor extends PromiseExtensions { } }

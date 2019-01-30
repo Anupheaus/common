@@ -1,5 +1,6 @@
 import { MathExtensions } from './mathExtensions';
 
-// tslint:disable-next-line:interface-name
-declare global { interface Math extends MathExtensions { } }
+// tslint:disable:interface-name
+
 Object.extendPrototype(Math, MathExtensions.prototype);
+declare global { interface Math extends MathExtensions { } }

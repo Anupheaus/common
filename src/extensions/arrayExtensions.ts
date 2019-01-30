@@ -1,7 +1,7 @@
+import './object';
 import { ArgumentInvalidError, InternalError } from '../errors';
 import { SortDirections } from '../models/sort';
 import { DeepPartial, IRecord, TypeOf, Upsertable, Updatable } from './global';
-import './object';
 import './reflect';
 import { MapDelegate, SimpleMapDelegate, IArrayOrderByConfig, IArrayDiff, IMergeWithOptions, MergeWithUpdateOperations } from '../models';
 
