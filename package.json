@@ -1,6 +1,6 @@
 {
   "name": "anux-common",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "main": "./dist/index.js",
   "repository": "https://github.com/Anupheaus/anux-common.git",
   "author": "Anupheaus <anupheaus@gmail.com>",
@@ -37,6 +37,7 @@
     "tslint-no-unused-expression-chai": "^0.1.4",
     "webpack-node-externals": "^1.7.2",
     "clean-webpack-plugin": "^1.0.0",
+    "terser-webpack-plugin": "^1.2.1",
     "typescript": "^3.2.2",
     "webpack": "^4.28.3",
     "webpack-cli": "^3.2.0",
