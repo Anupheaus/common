@@ -625,7 +625,7 @@ describe('extension > array', () => {
 
   });
 
-  /*describe('mergeWith', () => {
+  describe.only('mergeWith', () => {
 
     it('can merge two simple arrays', () => {
       const a = [1, 2, 3, 4];
@@ -682,11 +682,11 @@ describe('extension > array', () => {
       expect(c).to.eql([3, 2, 1, 4, 7]);
     });
 
-    it('matches the target order with no target items and removes any unmatched items', () => {
+    it('removes any unmatched items', () => {
       const a = [1, 2, 7, 3, 4];
       const b = [];
 
-      const c = a.mergeWith(b, { removeUnmatched: true, matchOrder: true });
+      const c = a.mergeWith(b, { removeUnmatched: true });
 
       expect(c).to.eql([]);
     });
@@ -716,6 +716,39 @@ describe('extension > array', () => {
       const c = a.mergeWith(b, { matchOrder: true, removeUnmatched: true });
 
       expect(c).to.eql([1, 2, 7, 3, 4]);
+    });
+
+    it('matches the target where all target items are filtered', () => {
+      const a = [{ doCopy: false }];
+      const b = [];
+
+      const c = b.mergeWith(a, { addNew: item => item.doCopy === true });
+      expect(c).to.eq(b);
+      expect(c).to.eql([]);
+    });
+
+    it('matches the target where some target items are filtered', () => {
+      const a = [{ id: 1, doCopy: true }, { id: 2, doCopy: false }, { id: 3, doCopy: true }];
+      const b = [];
+
+      const c = b.mergeWith(a, { addNew: item => item.doCopy === true });
+      expect(c).to.eql([{ id: 1, doCopy: true }, { id: 3, doCopy: true }]);
+    });
+
+    it('matches the target where some target items are filtered and matched items are the target', () => {
+      const a = [{ id: 1, doCopy: true }, { id: 2, doCopy: false }, { id: 3, doCopy: true }];
+      const b = [{ id: 3 }, { id: 1 }];
+
+      const c = b.mergeWith(a, { addNew: item => item.doCopy === true, matchOrder: true, updateMatched: (_ia, ib) => ib });
+      expect(c).to.eql([{ id: 1, doCopy: true }, { id: 3, doCopy: true }]);
+    });
+
+    it('matches the target where some target items are filtered and matched items are the source', () => {
+      const a = [{ id: 1, doCopy: true }, { id: 2, doCopy: false }, { id: 3, doCopy: true }];
+      const b = [{ id: 3 }, { id: 1 }];
+
+      const c = b.mergeWith(a, { addNew: item => item.doCopy === true, matchOrder: true, updateMatched: (ia, _ib) => ia });
+      expect(c).to.eql([{ id: 1 }, { id: 3 }]);
     });
 
   });
@@ -822,6 +855,6 @@ describe('extension > array', () => {
       expect(data[4]).to.eql({ id: '5', name: 'hayden', surname: 'hales' });
     });
 
-  });*/
+  });
 
 });

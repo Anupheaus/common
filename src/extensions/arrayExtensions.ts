@@ -1,7 +1,7 @@
 import './object';
 import { ArgumentInvalidError, InternalError } from '../errors';
 import { SortDirections } from '../models/sort';
-import { DeepPartial, IRecord, TypeOf, Upsertable, Updatable } from './global';
+import { DeepPartial, IRecord, TypeOf, Upsertable, Updatable, PrimitiveOrRecord } from './global';
 import './reflect';
 import { MapDelegate, SimpleMapDelegate, IArrayOrderByConfig, IArrayDiff, IMergeWithOptions, MergeWithUpdateOperations } from '../models';
 
@@ -133,20 +133,30 @@ export class ArrayExtensions<T> {
     return this.find(item => item && item['id'] === id);
   }
 
-  public upsert(item: Upsertable<T>): T[];
-  public upsert(item: Upsertable<T>, index: number): T[];
-  public upsert(item: Upsertable<T>, index: number): T[];
-  public upsert(this: T[], item: Upsertable<T>, index?: number): T[] {
-    const isLiteral = typeof (item) === 'string' || typeof (item) === 'number';
+  public upsert(item: Upsertable<PrimitiveOrRecord<T>>): T[];
+  public upsert(item: Upsertable<PrimitiveOrRecord<T>>, index: number): T[];
+  public upsert(this: T[], item: Upsertable<PrimitiveOrRecord<T>>, index?: number): T[] {
+    const isLiteral = typeof (item) === 'string' || typeof (item) === 'number' || typeof (item) === 'boolean';
     const foundIndex = item && !isLiteral && item['id'] ? this.indexOfId(item['id']) : this.indexOf(item as T);
     return performUpsert(this, foundIndex, () => item as T, () => item as T, index);
   }
 
-  public upsertMany(this: T[], items: T[], newIndex?: number): T[] {
+  public upsertMany(this: T[], items: Upsertable<PrimitiveOrRecord<T>>[], newIndex?: number): T[] {
     // tslint:disable-next-line:no-this-assignment
     let self = this;
-    items.forEach((item, index) => self = self.upsert(item as any, newIndex == null ? undefined : newIndex + index));
+    items.forEach((item, index) => self = self.upsert(item, newIndex == null ? undefined : newIndex + index));
     return self;
+  }
+
+  public upsertWhere(filter: FilterDelegate<T>, update: UpdateDelegate<T>): T[];
+  public upsertWhere(this: T[], filter: FilterDelegate<T>, update: UpdateDelegate<T>): T[] {
+    let hasUpserted = false;
+    const array = this.map((innerItem, index) => {
+      if (!filter(innerItem, index)) { return innerItem; }
+      hasUpserted = true;
+      return Object.merge({}, innerItem, update(innerItem, index));
+    });
+    return hasUpserted ? array : array.concat(update(undefined, undefined) as T);
   }
 
   public replace(item: T): T[];
@@ -240,13 +250,14 @@ export class ArrayExtensions<T> {
     return this.filter(item => item != null);
   }
 
-  public except(array: Updatable<T>[]): T[];
-  public except(this: T[], array: Updatable<T>[]): T[] {
+  public except(array: T[]): T[];
+  public except<U extends T & IRecord>(array: Updatable<U>[]): U[];
+  public except<U extends T & IRecord>(this: T[], array: T[] | Updatable<U>[]): T[] {
     const results = this
       .slice()
       .filter(item => {
-        if (item && item['id']) { return !array.find(i => i['id'] === item['id']); }
-        return !array.includes(item as any);
+        if (item && item['id']) { return !(array as Updatable<U>[]).find(i => i['id'] === item['id']); }
+        return !(array as T[]).includes(item);
       });
     return results.length === this.length ? this : results;
   }
@@ -413,8 +424,8 @@ export class ArrayExtensions<T> {
         },
         updateUnmatched: (b): any => { changeFound = true; return options.createBy(b); },
         createBy: (b): any => { changeFound = true; return b; },
-        removeUnmatched: typeof (options.addNew) === 'function' ? options.addNew : !options.addNew,
-        addNew: typeof (options.removeUnmatched) === 'function' ? options.removeUnmatched : !options.removeUnmatched,
+        removeUnmatched: item => typeof (options.addNew) === 'function' ? !options.addNew(item) : !options.addNew,
+        addNew: item => typeof (options.removeUnmatched) === 'function' ? !options.removeUnmatched(item) : !options.removeUnmatched,
         matchOrder: false,
       });
       if (result === items) { return result.slice(); }
@@ -422,7 +433,7 @@ export class ArrayExtensions<T> {
       return result;
     }
 
-    const matchedItems = [];
+    const matchedItems: P[] = [];
 
     this.forEach((a, ai) => {
       let matchFound = false;
