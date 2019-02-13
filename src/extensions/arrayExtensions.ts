@@ -403,7 +403,7 @@ export class ArrayExtensions<T> {
   public mergeWith<P>(this: T[], items: P[], options?: IMergeWithOptions<T, P>): T[] {
     options = {
       matchBy: (a: any, b: any) => a === b || (a != null && b != null && a.id != null && a.id === b.id),
-      updateMatched: MergeWithUpdateOperations.UseTargetIfDifferent,
+      updateMatched: MergeWithUpdateOperations.KeepSource,
       updateUnmatched: a => a,
       createBy: (b: any) => b,
       removeUnmatched: false,

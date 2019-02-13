@@ -625,7 +625,7 @@ describe('extension > array', () => {
 
   });
 
-  describe.only('mergeWith', () => {
+  describe('mergeWith', () => {
 
     it('can merge two simple arrays', () => {
       const a = [1, 2, 3, 4];
