@@ -15,6 +15,10 @@ const fastEquals = (customComparer: (source, target) => boolean | void, isDeepCo
       const result = customComparer(objA, objB);
       if (result === true || result === false) { return result; }
     }
+    if (typeof (objA) === 'function' && typeof (objB) === 'function' && objA.toString() === objB.toString()) { return true; }
+    if (!isDeepComparison && typeof (objA) === 'object' && typeof (objB) === 'object') {
+      if (!(objA instanceof Date)) { return objA === objB; }
+    }
     const finalResult = comparitor(objA, objB);
     return isDeepComparison ? finalResult : finalResult === true;
   });
