@@ -13,6 +13,7 @@ export interface ICreateEventSubscribeOptions {
 
 export interface ICreateEvent<TEventDefinition extends EventDefinition> {
   invoke: TEventDefinition;
+  isEnabled: boolean;
   subscribe(delegate: TEventDefinition): Unsubscribe;
   subscribe(delegate: TEventDefinition, subscriptionOptions: ICreateEventSubscribeOptions): Unsubscribe;
   dispose(): void;
@@ -31,7 +32,9 @@ export function createEvent<TEventDefinition extends EventDefinition>(options?: 
   };
   let subscribers: TEventDefinition[] = [];
   let hasBeenDisposed = false;
-  return {
+  const event = {
+
+    isEnabled: true,
 
     subscribe(delegate: TEventDefinition, subscribeOptions?: ICreateEventSubscribeOptions): Unsubscribe {
       subscribeOptions = {
@@ -57,6 +60,7 @@ export function createEvent<TEventDefinition extends EventDefinition>(options?: 
 
     invoke: ((...args: any[]): PromiseMaybe => {
       if (hasBeenDisposed) { throw new ObjectDisposedError('This event has been disposed and cannot be invoked.'); }
+      if (!event.isEnabled) { return; }
       let promiseReturned = false;
       const results = subscribers
         .slice()
@@ -77,4 +81,5 @@ export function createEvent<TEventDefinition extends EventDefinition>(options?: 
       options = undefined; // potential memory leak if we don't clear this - allows the onSubscribe et al to be released
     },
   };
+  return event;
 }

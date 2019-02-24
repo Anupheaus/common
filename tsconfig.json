@@ -1,33 +1,3 @@
 {
-    "compilerOptions": {
-        "alwaysStrict": true,
-        "noUnusedLocals": true,
-        "noUnusedParameters": true,
-        "experimentalDecorators": true,
-        "importHelpers": true,
-        "noEmitHelpers": true,
-        "emitDecoratorMetadata": true,
-        "removeComments": true,
-        "noImplicitAny": false,
-        "module": "commonjs",
-        "resolveJsonModule": true,
-        "lib": [
-            "es2018",
-            "dom",
-        ],
-        "target": "es2018",
-        "sourceMap": true,
-        "jsx": "react",
-        "declaration": true,
-        "declarationDir": "./dist",
-    },
-    "exclude": [
-        "node_modules",
-        "dist"
-    ],
-    "typeAcquisition": {
-        "exclude": [
-            "/dist"
-        ]
-    }
+    "extends": "./node_modules/anux-package/configs/tsconfig.json"
 }
