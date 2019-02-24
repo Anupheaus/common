@@ -27,6 +27,6 @@
     "@types/numeral": "^0.0.25",
     "@types/uuid": "^3.4.4",
     "@types/shortid": "^0.0.29",
-    "anux-package": "^1.0.7"
+    "anux-package": "^1.0.8"
   }
 }
