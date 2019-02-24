@@ -1,31 +1,6 @@
-module.exports = function () {
-  return {
-    name: 'Anux - Common',
-    files: [
-      '!src/**/*.tests.ts?(x)',
-      { pattern: 'src/**/*.ts?(x)', load: false },
-    ],
-    tests: [
-      { pattern: 'src/**/*.tests.ts?(x)' },
-    ],
-    testFramework: 'mocha',
-    env: {
-      type: 'node',
-    },
-    workers: {
-      initial: 6,
-      regular: 3,
-    },
-    setup() {
-      const chai = require('chai');
-      const spies = require('chai-spies');
-      const fuzzy = require('chai-fuzzy');
+const config = require('anux-package/configs/wallaby');
 
-      chai.use(spies);
-      chai.use(fuzzy);
-
-      global['chai'] = chai;
-      global['expect'] = chai.expect;
-    }
-  };
-}
+module.exports = config({
+  name: 'Anux - Common',
+  enableReact: true,
+});
