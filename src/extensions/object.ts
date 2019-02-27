@@ -83,9 +83,14 @@ function isOverridableItemArray<T>(items: T[]): items is (T & IRecord)[] {
 function parseObject<T>(existingObject: T, newObject: T, checkForOverridableItems: boolean): T {
   existingObject = existingObject || {} as T;
   // tslint:disable-next-line:forin
-  for (const key in newObject) {
-    existingObject[key] = parseValue(existingObject[key], newObject[key], checkForOverridableItems);
-  }
+  Reflect.ownKeys(newObject || {}).forEach(key => {
+    const propertyDescriptor = Reflect.getDefinition(newObject, key);
+    if (propertyDescriptor.get) {
+      Object.defineProperty(existingObject, key, propertyDescriptor);
+    } else {
+      existingObject[key] = parseValue(existingObject[key], newObject[key], checkForOverridableItems);
+    }
+  });
   return existingObject;
 }
 
