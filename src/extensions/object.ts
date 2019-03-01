@@ -84,11 +84,23 @@ function parseObject<T>(existingObject: T, newObject: T, checkForOverridableItem
   existingObject = existingObject || {} as T;
   // tslint:disable-next-line:forin
   Reflect.ownKeys(newObject || {}).forEach(key => {
-    const propertyDescriptor = Reflect.getDefinition(newObject, key);
-    if (propertyDescriptor.get) {
-      Object.defineProperty(existingObject, key, propertyDescriptor);
+    const newPropertyDescriptor = Reflect.getDefinition(newObject, key);
+    const existingPropertyDescriptor = Reflect.getDefinition(existingObject, key);
+    if (newPropertyDescriptor.get) {
+      Object.defineProperty(existingObject, key, newPropertyDescriptor);
+    } else if (existingPropertyDescriptor) {
+      const existingValue = existingPropertyDescriptor.value;
+      const newValue = newPropertyDescriptor.value;
+      const result = parseValue(existingValue, newValue, checkForOverridableItems);
+      if (result === newValue) {
+        Object.defineProperty(existingObject, key, {
+          value: newValue,
+          enumerable: newPropertyDescriptor.enumerable,
+          configurable: newPropertyDescriptor.configurable,
+        });
+      }
     } else {
-      existingObject[key] = parseValue(existingObject[key], newObject[key], checkForOverridableItems);
+      existingObject[key] = parseValue(existingObject[key], newPropertyDescriptor.value, checkForOverridableItems);
     }
   });
   return existingObject;
