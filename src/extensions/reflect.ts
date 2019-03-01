@@ -124,6 +124,7 @@ Object.addMethods(Reflect, [
 
   function isOrDerivesFrom(source: any, derivesFrom: any): boolean {
     let sourcePrototype = typeof (source) === 'function' ? source.prototype : source;
+    if (sourcePrototype == null) { return false; }
     const derivesFromPrototype = typeof (derivesFrom) === 'function' ? derivesFrom.prototype : derivesFrom;
     do {
       if (sourcePrototype === derivesFromPrototype) { return true; }
