@@ -1,6 +1,6 @@
 {
   "name": "anux-common",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "main": "./dist/index.js",
   "repository": "https://github.com/Anupheaus/anux-common.git",
   "author": "Anupheaus <anupheaus@gmail.com>",
@@ -8,7 +8,7 @@
   "private": false,
   "scripts": {
     "build": "webpack --mode production",
-    "build:dev": "webpack --mode development"
+    "build:dev": "webpack --mode development --watch"
   },
   "files": [
     "dist"
