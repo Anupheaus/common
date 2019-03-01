@@ -25,6 +25,6 @@
     "@types/datejs": "^0.0.30",
     "@types/numeral": "^0.0.25",
     "@types/uuid": "^3.4.4",
-    "anux-package": "^1.0.12"
+    "anux-package": "^1.0.14"
   }
 }
