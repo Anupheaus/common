@@ -1,6 +1,6 @@
 {
   "name": "anux-common",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "main": "./dist/index.js",
   "repository": "https://github.com/Anupheaus/anux-common.git",
   "author": "Anupheaus <anupheaus@gmail.com>",
@@ -19,11 +19,11 @@
     "datejs": "^1.0.0-rc3",
     "numeral": "^2.0.6",
     "chalk": "^2.4.2",
-    "uuid": "^3.3.2"
+    "uuid": "^3.3.2",
+    "@types/datejs": "^0.0.30",
+    "@types/numeral": "^0.0.25"
   },
   "devDependencies": {
-    "@types/datejs": "^0.0.30",
-    "@types/numeral": "^0.0.25",
     "@types/uuid": "^3.4.4",
     "anux-package": "^1.0.14"
   }
