@@ -1,0 +1,3 @@
+-r ts-node/register
+--require ./tests/mocha-setup.ts
+./src/**/*.tests.ts
