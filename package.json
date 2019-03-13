@@ -8,7 +8,8 @@
   "private": false,
   "scripts": {
     "build": "webpack --mode production",
-    "build:dev": "webpack --mode development --watch"
+    "build:dev": "webpack --mode development --watch",
+    "test": "node ./node_modules/mocha/bin/mocha --opts \"./tests/mocha.opts\""
   },
   "files": [
     "dist"
@@ -25,6 +26,7 @@
   },
   "devDependencies": {
     "@types/uuid": "^3.4.4",
-    "anux-package": "^1.0.14"
+    "anux-package": "^1.0.14",
+    "ts-node": "^8.0.3"
   }
 }
