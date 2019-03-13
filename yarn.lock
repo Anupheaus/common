@@ -556,10 +556,10 @@ ansi-styles@^3.2.0, ansi-styles@^3.2.1:
   dependencies:
     color-convert "^1.9.0"
 
-anux-package@^1.0.15:
-  version "1.0.15"
-  resolved "https://registry.yarnpkg.com/anux-package/-/anux-package-1.0.15.tgz#60922ccdd0bc1a787325d849618bc442ef350845"
-  integrity sha512-Fij3CSeg5eJhE8U/dse05EjpQj5e7GUeAqRDRLqgUsm5bBwFKZW+lhOLOrm9HoPLF9Ned8Qxc7QhYptri2x0MA==
+anux-package@^1.0.16:
+  version "1.0.16"
+  resolved "https://registry.yarnpkg.com/anux-package/-/anux-package-1.0.16.tgz#2d318bacef8e8c705e1b2f3d015ea3c20c320629"
+  integrity sha512-ZRl0HClGlFkQbUnPRT/rIa/Mi+akdBEjcs+RY2X2W4V2zfr3YY+nt/BX7kFFEuWaRyHXCKCzdA+piGzgTHJ8UA==
   dependencies:
     "@types/chai" "^4.1.7"
     "@types/chai-fuzzy" "^1.3.30"
