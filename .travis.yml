@@ -1,4 +1,7 @@
-language: nodejs
+language: node_js
+
+node_js:
+  - "10.15.1"
 
 before_script:
   - npm install
