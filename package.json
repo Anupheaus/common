@@ -9,7 +9,7 @@
   "scripts": {
     "build": "webpack --mode production",
     "build:dev": "webpack --mode development --watch",
-    "test": "node ./node_modules/mocha/bin/mocha --opts \"./tests/mocha.opts\""
+    "test": "mocha --opts \"./tests/mocha.opts\""
   },
   "files": [
     "dist"
