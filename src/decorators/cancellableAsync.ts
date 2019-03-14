@@ -9,7 +9,6 @@ export interface ICancelAsyncToken {
 const tokens = new WeakMap<Promise<any>, ICancelAsyncToken>();
 
 export function getCancellableAsyncToken(promise: Promise<any>): ICancelAsyncToken {
-  console.log(promise);
   return tokens.get(promise);
 }
 
