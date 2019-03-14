@@ -1,4 +1,4 @@
-import '../extensions/promise';
+import '../extensions';
 import { cancellableAsync, ICancelAsyncToken } from './cancellableAsync';
 
 class TestCancellableAsync {
