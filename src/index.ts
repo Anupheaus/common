@@ -1,4 +1,3 @@
-import './global';
 import './extensions';
 
 export * from './decorators';

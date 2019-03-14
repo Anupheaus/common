@@ -1,7 +1,7 @@
 import './object';
 import './array';
 
-describe.only('merge', () => {
+describe('merge', () => {
 
   it('can merge objects with getters and setters without changing them', () => {
     const a = {
@@ -23,7 +23,7 @@ describe.only('merge', () => {
     expect(b.b).to.eq(1);
   });
 
-  it.only('can merge objects and override getters and setters', () => {
+  it('can merge objects and override getters and setters', () => {
     const a = {
       a: 1,
       b: 8,
