@@ -1,4 +1,5 @@
 import { CancellationCallback } from './models';
+import { bind } from '../decorators';
 
 export class CancellationToken {
   private constructor() {
@@ -31,6 +32,7 @@ export class CancellationToken {
 
   public cancel(): void;
   public cancel(reason: string): void;
+  @bind
   public cancel(reason?: string): void {
     if (this._isDisposed || this._isCancelled) { return; }
     this._isCancelled = true;
@@ -38,6 +40,7 @@ export class CancellationToken {
     this.callAllCallbacks();
   }
 
+  @bind
   public onCancelled(callback: CancellationCallback): boolean {
     if (this._isDisposed) { return false; }
     if (this._isCancelled) {
@@ -48,6 +51,7 @@ export class CancellationToken {
     return this._isCancelled;
   }
 
+  @bind
   public dispose(): void {
     this._isDisposed = true;
     this._callbacks = undefined;
