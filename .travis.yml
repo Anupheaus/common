@@ -7,13 +7,11 @@ script:
 
 deploy:
   provider: npm
-  email: email@tonyhales.co.uk
+  email: $EMAIL_ADDRESS
+  api_key: $NPM_TOKEN
   on:
     branch: master    
 
 notifications:
   email:
-  - email@tonyhales.co.uk
-
-dd:
-  secure: itke/XJAAYUHvl9w4R+N3JxQlzcyHqX1jd3ErztSdTlCae1AOYnbBMx9CW/7Wl2wXQ3FaPpIGP4LejtCbf+hu0A16tKJCNXLZ0Fk3+o3lF+EJIKNmEh8tLmg9wdRxyQ46DoBME4K3Oyfgrlvpm7S515YmmNhschQ21FvntUvL2NLErSMkuN9nBNN+yofJvEe/jbL1W3pB1zSkNF7XIvgNi8BwYKhEFk1ytahEvumlcSFqamIEA5Q0sXFIEIn4ggHXua+plqO3bHWzMyGfJl0luyGPS9gPNK1ee+iQMnFFj0j+PVaAAJm6bCHAfxv0kmbHv08xZ3eaoM+H5Qovw5A6xHqky5103QwlS0wtdiSCGmKf92AG61KQh6snorxK/AP4Zq8YU52nHTrNnQ+0tNH+Zk+N1Yn7Xg10XJn/pASfI2+AZkPb6mBaZUP7ettME/qDqvYJ4gc6sAL2vjBLT/1/ZzhMDSvntx7Lxf9+twlZ0UUrnC7FrwgH1lr6n/NYiIs17g+x7tCPhzQL/pyXoA6S/LViTfAAC5mC/9W5zAx4te1BZQ8+AhjhM6jyFCk84FS9NLWB/eDzOyMvq987EQfHJWI8WfTuWnb8kmRiy4eoGBACCH/xOW6KmSzxEUJaPHtxo8h99hAudcJhMBFZYd5m0u2U0QAnBnFqzyULx4iNfY=
+  - $EMAIL_ADDRESS
