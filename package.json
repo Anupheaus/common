@@ -9,7 +9,7 @@
   "scripts": {
     "build": "webpack --mode production",
     "build:dev": "webpack --mode development --watch",
-    "test": "mocha --opts ./node_modules/anux-package/configs/mocha.opts"
+    "test": "mocha"
   },
   "files": [
     "dist"
