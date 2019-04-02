@@ -77,7 +77,7 @@ if (!Object.addMethods) {
 }
 
 function isOverridableItemArray<T>(items: T[]): items is (T & IRecord)[] {
-  return items.every((item: any) => item != null && typeof (item.id) === 'string' && item.id.length > 0);
+  return items.every((item: any) => item != null && ((typeof (item.id) === 'string' && item.id.length > 0) || typeof (item.id) === 'number'));
 }
 
 function parseObject<T>(existingObject: T, newObject: T, checkForOverridableItems: boolean): T {
@@ -92,13 +92,10 @@ function parseObject<T>(existingObject: T, newObject: T, checkForOverridableItem
       const existingValue = existingPropertyDescriptor.value;
       const newValue = newPropertyDescriptor.value;
       const result = parseValue(existingValue, newValue, checkForOverridableItems);
-      if (result === newValue) {
-        Object.defineProperty(existingObject, key, {
-          value: newValue,
-          enumerable: newPropertyDescriptor.enumerable,
-          configurable: newPropertyDescriptor.configurable,
-        });
-      }
+      Object.defineProperty(existingObject, key, {
+        ...newPropertyDescriptor,
+        value: result,
+      });
     } else {
       existingObject[key] = parseValue(existingObject[key], newPropertyDescriptor.value, checkForOverridableItems);
     }
@@ -111,7 +108,7 @@ function parseArray(existingValue: any[], newValue: any[], checkForOverridableIt
   if (existingValue.length === 0 && newValue.length === 0) { return existingValue; }
   // Check to see if the items are overridable
   if (checkForOverridableItems && isOverridableItemArray(existingValue) && isOverridableItemArray(newValue)) {
-    existingValue.syncWith(newValue);
+    existingValue = existingValue.syncWith(newValue, { updateMatched: (a, b) => parseValue(a, b, true) });
   } else {
     if (existingValue.length > newValue.length) { existingValue.length = newValue.length; }
     newValue.forEach((item, index) => { existingValue[index] = parseValue(existingValue[index], item, checkForOverridableItems); });
@@ -143,7 +140,7 @@ Object.addMethods(Object, [
   },
 
   function merge<T>(this: Object, target: T, ...extenders: any[]): T {
-    extenders.removeNull().forEach(extender => target = parseValue(target, extender, false));
+    extenders.removeNull().forEach(extender => target = parseValue(target, extender, true));
     return target;
   },
 
