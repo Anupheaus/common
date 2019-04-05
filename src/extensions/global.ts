@@ -1,4 +1,4 @@
-export interface IMap<T= any> {
+export interface IMap<T = any> {
   [key: string]: T;
 }
 
@@ -19,8 +19,8 @@ export type Minus<T, U> = { [P in Diff<keyof T, keyof U>]: T[P] };
 
 type UpsertableObject<T extends IRecord, TKey extends keyof T = keyof T> = (Pick<T, TKey> | Partial<T>) & IRecord;
 type IfElsePrimitive<T, U> = T extends string | number | boolean ? T : U;
-export type Updatable<T extends string | number | boolean | IRecord, TKey extends keyof T = keyof T> = IfElsePrimitive<T, UpsertableObject<T & IRecord, TKey>>;
-export type Upsertable<T extends string | number | boolean | IRecord, TKey extends keyof T = keyof T> = IfElsePrimitive<T, Updatable<T, TKey>>;
+export type Updatable<T extends IRecord, TKey extends keyof T = keyof T> = UpsertableObject<T & IRecord, TKey>;
+export type Upsertable<T extends string | number | boolean | IRecord, TKey extends keyof T = keyof T> = IfElsePrimitive<T, UpsertableObject<T & IRecord, TKey>>;
 export type EnsureId<T> = T extends IRecord ? T : never;
 export type PrimitiveOrRecord<T> = T extends IRecord | string | number | boolean ? T : never;
 

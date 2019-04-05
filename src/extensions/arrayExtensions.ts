@@ -177,19 +177,28 @@ export class ArrayExtensions<T> {
     return self;
   }
 
+  public update(item: Updatable<T & IRecord>): T[];
   public update(filter: FilterDelegate<T>, update: UpdateDelegate<T>): T[];
-  public update(this: T[], filter: FilterDelegate<T>, update: UpdateDelegate<T>): T[] {
-    let hasUpdated = false;
-    let array: T[];
-    for (let index = 0; index < this.length; index++) {
-      if (filter(this[index], index)) {
-        hasUpdated = true;
-        if (!array) { array = this.slice(); }
-        array = performUpsert(array, index, update, undefined, index);
+  public update(this: T[], filterOrItem: FilterDelegate<T> | Updatable<T & IRecord>, update?: UpdateDelegate<T>): T[] {
+    if (typeof (filterOrItem) === 'function') {
+      const filter = filterOrItem as FilterDelegate<T>;
+      let hasUpdated = false;
+      let array: T[];
+      for (let index = 0; index < this.length; index++) {
+        if (filter(this[index], index)) {
+          hasUpdated = true;
+          if (!array) { array = this.slice(); }
+          array = performUpsert(array, index, update, undefined, index);
+        }
       }
+      if (!hasUpdated) { return this; }
+      return array;
+    } else if (filterOrItem) {
+      const item = filterOrItem as IRecord;
+      const foundIndex = this.indexOfId(item.id);
+      if (foundIndex === -1) { return this; }
+      return this.upsert(item as any);
     }
-    if (!hasUpdated) { return this; }
-    return array;
   }
 
   public insert(item: T): T[];
@@ -251,14 +260,11 @@ export class ArrayExtensions<T> {
   }
 
   public except(array: T[]): T[];
-  public except<U extends T & IRecord>(array: Updatable<U>[]): U[];
-  public except<U extends T & IRecord>(this: T[], array: T[] | Updatable<U>[]): T[] {
+  public except<U extends IRecord>(array: U[]): T[];
+  public except<U extends IRecord>(this: T[], array: T[] | U[]): T[] {
     const results = this
       .slice()
-      .filter(item => {
-        if (item && item['id']) { return !(array as Updatable<U>[]).find(i => i['id'] === item['id']); }
-        return !(array as T[]).includes(item);
-      });
+      .filter(item => item && item['id'] != null ? array.findById(item['id']) == null : !array.includes(item as any));
     return results.length === this.length ? this : results;
   }
 
@@ -492,7 +498,7 @@ export class ArrayExtensions<T> {
 
 export class ArrayConstructorExtensions {
 
-  public ofSize<T= any>(length: number): T[] {
+  public ofSize<T = any>(length: number): T[] {
     return new Array(length).fill(undefined, 0, length);
   }
 
