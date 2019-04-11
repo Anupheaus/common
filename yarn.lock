@@ -585,10 +585,10 @@ ansi-styles@^3.2.0, ansi-styles@^3.2.1:
   dependencies:
     color-convert "^1.9.0"
 
-anux-package@^1.0.30:
-  version "1.0.30"
-  resolved "https://registry.yarnpkg.com/anux-package/-/anux-package-1.0.30.tgz#796bab1ad85f05069d1b67517e7b7a4f5d852861"
-  integrity sha512-G19COqokLDQPwyfAwg4fqhCkiab1HEuBkdbB+86ml8oXeEaHamAH25fJzKGGSKfXHYM5iReglxKqGDlf4o9nxw==
+anux-package@^1.0.31:
+  version "1.0.31"
+  resolved "https://registry.yarnpkg.com/anux-package/-/anux-package-1.0.31.tgz#d33dce67c7af109ed98f844185f9720058d65691"
+  integrity sha512-DRMKaSPg7SICIIJReRGnB/QfLUfJx/OD67eWP4EvRnV+6MNtOEoRUmG1BI+3vMpMg7bwxlvezfgmPKn5uqya/Q==
   dependencies:
     "@types/chai" "^4.1.7"
     "@types/chai-fuzzy" "^1.3.30"
@@ -642,7 +642,6 @@ anux-package@^1.0.30:
     webpack-build-notifier "^0.1.31"
     webpack-cli "^3.3.0"
     webpack-dev-server "^3.3.1"
-    webpack-node-externals "^1.7.2"
 
 anymatch@^2.0.0:
   version "2.0.0"
@@ -7784,11 +7783,6 @@ webpack-log@^2.0.0:
   dependencies:
     ansi-colors "^3.0.0"
     uuid "^3.3.2"
-
-webpack-node-externals@^1.7.2:
-  version "1.7.2"
-  resolved "https://registry.yarnpkg.com/webpack-node-externals/-/webpack-node-externals-1.7.2.tgz#6e1ee79ac67c070402ba700ef033a9b8d52ac4e3"
-  integrity sha512-ajerHZ+BJKeCLviLUUmnyd5B4RavLF76uv3cs6KNuO8W+HuQaEs0y0L7o40NQxdPy5w0pcv8Ew7yPUAQG0UdCg==
 
 webpack-sources@^1.1.0, webpack-sources@^1.3.0:
   version "1.3.0"
