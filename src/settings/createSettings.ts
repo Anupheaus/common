@@ -4,18 +4,18 @@ import { IMap } from '../extensions';
 interface IFrom {
   env: {
     mode: string;
-    <V>(name: string): V;
-    <V>(name: string, format: (value: V) => V): V;
-    <V>(name: string, defaultValue: V): V;
-    <V>(name: string, format: (value: V) => V, defaultValue: V): V;
+    <V = string>(name: string): V;
+    <V = string>(name: string, format: (value: V) => V): V;
+    <V = string>(name: string, defaultValue: V): V;
+    <V = string>(name: string, format: (value: V) => V, defaultValue: V): V;
   };
   packageJson: {
     title: string;
     version: string;
-    <V>(name: string): V;
-    <V>(name: string, format: (value: V) => V): V;
-    <V>(name: string, defaultValue: V): V;
-    <V>(name: string, format: (value: V) => V, defaultValue: V): V;
+    <V = string>(name: string): V;
+    <V = string>(name: string, format: (value: V) => V): V;
+    <V = string>(name: string, defaultValue: V): V;
+    <V = string>(name: string, format: (value: V) => V, defaultValue: V): V;
   };
 }
 
