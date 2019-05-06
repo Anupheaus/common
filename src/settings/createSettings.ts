@@ -1,21 +1,20 @@
 import { IMap } from '../extensions';
-// import * as fs from 'fs';
 
-interface IFrom {
+interface IFrom<E extends IMap = IMap, P extends IMap = IMap> {
   env: {
     mode: string;
-    <V = string>(name: string): V;
-    <V = string>(name: string, format: (value: V) => V): V;
-    <V = string>(name: string, defaultValue: V): V;
-    <V = string>(name: string, format: (value: V) => V, defaultValue: V): V;
+    <K extends keyof E>(name: K): E[K];
+    <K extends keyof E, V>(name: K, format: (value: E[K]) => V): V;
+    <K extends keyof E>(name: K, defaultValue: E[K]): E[K];
+    <K extends keyof E, V>(name: K, format: (value: E[K]) => V, defaultValue: V): V;
   };
   packageJson: {
     title: string;
     version: string;
-    <V = string>(name: string): V;
-    <V = string>(name: string, format: (value: V) => V): V;
-    <V = string>(name: string, defaultValue: V): V;
-    <V = string>(name: string, format: (value: V) => V, defaultValue: V): V;
+    <K extends keyof P>(name: K): P[K];
+    <K extends keyof P, V>(name: K, format: (value: P[K]) => V): V;
+    <K extends keyof P>(name: K, defaultValue: P[K]): P[K];
+    <K extends keyof P, V>(name: K, format: (value: P[K]) => V, defaultValue: V): V;
   };
 }
 
@@ -80,18 +79,17 @@ function createPackageJsonFunc(config: IConfig): IFrom['packageJson'] {
   return packageJson;
 }
 
-interface IConfig {
+interface IConfig<E extends IMap = IMap, P extends IMap = IMap> {
   maxSearchDepthForJSONFiles?: number;
+  environmentVariableKeys: E;
+  packageJsonKeys: P;
 }
 
-export function createSettings<T extends IMap>(delegate: (from: IFrom) => T): T;
-export function createSettings<T extends IMap>(config: IConfig, delegate: (from: IFrom) => T): T;
-export function createSettings<T extends IMap>(configOrDelegate: IConfig | ((from: IFrom) => T), delegate?: (from: IFrom) => T): T {
-  const config: IConfig = {
+export function createSettings<T extends IMap, E extends IMap, P extends IMap>(config: IConfig<E, P>, delegate: (from: IFrom<E, P>) => T): T {
+  config = {
     maxSearchDepthForJSONFiles: 15,
-    ...(typeof (configOrDelegate) === 'function' ? {} : configOrDelegate),
+    ...config,
   };
-  delegate = delegate || (configOrDelegate as any);
   loadAnyEnvironmentVariables(config);
   return delegate({
     env: createEnvFunc(),
