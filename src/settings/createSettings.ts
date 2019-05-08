@@ -3,10 +3,10 @@ import { IMap } from '../extensions';
 interface IFrom<E extends IMap = IMap, P extends IMap = IMap> {
   env: {
     mode: string;
-    <K extends keyof E>(name: K): E[K];
-    <K extends keyof E, V>(name: K, format: (value: E[K]) => V): V;
+    <K extends keyof E>(name: K): string;
+    <K extends keyof E, V>(name: K, format: (value: string) => V): V;
     <K extends keyof E>(name: K, defaultValue: E[K]): E[K];
-    <K extends keyof E, V>(name: K, format: (value: E[K]) => V, defaultValue: V): V;
+    <K extends keyof E, V>(name: K, format: (value: string) => V, defaultValue: V): V;
   };
   packageJson: {
     title: string;
@@ -18,27 +18,25 @@ interface IFrom<E extends IMap = IMap, P extends IMap = IMap> {
   };
 }
 
-function loadJsonFile(file: string, maxSearchDepthForJSONFiles: number, errorOnFSFail: boolean = false) {
+function loadJsonFile(file: string, errorOnFSFail: boolean = false) {
   let fs: typeof import('fs');
   try {
     fs = require('fs');
   } catch (error) {
     if (errorOnFSFail) { throw new Error('Trying to use fs in a client environment.'); }
   }
-  let maxCount = maxSearchDepthForJSONFiles;
-  let foundFile = false;
-  while (!(foundFile = fs.existsSync(file)) && maxCount > 0) { file = `../${file}`; maxCount--; }
-  return foundFile ? JSON.parse(fs.readFileSync(file).toString()) : undefined;
+  if (!fs.existsSync(file /*?*/)) { return undefined; }
+  return JSON.parse(fs.readFileSync(file).toString());
 }
 
 function loadPackageJson(config: IConfig): IMap {
-  const packageJsonContents = loadJsonFile('package.json', config.maxSearchDepthForJSONFiles, true);
+  const packageJsonContents = loadJsonFile((config.packageJsonKeys as any)('package.json'), true);
   if (!packageJsonContents) { throw new Error('Unable to find the package.json file for this project.'); }
   return packageJsonContents;
 }
 
 function loadAnyEnvironmentVariables(config: IConfig) {
-  const envs = loadJsonFile('envs.json', config.maxSearchDepthForJSONFiles);
+  const envs = loadJsonFile((config.environmentVariableKeys as any)('envs.json'));
   if (!envs) { return; }
   // tslint:disable-next-line: forin
   for (const key in envs) { process.env[key] = envs[key]; }
@@ -62,7 +60,7 @@ function createPackageJsonFunc(config: IConfig): IFrom['packageJson'] {
   let packageJsonContents: IMap;
   const packageJson: IFrom['packageJson'] = (<V>(...args: any[]): V => {
     packageJsonContents = packageJsonContents || loadPackageJson(config);
-    return getValueUsingName(args, name => packageJson[name]);
+    return getValueUsingName(args, name => packageJsonContents[name]);
   }) as any;
   Object.defineProperties(packageJson, {
     title: {
