@@ -3,7 +3,7 @@ import { getJsonFileKeys } from './getJsonFileKeys';
 import * as path from 'path';
 import * as packageJson from '../../package.json';
 
-describe.only('createSettings', () => {
+describe('createSettings', () => {
 
   it('can get settings from a .json file for environment variables and the package.json file for settings', () => {
     const settings = createSettings({
