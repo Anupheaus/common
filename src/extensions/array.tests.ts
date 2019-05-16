@@ -857,4 +857,90 @@ describe('extension > array', () => {
 
   });
 
+  describe.only('take', () => {
+
+    it('can take the first n number of items', () => {
+      const array = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+      const result = array.take(5);
+      expect(result).to.eql([1, 2, 3, 4, 5]);
+    });
+
+    it('does not take more than the number of items', () => {
+      const array = [1, 2, 3, 4];
+      const result = array.take(5);
+      expect(result).to.eql([1, 2, 3, 4]);
+      expect(result).to.eq(array);
+    });
+
+    it('returns the same array if the count is the same as the length', () => {
+      const array = [1, 2, 3, 4, 5];
+      const result = array.take(5);
+      expect(result).to.eq(array);
+    });
+
+    it('returns a new empty array if the count is zero and the array length is greater than zero', () => {
+      const array = [1, 2, 3, 4, 5];
+      const result = array.take(0);
+      expect(result).to.eql([]);
+    });
+
+  });
+
+  describe.only('takeLast', () => {
+
+    it('can take the last n number of items', () => {
+      const array = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+      const result = array.takeLast(5);
+      expect(result).to.eql([5, 6, 7, 8, 9]);
+    });
+
+    it('does not take more than the number of items', () => {
+      const array = [1, 2, 3, 4];
+      const result = array.takeLast(5);
+      expect(result).to.eql([1, 2, 3, 4]);
+      expect(result).to.eq(array);
+    });
+
+    it('returns the same array if the count is the same as the length', () => {
+      const array = [1, 2, 3, 4, 5];
+      const result = array.takeLast(5);
+      expect(result).to.eq(array);
+    });
+
+    it('returns a new empty array if the count is zero and the array length is greater than zero', () => {
+      const array = [1, 2, 3, 4, 5];
+      const result = array.takeLast(0);
+      expect(result).to.eql([]);
+    });
+
+  });
+
+  describe.only('skip', () => {
+
+    it('can skip the first n number of items', () => {
+      const array = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+      const result = array.skip(5);
+      expect(result).to.eql([6, 7, 8, 9]);
+    });
+
+    it('does not skip more than the number of items', () => {
+      const array = [1, 2, 3, 4];
+      const result = array.skip(5);
+      expect(result).to.eql([]);
+    });
+
+    it('returns the same array if the count is zero', () => {
+      const array = [1, 2, 3, 4, 5];
+      const result = array.skip(0);
+      expect(result).to.eq(array);
+    });
+
+    it('returns the same array if the length is zero and the count is not', () => {
+      const array = [];
+      const result = array.skip(10);
+      expect(result).to.eq(array);
+    });
+
+  });
+
 });

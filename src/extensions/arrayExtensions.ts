@@ -489,9 +489,30 @@ export class ArrayExtensions<T> {
 
   public take(count: number): T[];
   public take(this: T[], count: number): T[] {
-    const clone = this.clone();
-    clone.length = count;
-    return clone;
+    if (this.length === 0 || this.length <= count) { return this; }
+    if (count === 0) { return []; }
+    return this.slice(0, count);
+  }
+
+  public takeLast(count: number): T[];
+  public takeLast(this: T[], count: number): T[] {
+    if (this.length === 0 || this.length <= count) { return this; }
+    if (count === 0) { return []; }
+    return this.slice(this.length - count);
+  }
+
+  /**
+   * Returns the remaining items of this array after the required number of items (count) have been skipped.
+   * @param {number} count The number of items to skip within this array.
+   * @returns {T[]} If the length of this array is zero or the number of items to skip is 0, this array will be returned without modification.  If the length of this array is
+   * less than the number of items to skip then a blank array is returned.  Otherwise the remainder of the array, after the required number of items have been skipped,
+   * will be returned.
+   */
+  public skip(count: number): T[];
+  public skip(this: T[], count: number): T[] {
+    if (this.length === 0 || count === 0) { return this; }
+    if (this.length < count) { return []; }
+    return this.slice(count);
   }
 
 }
