@@ -857,7 +857,7 @@ describe('extension > array', () => {
 
   });
 
-  describe.only('take', () => {
+  describe('take', () => {
 
     it('can take the first n number of items', () => {
       const array = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -886,7 +886,7 @@ describe('extension > array', () => {
 
   });
 
-  describe.only('takeLast', () => {
+  describe('takeLast', () => {
 
     it('can take the last n number of items', () => {
       const array = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -915,7 +915,7 @@ describe('extension > array', () => {
 
   });
 
-  describe.only('skip', () => {
+  describe('skip', () => {
 
     it('can skip the first n number of items', () => {
       const array = [1, 2, 3, 4, 5, 6, 7, 8, 9];
