@@ -22,6 +22,7 @@ function loadJsonFile(file: string, errorOnFSFail: boolean = false) {
   let fs: typeof import('fs');
   try {
     fs = require('fs');
+    if (!fs) { throw new Error('Ignored'); }
   } catch (error) {
     if (errorOnFSFail) { throw new Error('Trying to use fs in a client environment.'); }
   }
