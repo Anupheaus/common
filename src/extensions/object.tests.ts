@@ -110,6 +110,17 @@ describe('object', () => {
       expect(b.a).to.eql([1, 3, 5]);
     });
 
+    it('can merge an array into an empty object correctly', () => {
+      const b = {
+        a: [],
+      };
+      const c = {
+        b: 'something',
+      };
+      const d = Object.merge({}, b, c);
+      expect(d.a).to.eq(b.a);
+    });
+
     it('can merge overridable items correctly', () => {
       const a = {
         a: [{ id: 3, something: '3' }, { id: 1, something: '1' }, { id: 2, something: '2', boo: 'not' }],

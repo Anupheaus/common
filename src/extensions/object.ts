@@ -37,7 +37,7 @@ declare global {
     hash(target: object): number;
     remove<T, P>(value: T, removeProps: (propsToRemove: T) => P): P;
     // remove2<T, K extends Partial<T>>(value: T, removeProps: K): Pick<T, Diff<keyof T, keyof K>>;
-    values<T= any>(target: object): T[];
+    values<T = any>(target: object): T[];
     getValueOf<R>(delegate: () => R, defaultValue: R): R;
     getValueOf<T, R>(target: T, delegate: (target: T) => R, defaultValue: R): R;
     mixin(destinationClass: Function, sourceClass: Function): void;
@@ -104,7 +104,7 @@ function parseObject<T>(existingObject: T, newObject: T, checkForOverridableItem
 }
 
 function parseArray(existingValue: any[], newValue: any[], checkForOverridableItems: boolean): any[] {
-  if (!(existingValue instanceof Array)) { existingValue = new Array<any>(); }
+  if (!(existingValue instanceof Array)) { return newValue; }
   if (existingValue.length === 0 && newValue.length === 0) { return existingValue; }
   // Check to see if the items are overridable
   if (checkForOverridableItems && isOverridableItemArray(existingValue) && isOverridableItemArray(newValue)) {
