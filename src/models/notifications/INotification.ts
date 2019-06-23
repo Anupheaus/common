@@ -1,9 +1,11 @@
 import { ReactNode } from 'react';
-import { IDialogActions } from './IDialogActions';
+import { INotificationActions } from './INotificationActions';
+import { ImplementationModes } from './ImplementationModes';
 
-export interface IDialog {
+export interface INotification {
   title?: ReactNode;
   message: ReactNode;
   autoHideAfterMilliseconds?: number;
-  buttons?(actions: IDialogActions): ReactNode;
+  implementationMode: ImplementationModes;
+  buttons?(actions: INotificationActions): ReactNode;
 }
