@@ -1,7 +1,5 @@
 import { ArrayExtensions, ArrayConstructorExtensions } from './arrayExtensions';
 
-// tslint:disable:interface-name
-
 Object.extendPrototype(Array.prototype, ArrayExtensions.prototype);
 Object.extendPrototype(Array, ArrayConstructorExtensions.prototype);
 
