@@ -74,7 +74,3 @@ Object.addMethods(Function.prototype, [
   }
 
 ]);
-
-function test() {
-  Function.getStackTrace()
-}

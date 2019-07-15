@@ -1,6 +1,6 @@
 import './function';
 
-describe.only('extensions', () => {
+describe('extensions', () => {
 
   describe('function', () => {
 
