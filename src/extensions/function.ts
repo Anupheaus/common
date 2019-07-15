@@ -1,5 +1,14 @@
 import { InternalError } from '../errors';
 
+const callStackRegExp = new RegExp(/^\s{4}at\s(\S+)\s\((.*?):(\d+):(\d+)\)$/, 'gmi');
+
+export interface IFunctionStackTraceInfo {
+  methodName: string;
+  file: string;
+  line: number;
+  column: number;
+}
+
 declare global {
   // tslint:disable-next-line:interface-name
   interface Function {
@@ -7,6 +16,7 @@ declare global {
     wrap(instance: object, delegate: (args: any[], next: (args: any[]) => any) => any): void;
     empty<TReturn = void>(): () => TReturn;
     emptyAsync<TReturn = void>(): () => Promise<TReturn>;
+    getStackTrace(): IFunctionStackTraceInfo[]
   }
 }
 
@@ -43,4 +53,28 @@ Object.addMethods(Function.prototype, [
     return emptyAsyncFunction;
   },
 
+  function getStackTrace(this: Function): IFunctionStackTraceInfo[] {
+    const errorStack = new Error().stack;
+    const matches = errorStack.match(callStackRegExp);
+    if (!matches || matches.length < 2) { return []; }
+    return matches.skip(1).map((match): IFunctionStackTraceInfo => {
+      const result = new RegExp(callStackRegExp, 'gmi').exec(match);
+      const methodName = result[1];
+      const file = result[2];
+      const line = parseInt(result[3], 10);
+      const column = parseInt(result[4], 10);
+
+      return {
+        methodName,
+        file,
+        line,
+        column,
+      }
+    });
+  }
+
 ]);
+
+function test() {
+  Function.getStackTrace()
+}
