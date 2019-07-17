@@ -4,6 +4,19 @@ describe('extensions', () => {
 
   describe('string', () => {
 
+    describe('hash', () => {
+
+      it('can produce a hash of the expected length', () => {
+        expect(''.hash(20)).to.eq('');
+        expect('something'.hash(0)).to.eq('');
+        expect('something'.hash(-1)).to.eq('');
+        expect('something'.hash()).to.be.a('string').with.lengthOf(16);
+        expect('something'.hash(20)).to.be.a('string').with.lengthOf(20);
+
+      });
+
+    });
+
     describe('obfuscate', () => {
 
       it('all values below minimum are set to minimum x star', () => {

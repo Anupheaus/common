@@ -14,16 +14,31 @@ export class StringExtensions {
     return new Function(...mapped.map(item => item[0]), `return \`${this}\`;`)(...mapped.map(item => item[1]));
   }
 
-  public hash(): number;
-  public hash(this: string): number {
-    let hashValue = 0;
-    if (this.length === 0) { return hashValue; }
-    for (let i = 0; i < this.length; i++) {
-      const chr = this.charCodeAt(i);
-      hashValue = ((hashValue << 5) - hashValue) + chr;
-      hashValue |= 0;
-    }
-    return hashValue;
+  public hash(): string;
+  public hash(length: number): string;
+  public hash(this: string, length: number = 16): string {
+    if (this.length === 0 || length <= 0) { return ''; }
+    const createChunk = (value: string) => {
+      let hval = 0x811c9dc5;
+
+      for (let i = 0, l = value.length; i < l; i++) {
+        hval ^= value.charCodeAt(i);
+        hval += (hval << 1) + (hval << 4) + (hval << 7) + (hval << 8) + (hval << 24);
+      }
+      // Convert to 8 digit hex string
+      return (hval >>> 0).toString(36);
+    };
+    let result = createChunk(this);
+    while (result.length < length) result += createChunk(result + this);
+    return result.substr(0, length);
+    // let hashValue = 0;
+    // if (this.length === 0) { return hashValue; }
+    // for (let i = 0; i < this.length; i++) {
+    //   const chr = this.charCodeAt(i);
+    //   hashValue = ((hashValue << 5) - hashValue) + chr;
+    //   hashValue |= 0;
+    // }
+    // return hashValue;
   }
 
   public condenseWhitespace(): string;
@@ -52,22 +67,6 @@ export class StringExtensions {
   public toVariableName(): string;
   public toVariableName(this: string): string {
     return this.toCamelCase().replace(/\s+/g, '');
-  }
-
-  public padRight(length: number): string;
-  public padRight(length: number, paddingChar: string): string;
-  public padRight(this: string, length: number, paddingChar: string = ' '): string {
-    length = length - this.length;
-    length = Math.max(0, length);
-    return `${this}${paddingChar.repeat(length)}`;
-  }
-
-  public padLeft(length: number): string;
-  public padLeft(length: number, paddingChar: string): string;
-  public padLeft(this: string, length: number, paddingChar: string = ' '): string {
-    length = length - this.length;
-    length = Math.max(0, length);
-    return `${paddingChar.repeat(length)}${this}`;
   }
 
   public countOf(value: string): number;

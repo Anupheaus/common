@@ -203,8 +203,8 @@ Object.addMethods(Object, [
     return compareValue(target, comparison);
   },
 
-  function hash(this: Object, target: object): number {
-    if (is.null(target)) { return 0; }
+  function hash(this: Object, target: object): string {
+    if (is.null(target)) { return ''; }
     const hashableValues: string[] = [];
     if (target && typeof (target) === 'object' && typeof (target.constructor) === 'function') {
       const isPrototype = Object.getOwnPropertyNames(target).includes('constructor');
