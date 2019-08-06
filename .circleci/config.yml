@@ -14,10 +14,10 @@ jobs:
           - v1-dependencies-{{ checksum "package.json" }}
       - run:
           name: Install dependencies
-          command: 'pnpm install --frozen-lockfile'
+          command: 'npm install'
       - save_cache:
           paths:
-            - ~/.pnpm/store
+            - node_modules
           key: v1-dependencies-{{ checksum "package.json" }}
   test:
     docker: 
@@ -26,7 +26,7 @@ jobs:
       - checkout
       - run:
           name: Test
-          command: 'pnpm test'
+          command: 'npm test'
 
 workflows:
   version: 2
