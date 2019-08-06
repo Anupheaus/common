@@ -1,7 +1,7 @@
-import { createSettings } from './createSettings';
-import { getJsonFileKeys } from './getJsonFileKeys';
 import * as path from 'path';
 import * as packageJson from '../../package.json';
+import { createSettings } from './createSettings';
+import { getJsonFileKeys } from './getJsonFileKeys';
 
 describe('createSettings', () => {
 

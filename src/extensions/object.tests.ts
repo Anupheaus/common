@@ -134,6 +134,16 @@ describe('object', () => {
       expect(b.a).to.eql([{ id: 2, something: 'else', with: 'more', boo: 'not' }]);
     });
 
+    it('does not modify the extenders', () => {
+      const a = { items: [{ boo: 2 }] };
+      const b = { items: [{ boo: 3 }] };
+      const result = Object.merge({}, a, b);
+      expect(result.items[0].boo).to.eq(3);
+      expect(result.items[0]).not.to.eq(a.items[0]);
+      expect(a.items[0].boo).to.eq(2);
+      expect(b.items[0].boo).to.eq(3);
+    })
+
   });
 
 });

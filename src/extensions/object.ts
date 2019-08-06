@@ -80,27 +80,35 @@ function isOverridableItemArray<T>(items: T[]): items is (T & IRecord)[] {
   return items.every((item: any) => item != null && ((typeof (item.id) === 'string' && item.id.length > 0) || typeof (item.id) === 'number'));
 }
 
-function parseObject<T>(existingObject: T, newObject: T, checkForOverridableItems: boolean): T {
-  existingObject = existingObject || {} as T;
+function parseObject<T extends Object>(existingObject: T, newObject: T, checkForOverridableItems: boolean): T {
+  const changedObject = {} as T;
+  Reflect.ownKeys(existingObject || {}).forEach(key => Object.defineProperty(changedObject, key, Reflect.getDefinition(existingObject, key)));
+  let hasObjectChanged = false;
   // tslint:disable-next-line:forin
   Reflect.ownKeys(newObject || {}).forEach(key => {
     const newPropertyDescriptor = Reflect.getDefinition(newObject, key);
-    const existingPropertyDescriptor = Reflect.getDefinition(existingObject, key);
+    const existingPropertyDescriptor = Reflect.getDefinition(changedObject, key);
     if (newPropertyDescriptor.get) {
-      Object.defineProperty(existingObject, key, newPropertyDescriptor);
-    } else if (existingPropertyDescriptor) {
-      const existingValue = existingPropertyDescriptor.value;
-      const newValue = newPropertyDescriptor.value;
-      const result = parseValue(existingValue, newValue, checkForOverridableItems);
-      Object.defineProperty(existingObject, key, {
+      Object.defineProperty(changedObject, key, {
         ...newPropertyDescriptor,
-        value: result,
+        get: function () { return newPropertyDescriptor.get.call(this); },
+        set: newPropertyDescriptor.set ? function (...args: any[]) { return newPropertyDescriptor.set.call(this, ...args); } : undefined,
       });
-    } else {
-      existingObject[key] = parseValue(existingObject[key], newPropertyDescriptor.value, checkForOverridableItems);
+      hasObjectChanged = true;
+      return;
     }
+    const existingValue = existingPropertyDescriptor ? existingPropertyDescriptor.value : changedObject[key];
+    const newValue = newPropertyDescriptor.value;
+    const result = parseValue(existingValue, newValue, checkForOverridableItems);
+    if (result === existingValue) { return; }
+
+    Object.defineProperty(changedObject, key, {
+      ...newPropertyDescriptor,
+      value: result,
+    });
+    hasObjectChanged = true;
   });
-  return existingObject;
+  return hasObjectChanged ? changedObject : existingObject;
 }
 
 function parseArray(existingValue: any[], newValue: any[], checkForOverridableItems: boolean): any[] {
@@ -109,11 +117,21 @@ function parseArray(existingValue: any[], newValue: any[], checkForOverridableIt
   // Check to see if the items are overridable
   if (checkForOverridableItems && isOverridableItemArray(existingValue) && isOverridableItemArray(newValue)) {
     existingValue = existingValue.syncWith(newValue, { updateMatched: (a, b) => parseValue(a, b, true) });
-  } else {
-    if (existingValue.length > newValue.length) { existingValue.length = newValue.length; }
-    newValue.forEach((item, index) => { existingValue[index] = parseValue(existingValue[index], item, checkForOverridableItems); });
+    return existingValue;
   }
-  return existingValue;
+  const changedArray = existingValue.slice();
+  let hasChangedArray = false;
+  if (existingValue.length > newValue.length) {
+    changedArray.length = newValue.length;
+    hasChangedArray = true;
+  }
+  newValue.forEach((item, index) => {
+    const result = parseValue(existingValue[index], item, checkForOverridableItems);
+    if (result === existingValue[index]) { return; }
+    hasChangedArray = true;
+    changedArray[index] = result;
+  });
+  return hasChangedArray ? changedArray : existingValue;
 }
 
 function parseValue(existingValue: any, newValue: any, checkForOverridableItems: boolean): any {

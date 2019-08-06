@@ -10,7 +10,7 @@ export enum PropertyAccess {
 
 const fastEquals = (customComparer: (source, target) => boolean | void, isDeepComparison?: boolean) => {
   const hasCustomComparer = typeof (customComparer) === 'function';
-  return (createCustomEqual as any)(comparitor => (objA, objB) => {
+  return createCustomEqual(comparitor => (objA, objB) => {
     if (hasCustomComparer) {
       const result = customComparer(objA, objB);
       if (result === true || result === false) { return result; }
@@ -24,7 +24,8 @@ const fastEquals = (customComparer: (source, target) => boolean | void, isDeepCo
   });
 };
 
-function performComparison(source: any, target: any, customComparer: (source, target) => boolean | void, isDeepComparison): boolean {
+function performComparison(source: unknown, target: unknown,
+  customComparer: (source: unknown, target: unknown) => boolean | void, isDeepComparison: boolean): boolean {
   if (typeof (customComparer) === 'function') {
     const firstResult = customComparer(source, target);
     if (firstResult === true || firstResult === false) { return firstResult; }
@@ -37,11 +38,11 @@ declare global {
   namespace Reflect {
 
     interface IEndOfPathAction {
-      value: any;
+      value: unknown;
       shouldContinue: boolean;
     }
 
-    export interface ITypeOf<T = any> {
+    export interface ITypeOf<T = unknown> {
       type: string;
       isArray: boolean;
       isObject: boolean;
@@ -59,29 +60,29 @@ declare global {
       value: T;
     }
 
-    function isOrDerivesFrom(source: any, derivesFrom: any): boolean;
+    function isOrDerivesFrom(source: unknown, derivesFrom: unknown): boolean;
 
-    function className(instance: any): string;
+    function className(instance: unknown): string;
 
-    function getDefinition(target: any, memberKey: PropertyKey): PropertyDescriptor;
+    function getDefinition(target: unknown, memberKey: PropertyKey): PropertyDescriptor;
 
-    function getAllDefinitionsForMember(target: any, memberName: string): PropertyDescriptor[];
+    function getAllDefinitionsForMember(target: unknown, memberName: string): PropertyDescriptor[];
 
-    function getAllDefinitions(target: any): PropertyDescriptorMap;
+    function getAllDefinitions(target: unknown): PropertyDescriptorMap;
 
-    function getProperty<T>(target: any, propertyName: string): T;
-    function getProperty<T>(target: any, propertyName: string, defaultValue: T): T;
-    function getProperty<T>(target: any, propertyName: string, defaultValue: T, addIfNotExists: boolean): T;
+    function getProperty<T>(target: unknown, propertyName: string): T;
+    function getProperty<T>(target: unknown, propertyName: string, defaultValue: T): T;
+    function getProperty<T>(target: unknown, propertyName: string, defaultValue: T, addIfNotExists: boolean): T;
 
-    function setProperty<T>(target: any, propertyName: string, value: T): void;
+    function setProperty<T>(target: unknown, propertyName: string, value: T): void;
 
-    function checkPropertyAccess(target: any, propertyName: string, access: PropertyAccess): boolean;
+    function checkPropertyAccess(target: unknown, propertyName: string, access: PropertyAccess): boolean;
 
-    function getAllPrototypesOf(target: any): Object[];
+    function getAllPrototypesOf(target: unknown): Object[];
 
-    function invokeAll(target: any, name: string, ...args: any[]): any[];
+    function invokeAll(target: unknown, name: string, ...args: unknown[]): unknown[];
 
-    function getAndCombineAll<T extends {}>(target: any, propertyName: string): T;
+    function getAndCombineAll<T extends {}>(target: unknown, propertyName: string): T;
 
     function parameterNames(func: Function): string[];
 
@@ -90,17 +91,17 @@ declare global {
     function areShallowEqual(source, target): boolean;
     function areShallowEqual(source, target, customComparer: (objA, objB) => boolean | void): boolean;
 
-    function wrapMethod<T extends Function, R>(target: object, method: T, delegate: (originalFunc: T, args: any[]) => R): R;
+    function wrapMethod<T extends Function, R>(target: object, method: T, delegate: (originalFunc: T, args: unknown[]) => R): R;
 
-    function hashesOf(target: any): number[];
+    function hashesOf(target: unknown): number[];
 
     function typeOf<T>(value: T): ITypeOf<T>;
 
   }
 }
 
-function navigateToProperty(target: any, propertyName: string,
-  endOfPathAction: (target: any, propertyName: string) => Reflect.IEndOfPathAction = () => ({ value: null, shouldContinue: false })): any[] {
+function navigateToProperty(target: object, propertyName: string,
+  endOfPathAction: (target: object, propertyName: string) => Reflect.IEndOfPathAction = () => ({ value: null, shouldContinue: false })): [object, string] {
   const propertyNames = propertyName.split('.');
   let currentProperty = propertyNames.shift();
   let currentTarget = target;
@@ -122,7 +123,7 @@ function navigateToProperty(target: any, propertyName: string,
 
 Object.addMethods(Reflect, [
 
-  function isOrDerivesFrom(source: any, derivesFrom: any): boolean {
+  function isOrDerivesFrom(source: unknown, derivesFrom: unknown): boolean {
     let sourcePrototype = typeof (source) === 'function' ? source.prototype : source;
     if (sourcePrototype == null) { return false; }
     const derivesFromPrototype = typeof (derivesFrom) === 'function' ? derivesFrom.prototype : derivesFrom;
@@ -133,13 +134,13 @@ Object.addMethods(Reflect, [
     return false;
   },
 
-  function className(instance: any): string {
+  function className(instance: object): string {
     const prototype = Reflect.getPrototypeOf(instance);
     const constructor: Function = prototype.constructor;
     return constructor.name;
   },
 
-  function getDefinition(target: any, memberKey: PropertyKey): PropertyDescriptor {
+  function getDefinition(target: object, memberKey: PropertyKey): PropertyDescriptor {
     if (!target) { return undefined; }
     let definition: PropertyDescriptor = null;
     // if (target.prototype) { target = target.prototype; }
@@ -151,7 +152,7 @@ Object.addMethods(Reflect, [
     return definition;
   },
 
-  function getAllDefinitionsForMember(target: any, memberName: string): PropertyDescriptor[] {
+  function getAllDefinitionsForMember(target: object, memberName: string): PropertyDescriptor[] {
     const definitions = new Array<PropertyDescriptor>();
     do {
       const definition = Reflect.getOwnPropertyDescriptor(target, memberName) || null;
@@ -161,7 +162,7 @@ Object.addMethods(Reflect, [
     return definitions;
   },
 
-  function getAllDefinitions(target: any): PropertyDescriptorMap {
+  function getAllDefinitions(target: object): PropertyDescriptorMap {
     const descriptors: PropertyDescriptorMap = {};
     Reflect.getAllPrototypesOf(target)
       .mapMany(prototype => Object.getOwnPropertyNames(prototype).map(key => ({ key, descriptor: Reflect.getOwnPropertyDescriptor(prototype, key) })))
@@ -172,7 +173,7 @@ Object.addMethods(Reflect, [
     return descriptors;
   },
 
-  function getProperty<T>(target: any, propertyName: string, defaultValue: T = null, addIfNotExists: boolean = false): T {
+  function getProperty<T>(target: object, propertyName: string, defaultValue: T = null, addIfNotExists: boolean = false): T {
     [target, propertyName] = navigateToProperty(target, propertyName, () => {
       if (!addIfNotExists) { return { value: null, shouldContinue: false }; }
       return { value: {}, shouldContinue: true };
@@ -183,7 +184,7 @@ Object.addMethods(Reflect, [
     return result;
   },
 
-  function setProperty<T>(target: any, propertyName: string, value: T): void {
+  function setProperty<T>(target: object, propertyName: string, value: T): void {
     [target, propertyName] = navigateToProperty(target, propertyName, () => ({ value: {}, shouldContinue: true }));
     if (target[propertyName] === undefined) {
       Reflect.defineProperty(target, propertyName, { value, writable: true, configurable: true, enumerable: false });
@@ -194,7 +195,7 @@ Object.addMethods(Reflect, [
     }
   },
 
-  function checkPropertyAccess(target: any, propertyName: string, access: PropertyAccess): boolean {
+  function checkPropertyAccess(target: object, propertyName: string, access: PropertyAccess): boolean {
     [target, propertyName] = navigateToProperty(target, propertyName);
     if (target === null) { throw new InternalError('Access was requested on a property that does not exist.', { target, propertyName, access }); }
     const definition = Reflect.getDefinition(target, propertyName);
@@ -209,16 +210,16 @@ Object.addMethods(Reflect, [
     }
   },
 
-  function getAllPrototypesOf(target: any): any[] {
-    let prototype: any = target;
-    const prototypes = new Array<any>();
+  function getAllPrototypesOf(target: object): object[] {
+    let prototype = target;
+    const prototypes = new Array<object>();
     if (is.function(prototype)) { prototype = prototype.prototype; prototypes.push(prototype); }
     // tslint:disable-next-line:no-conditional-assignment
     while ((prototype = Reflect.getPrototypeOf(prototype)) !== Object.prototype) { prototypes.push(prototype); }
     return prototypes;
   },
 
-  function invokeAll(target: any, name: string, ...args: any[]): any[] {
+  function invokeAll(target: object, name: string, ...args: unknown[]): unknown[] {
     return Reflect.getAllPrototypesOf(target)
       .map(prototype => {
         const methodDescriptor = Reflect.getOwnPropertyDescriptor(prototype, name);
@@ -229,20 +230,18 @@ Object.addMethods(Reflect, [
       .map(method => method.apply(target, args));
   },
 
-  function getAndCombineAll<T extends {}>(target: any, propertyName: string): T {
-    return Object
-      .merge<T>({}, ...Reflect
-        .getAllPrototypesOf(target)
-        .map(prototype => {
-          const propertyDescriptor = Reflect.getOwnPropertyDescriptor(prototype, propertyName);
-          if (!is.null(propertyDescriptor) && is.function(propertyDescriptor.get)) { return propertyDescriptor.get; }
-          return null;
-        })
-        .removeNull()
-        .map(method => method.call(target))
-        .removeNull()
-        .reverse(),
-      );
+  function getAndCombineAll<T extends {}>(target: object, propertyName: string): T {
+    const results = Reflect.getAllPrototypesOf(target)
+      .map(prototype => {
+        const propertyDescriptor = Reflect.getOwnPropertyDescriptor(prototype, propertyName);
+        if (!is.null(propertyDescriptor) && is.function(propertyDescriptor.get)) { return propertyDescriptor.get; }
+        return null;
+      })
+      .removeNull()
+      .map(method => method.call(target))
+      .removeNull()
+      .reverse();
+    return Object.merge<T>({}, ...results);
   },
 
   function parameterNames(func: Function): string[] {

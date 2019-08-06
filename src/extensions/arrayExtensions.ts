@@ -1,9 +1,10 @@
+/* eslint-disable max-classes-per-file */
 import './object';
+import { MapDelegate, SimpleMapDelegate, IArrayOrderByConfig, IArrayDiff, IMergeWithOptions, MergeWithUpdateOperations } from '../models';
 import { ArgumentInvalidError, InternalError } from '../errors';
 import { SortDirections } from '../models/sort';
 import { DeepPartial, IRecord, TypeOf, Upsertable, Updatable, PrimitiveOrRecord } from './global';
 import './reflect';
-import { MapDelegate, SimpleMapDelegate, IArrayOrderByConfig, IArrayDiff, IMergeWithOptions, MergeWithUpdateOperations } from '../models';
 
 type FilterDelegate<T> = (item: T, index: number) => boolean;
 type UpdateDelegate<T> = MapDelegate<T, DeepPartial<T>>;
@@ -21,7 +22,7 @@ function performUpsert<T>(target: T[], foundIndex: number, found: UpdateDelegate
     if (isPrimitive) {
       if (originalItem === item && !isIndexChanged) { return target; }
     } else {
-      Object.merge(item, Object.merge({}, originalItem, item));
+      item = Object.merge({}, originalItem, item);
       if (Reflect.areShallowEqual(item, originalItem) && !isIndexChanged) { return target; } // no change
     }
     array.splice(foundIndex, 1);
@@ -109,6 +110,13 @@ export class ArrayExtensions<T> {
     return clone;
   }
 
+  public removeAt(index: number): T[];
+  public removeAt(this: T[], index: number): T[] {
+    const clone = this.slice();
+    clone.splice(index, 1);
+    return clone;
+  }
+
   public removeByFilter(filter: FilterDelegate<T>): T[];
   public removeByFilter(this: T[], filter: FilterDelegate<T>): T[] {
     if (typeof (filter) !== 'function') { throw new ArgumentInvalidError('filter'); }
@@ -163,7 +171,7 @@ export class ArrayExtensions<T> {
   public replace(item: T, index: number): T[];
   public replace(this: T[], item: T, index?: number): T[] {
     const isLiteral = typeof (item) === 'string' || typeof (item) === 'number';
-    const foundIndex = item && !isLiteral && item['id'] ? this.indexOfId(item['id']) : (index || -1);
+    const foundIndex = item && !isLiteral && item['id'] ? this.indexOfId(item['id']) : typeof (index) === 'number' ? Math.max(index, -1) : -1;
     if (foundIndex === -1) { return this; }
     return performUpsert(this, foundIndex, () => item, undefined, index);
   }
@@ -422,11 +430,11 @@ export class ArrayExtensions<T> {
 
     if (options.matchOrder) {
       result = items.mergeWith(this, {
-        matchBy: (b, a) => options.matchBy(a, b) as any,
-        updateMatched: (b, a, bi, ai): any => {
+        matchBy: (b, a) => options.matchBy(a, b),
+        updateMatched: (b, a, bi, ai): P => {
           const u = options.updateMatched(a, b, ai, bi);
           if (ai !== bi || u !== a) { changeFound = true; }
-          return u;
+          return u as unknown as P;
         },
         updateUnmatched: (b): any => { changeFound = true; return options.createBy(b); },
         createBy: (b): any => { changeFound = true; return b; },

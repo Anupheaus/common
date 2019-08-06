@@ -1,2 +1,2 @@
-export type SimpleMapDelegate<T, V = any> = (item: T) => V;
-export type MapDelegate<T, V = any> = (item: T, index: number) => V;
+export type SimpleMapDelegate<T, V = unknown> = (item: T) => V;
+export type MapDelegate<T, V = unknown> = (item: T, index: number) => V;

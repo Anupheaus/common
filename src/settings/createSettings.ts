@@ -1,5 +1,7 @@
 import { IMap } from '../extensions';
 
+type GetValueArgs = [string, ((v: unknown) => unknown) | unknown, unknown];
+
 interface IFrom<E extends IMap = IMap, P extends IMap = IMap> {
   env: {
     mode: string;
@@ -26,43 +28,43 @@ function loadJsonFile(file: string, errorOnFSFail: boolean = false) {
   } catch (error) {
     if (errorOnFSFail) { throw new Error('Trying to use fs in a client environment.'); }
   }
-  if (!fs.existsSync(file /*?*/)) { return undefined; }
+  if (!fs.existsSync(file)) { return undefined; }
   return JSON.parse(fs.readFileSync(file).toString());
 }
 
 function loadPackageJson(config: IConfig): IMap {
-  const packageJsonContents = loadJsonFile((config.packageJsonKeys as any)('package.json'), true);
+  const packageJsonContents = loadJsonFile((config.packageJsonKeys as Function)('package.json'), true);
   if (!packageJsonContents) { throw new Error('Unable to find the package.json file for this project.'); }
   return packageJsonContents;
 }
 
 function loadAnyEnvironmentVariables(config: IConfig) {
-  const envs = loadJsonFile((config.environmentVariableKeys as any)('envs.json'));
+  const envs = loadJsonFile((config.environmentVariableKeys as Function)('envs.json'));
   if (!envs) { return; }
   // tslint:disable-next-line: forin
   for (const key in envs) { process.env[key] = envs[key]; }
 }
 
-function getValueUsingName(args: any[], getValueUsingNameDelegate: (name: string) => any): any {
+function getValueUsingName(args: GetValueArgs, getValueUsingNameDelegate: (name: string) => unknown): unknown {
   const name = args[0];
-  const format = typeof (args[1]) === 'function' ? args[1] : (v: any) => v;
+  const format = typeof (args[1]) === 'function' ? args[1] : (v: unknown) => v;
   const defaultValue = args.length > 2 ? args[2] : args[1] != null && typeof (args[1]) !== 'function' ? args[1] : undefined;
   const value = getValueUsingNameDelegate(name);
   return value != null ? format(value) : defaultValue;
 }
 
 function createEnvFunc(): IFrom['env'] {
-  const env: IFrom['env'] = <V>(...args: any[]): V => getValueUsingName(args, name => process.env[name]);
+  const env = ((...args: GetValueArgs) => getValueUsingName(args, name => process.env[name])) as IFrom['env'];
   env.mode = (process.env['mode'] || '').toLowerCase() === 'production' ? 'production' : 'development';
   return env;
 }
 
 function createPackageJsonFunc(config: IConfig): IFrom['packageJson'] {
   let packageJsonContents: IMap;
-  const packageJson: IFrom['packageJson'] = (<V>(...args: any[]): V => {
+  const packageJson: IFrom['packageJson'] = ((...args: GetValueArgs) => {
     packageJsonContents = packageJsonContents || loadPackageJson(config);
     return getValueUsingName(args, name => packageJsonContents[name]);
-  }) as any;
+  }) as IFrom['packageJson'];
   Object.defineProperties(packageJson, {
     title: {
       get: () => packageJson('name'),

@@ -1,3 +1,4 @@
+/* eslint-disable max-classes-per-file */
 import './math';
 
 interface IObfuscateOptions {
@@ -31,14 +32,6 @@ export class StringExtensions {
     let result = createChunk(this);
     while (result.length < length) result += createChunk(result + this);
     return result.substr(0, length);
-    // let hashValue = 0;
-    // if (this.length === 0) { return hashValue; }
-    // for (let i = 0; i < this.length; i++) {
-    //   const chr = this.charCodeAt(i);
-    //   hashValue = ((hashValue << 5) - hashValue) + chr;
-    //   hashValue |= 0;
-    // }
-    // return hashValue;
   }
 
   public condenseWhitespace(): string;

@@ -1,4 +1,3 @@
-// tslint:disable:interface-name
 import { MathExtensions } from './mathExtensions';
 
 Object.extendPrototype(Math, MathExtensions.prototype);

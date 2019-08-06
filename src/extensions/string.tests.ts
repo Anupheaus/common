@@ -97,7 +97,8 @@ describe('extensions', () => {
     describe('pluralize', () => {
 
       it('can pluralize a string', () => {
-        const message = String.pluralize`There ${['are no fields', 'is $$ field', 'are $$ fields']} with ${['an error', 'errors']}; you cannot save until ${['it has', 'they have']} been corrected.`;
+        const message = String.pluralize`There ${['are no fields', 'is $$ field', 'are $$ fields']} with ${['an error',
+          'errors']}; you cannot save until ${['it has', 'they have']} been corrected.`;
         expect(message(0)).to.eq('There are no fields with errors; you cannot save until they have been corrected.');
         expect(message(1)).to.eq('There is 1 field with an error; you cannot save until it has been corrected.');
         expect(message(2)).to.eq('There are 2 fields with errors; you cannot save until they have been corrected.');
@@ -105,7 +106,8 @@ describe('extensions', () => {
       });
 
       it('can immediately pluralize a string', () => {
-        const message = String.pluralize`There ${['are no fields', 'is $$ field', 'are $$ fields']} with ${['an error', 'errors']}; you cannot save until ${['it has', 'they have']} been corrected.`(0);
+        const message = String.pluralize`There ${['are no fields', 'is $$ field', 'are $$ fields']} with ${['an error',
+          'errors']}; you cannot save until ${['it has', 'they have']} been corrected.`(0);
         expect(message).to.eq('There are no fields with errors; you cannot save until they have been corrected.');
       });
 
