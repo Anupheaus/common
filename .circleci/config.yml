@@ -6,17 +6,11 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Update NPM
-          command: 'sudo npm install -g npm@latest'
-      - restore_cache:
-          key: dependency-cache-{{ checksum "package.json" }}
+          name: Install PNPM
+          command: 'sudo npm install -g pnpm@latest'
       - run:
           name: Install dependencies
-          command: 'npm install'
-      - save_cache:
-          key: dependency-cache-{{ checksum "package.json" }}
-          paths:
-            - node_modules
+          command: 'pnpm install'      
   test:
     docker: 
       - image: circleci/node:7.10
@@ -24,7 +18,7 @@ jobs:
       - checkout
       - run:
           name: Test
-          command: 'npm test'
+          command: 'pnpm test'
 
 workflows:
   version: 2
