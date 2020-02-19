@@ -1,99 +1,57 @@
-import { IMap } from '../extensions';
+import { IMap, to } from '../extensions';
 
-type GetValueArgs = [string, ((v: unknown) => unknown) | unknown, unknown];
+interface ISettingsFromOptions<T> {
+  defaultValue?: T;
+  isRequired?: boolean;
+  transform?(value: string): T;
+}
 
-interface IFrom<E extends IMap = IMap, P extends IMap = IMap> {
+interface ISettingsFrom {
   env: {
-    mode: string;
-    <K extends keyof E>(name: K): string;
-    <K extends keyof E, V>(name: K, format: (value: string) => V): V;
-    <K extends keyof E>(name: K, defaultValue: E[K]): E[K];
-    <K extends keyof E, V>(name: K, format: (value: string) => V, defaultValue: V): V;
-  };
-  packageJson: {
-    title: string;
-    version: string;
-    <K extends keyof P>(name: K): P[K];
-    <K extends keyof P, V>(name: K, format: (value: P[K]) => V): V;
-    <K extends keyof P>(name: K, defaultValue: P[K]): P[K];
-    <K extends keyof P, V>(name: K, format: (value: P[K]) => V, defaultValue: V): V;
+    <T>(key: string): T;
+    (key: string): string;
+    <T>(key: string, options: ISettingsFromOptions<T>): T;
+    mode: 'production' | 'development';
   };
 }
 
-function loadJsonFile(file: string, errorOnFSFail: boolean = false) {
-  let fs: typeof import('fs');
-  try {
-    fs = require('fs');
-    if (!fs) { throw new Error('Ignored'); }
-  } catch (error) {
-    if (errorOnFSFail) { throw new Error('Trying to use fs in a client environment.'); }
-  }
-  if (!fs.existsSync(file)) { return undefined; }
-  return JSON.parse(fs.readFileSync(file).toString());
-}
+function createSettingsFrom(): ISettingsFrom {
+  const from = {
+    env<T>(key: string, options?: ISettingsFromOptions<T>): T {
+      const hasDefaultValue = options && Object.prototype.hasOwnProperty.call(options, 'defaultValue');
+      const { defaultValue, isRequired, transform }: ISettingsFromOptions<T> = {
+        defaultValue: undefined,
+        isRequired: !hasDefaultValue,
+        transform: value => {
+          if (!hasDefaultValue) { return value; }
+          const valueType = to.type(value);
+          const defaultType = to.type(defaultValue);
+          if (valueType === defaultType) { return value; }
+          if (defaultType === 'array') { return value.split('|') as unknown as T; }
+          if (defaultType === 'object') { return JSON.parse(value); }
+          return to.type(defaultType, value);
+        },
+        ...options,
+      };
 
-function loadPackageJson(config: IConfig): IMap {
-  const packageJsonContents = loadJsonFile((config.packageJsonKeys as Function)('package.json'), true);
-  if (!packageJsonContents) { throw new Error('Unable to find the package.json file for this project.'); }
-  return packageJsonContents;
-}
-
-function loadAnyEnvironmentVariables(config: IConfig) {
-  const envs = loadJsonFile((config.environmentVariableKeys as Function)('envs.json'));
-  if (!envs) { return; }
-  // tslint:disable-next-line: forin
-  for (const key in envs) { process.env[key] = envs[key]; }
-}
-
-function getValueUsingName(args: GetValueArgs, getValueUsingNameDelegate: (name: string) => unknown): unknown {
-  const name = args[0];
-  const format = typeof (args[1]) === 'function' ? args[1] : (v: unknown) => v;
-  const defaultValue = args.length > 2 ? args[2] : args[1] != null && typeof (args[1]) !== 'function' ? args[1] : undefined;
-  const value = getValueUsingNameDelegate(name);
-  return value != null ? format(value) : defaultValue;
-}
-
-function createEnvFunc(): IFrom['env'] {
-  const env = ((...args: GetValueArgs) => getValueUsingName(args, name => process.env[name])) as IFrom['env'];
-  env.mode = (process.env['mode'] || '').toLowerCase() === 'production' ? 'production' : 'development';
-  return env;
-}
-
-function createPackageJsonFunc(config: IConfig): IFrom['packageJson'] {
-  let packageJsonContents: IMap;
-  const packageJson: IFrom['packageJson'] = ((...args: GetValueArgs) => {
-    packageJsonContents = packageJsonContents || loadPackageJson(config);
-    return getValueUsingName(args, name => packageJsonContents[name]);
-  }) as IFrom['packageJson'];
-  Object.defineProperties(packageJson, {
-    title: {
-      get: () => packageJson('name'),
-      enumerable: true,
-      configurable: true,
+      if (Object.prototype.hasOwnProperty.call(process.env, key)) { return transform(process.env[key]); }
+      if (isRequired) { throw new Error(`The setting "${key}" was not found in the environment variables, but this is a required setting.`); }
+      return defaultValue;
     },
-    version: {
-      get: () => packageJson('version'),
+  };
+
+  Object.defineProperties(from.env, {
+    mode: {
+      get: () => from.env('NODE_ENV', {
+        defaultValue: 'production',
+        transform: value => ['dev', 'development'].includes((value || '').toLowerCase()) ? 'development' : 'production'
+      }),
       enumerable: true,
-      configurable: true,
+      configurable: false,
     },
   });
-  return packageJson;
+
+  return from as ISettingsFrom;
 }
 
-interface IConfig<E extends IMap = IMap, P extends IMap = IMap> {
-  maxSearchDepthForJSONFiles?: number;
-  environmentVariableKeys: E;
-  packageJsonKeys: P;
-}
-
-export function createSettings<T extends IMap, E extends IMap, P extends IMap>(config: IConfig<E, P>, delegate: (from: IFrom<E, P>) => T): T {
-  config = {
-    maxSearchDepthForJSONFiles: 15,
-    ...config,
-  };
-  loadAnyEnvironmentVariables(config);
-  return delegate({
-    env: createEnvFunc(),
-    packageJson: createPackageJsonFunc(config),
-  });
-}
+export const createSettings = <TSettings extends IMap>(delegate: (from: ISettingsFrom) => TSettings): TSettings => delegate(createSettingsFrom());

@@ -42,7 +42,7 @@ declare global {
       shouldContinue: boolean;
     }
 
-    export interface ITypeOf<T = unknown> {
+    export interface ITypeOf<T = object> {
       type: string;
       isArray: boolean;
       isObject: boolean;
@@ -95,8 +95,7 @@ declare global {
 
     function hashesOf(target: unknown): number[];
 
-    function typeOf<T>(value: T): ITypeOf<T>;
-
+    function typeOf<T = object>(value: T): ITypeOf<T>;
   }
 }
 
@@ -173,7 +172,7 @@ Object.addMethods(Reflect, [
     return descriptors;
   },
 
-  function getProperty<T>(target: object, propertyName: string, defaultValue: T = null, addIfNotExists: boolean = false): T {
+  function getProperty<T>(target: object, propertyName: string, defaultValue: T = null, addIfNotExists = false): T {
     [target, propertyName] = navigateToProperty(target, propertyName, () => {
       if (!addIfNotExists) { return { value: null, shouldContinue: false }; }
       return { value: {}, shouldContinue: true };
@@ -210,7 +209,7 @@ Object.addMethods(Reflect, [
     }
   },
 
-  function getAllPrototypesOf(target: object): object[] {
+  function getAllPrototypesOf(target: object | Function): object[] {
     let prototype = target;
     const prototypes = new Array<object>();
     if (is.function(prototype)) { prototype = prototype.prototype; prototypes.push(prototype); }
@@ -255,9 +254,9 @@ Object.addMethods(Reflect, [
 
   },
 
-  function wrapMethod(target: object, method: Function, delegate: (originalMethod: Function, args: any[]) => any): any {
+  function wrapMethod(target: object, method: Function, delegate: (originalMethod: Function, args: unknown[]) => unknown): void {
     Object.defineProperty(target, method.name, {
-      value(...args: any[]) {
+      value(...args: unknown[]) {
         args.unshift(method.bind(target));
         return delegate.apply(target, args);
       },
@@ -267,7 +266,7 @@ Object.addMethods(Reflect, [
     });
   },
 
-  function hashesOf(target: any): number[] {
+  function hashesOf(target: unknown): number[] {
     return Reflect.getAllPrototypesOf(target)
       .map(prototype => Object.hash(prototype))
       .removeByFilter(hash => hash === 0)
@@ -282,7 +281,7 @@ Object.addMethods(Reflect, [
     return performComparison(source, target, customComparer, false);
   },
 
-  function typeOf<T extends any = any>(value: T): Reflect.ITypeOf<T> {
+  function typeOf<T extends object = object>(value: T): Reflect.ITypeOf<T> {
     let type: string = typeof (value);
     const isArray = value instanceof Array;
     const isNull = value === null;

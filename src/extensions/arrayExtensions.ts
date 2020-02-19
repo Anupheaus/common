@@ -3,7 +3,7 @@ import './object';
 import { MapDelegate, SimpleMapDelegate, IArrayOrderByConfig, IArrayDiff, IMergeWithOptions, MergeWithUpdateOperations } from '../models';
 import { ArgumentInvalidError, InternalError } from '../errors';
 import { SortDirections } from '../models/sort';
-import { DeepPartial, IRecord, TypeOf, Upsertable, Updatable, PrimitiveOrRecord } from './global';
+import { DeepPartial, IRecord, TypeOf, Upsertable, Updatable, IsPrimitiveOrRecordType } from './global';
 import './reflect';
 
 type FilterDelegate<T> = (item: T, index: number) => boolean;
@@ -141,16 +141,16 @@ export class ArrayExtensions<T> {
     return this.find(item => item && item['id'] === id);
   }
 
-  public upsert(item: Upsertable<PrimitiveOrRecord<T>>): T[];
-  public upsert(item: Upsertable<PrimitiveOrRecord<T>>, index: number): T[];
-  public upsert(this: T[], item: Upsertable<PrimitiveOrRecord<T>>, index?: number): T[] {
+  public upsert(item: Upsertable<IsPrimitiveOrRecordType<T>>): T[];
+  public upsert(item: Upsertable<IsPrimitiveOrRecordType<T>>, index: number): T[];
+  public upsert(this: T[], item: Upsertable<IsPrimitiveOrRecordType<T>>, index?: number): T[] {
     const isLiteral = typeof (item) === 'string' || typeof (item) === 'number' || typeof (item) === 'boolean';
     const foundIndex = item && !isLiteral && item['id'] ? this.indexOfId(item['id']) : this.indexOf(item as T);
     return performUpsert(this, foundIndex, () => item as T, () => item as T, index);
   }
 
-  public upsertMany(this: T[], items: Upsertable<PrimitiveOrRecord<T>>[], newIndex?: number): T[] {
-    // tslint:disable-next-line:no-this-assignment
+  public upsertMany(this: T[], items: Upsertable<IsPrimitiveOrRecordType<T>>[], newIndex?: number): T[] {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     let self = this;
     items.forEach((item, index) => self = self.upsert(item, newIndex == null ? undefined : newIndex + index));
     return self;
@@ -179,7 +179,7 @@ export class ArrayExtensions<T> {
   public replaceMany(items: T[]): T[];
   public replaceMany(items: T[], index: number): T[];
   public replaceMany(this: T[], items: T[], index?: number): T[] {
-    // tslint:disable-next-line:no-this-assignment
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     let self = this;
     items.forEach((item, innerIndex) => self = self.replace(item, index == null ? undefined : index + innerIndex));
     return self;
@@ -292,7 +292,7 @@ export class ArrayExtensions<T> {
 
   public equals(array: T[]): boolean;
   public equals(array: T[], ignoreOrder: boolean): boolean;
-  public equals(this: T[], array: T[], ignoreOrder: boolean = true): boolean {
+  public equals(this: T[], array: T[], ignoreOrder = true): boolean {
     if (this === array || (this.length === 0 && array.length === 0)) { return true; }
     if (this.length !== array.length) { return false; }
     const a1 = ignoreOrder ? this.slice().sort() : this;
@@ -361,7 +361,7 @@ export class ArrayExtensions<T> {
 
   public takeUntil(this: T[], delegate: FilterDelegate<T>): T[];
   public takeUntil(this: T[], delegate: FilterDelegate<T>, andIncluding: boolean): T[];
-  public takeUntil(this: T[], delegate: FilterDelegate<T>, andIncluding: boolean = false): T[] {
+  public takeUntil(this: T[], delegate: FilterDelegate<T>, andIncluding = false): T[] {
     const results: T[] = [];
     for (let index = 0; index < this.length; index++) {
       const item = this[index];

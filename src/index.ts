@@ -7,3 +7,5 @@ export * from './errors';
 export * from './events';
 export * from './cancellationToken';
 export * from './settings';
+export * from './wrappers';
+export * from './utils';

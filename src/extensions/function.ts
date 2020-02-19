@@ -1,3 +1,4 @@
+import './array';
 import { InternalError } from '../errors';
 
 const callStackRegExp = new RegExp(/^\s{4}at\s(\S+)\s\((.*?):(\d+):(\d+)\)$/, 'gmi');
@@ -13,10 +14,10 @@ declare global {
   // tslint:disable-next-line:interface-name
   interface Function {
     setName(name: string): Function;
-    wrap(instance: object, delegate: (args: any[], next: (args: any[]) => any) => any): void;
+    wrap(instance: object, delegate: (args: unknown[], next: (args: unknown[]) => unknown) => unknown): void;
     empty<TReturn = void>(): () => TReturn;
     emptyAsync<TReturn = void>(): () => Promise<TReturn>;
-    getStackTrace(): IFunctionStackTraceInfo[]
+    getStackTrace(): IFunctionStackTraceInfo[];
   }
 }
 
@@ -30,12 +31,12 @@ Object.addMethods(Function.prototype, [
     return this;
   },
 
-  function wrap(this: Function, instance: object, delegate: (args: any[], next: (args: any[]) => any) => any): void {
+  function wrap(this: Function, instance: object, delegate: (args: unknown[], next: (args: unknown[]) => unknown) => unknown): void {
     const originalDefinition = Reflect.getDefinition(instance, this.name);
     if (!originalDefinition) { throw new InternalError(`Unable to find the original definition for method ${this.name} on ${instance.constructor.name}.`); }
     const originalMethod = originalDefinition.value;
     if (typeof (originalMethod) !== 'function') { throw new InternalError(`The original definition for member ${this.name} on ${instance.constructor.name} was not a method.`); }
-    const wrappedMethod = function method(...args: any[]) { return delegate(args, newArgs => originalMethod.apply(instance, newArgs)); };
+    const wrappedMethod = function method(...args: unknown[]) { return delegate(args, newArgs => originalMethod.apply(instance, newArgs)); };
     wrappedMethod.setName(this.name);
     Object.defineProperty(instance, this.name, {
       value: wrappedMethod,

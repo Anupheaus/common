@@ -1,3 +1,4 @@
+import { hash as utilsHash } from './utils';
 import { IRecord, IDisposable } from './global';
 import { is } from './is';
 
@@ -81,7 +82,7 @@ function isOverridableItemArray<T>(items: T[]): items is (T & IRecord)[] {
 }
 
 function parseObject<T extends Object>(existingObject: T, newObject: T, checkForOverridableItems: boolean): T {
-  const changedObject = {} as T;
+  const changedObject = {} as unknown as T;
   Reflect.ownKeys(existingObject || {}).forEach(key => Object.defineProperty(changedObject, key, Reflect.getDefinition(existingObject, key)));
   let hasObjectChanged = false;
   // tslint:disable-next-line:forin
@@ -99,6 +100,7 @@ function parseObject<T extends Object>(existingObject: T, newObject: T, checkFor
     }
     const existingValue = existingPropertyDescriptor ? existingPropertyDescriptor.value : changedObject[key];
     const newValue = newPropertyDescriptor.value;
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
     const result = parseValue(existingValue, newValue, checkForOverridableItems);
     if (result === existingValue) { return; }
 
@@ -116,6 +118,7 @@ function parseArray(existingValue: any[], newValue: any[], checkForOverridableIt
   if (existingValue.length === 0 && newValue.length === 0) { return existingValue; }
   // Check to see if the items are overridable
   if (checkForOverridableItems && isOverridableItemArray(existingValue) && isOverridableItemArray(newValue)) {
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
     existingValue = existingValue.syncWith(newValue, { updateMatched: (a, b) => parseValue(a, b, true) });
     return existingValue;
   }
@@ -126,6 +129,7 @@ function parseArray(existingValue: any[], newValue: any[], checkForOverridableIt
     hasChangedArray = true;
   }
   newValue.forEach((item, index) => {
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
     const result = parseValue(existingValue[index], item, checkForOverridableItems);
     if (result === existingValue[index]) { return; }
     hasChangedArray = true;
@@ -181,6 +185,7 @@ Object.addMethods(Object, [
         .reduce((list, key) => list.includes(key) ? list : list.concat([key]), new Array<PropertyKey>());
       // tslint:disable-next-line:forin
       for (const key of keys) {
+        // eslint-disable-next-line @typescript-eslint/no-use-before-define
         const result = compareValue(targetObject[key], comparisonObject[key]);
         if (result === undefined) { continue; }
         changes[key] = result;
@@ -194,7 +199,7 @@ Object.addMethods(Object, [
       if (targetArray.length === comparisonArray.length && JSON.stringify(targetArray) === JSON.stringify(comparisonArray)) { return undefined; }
       comparisonArray.forEach((item, index) => {
         if (!item) { return; }
-        if (!is.stringAndNotEmpty(item.id)) { return; }
+        if (is.empty(item.id)) { return; }
         const existingItem = targetArray.find(i => i && i.id === item.id);
         if (!existingItem) { return; }
         const result = compareObject(existingItem, item) || {} as any;
@@ -238,7 +243,7 @@ Object.addMethods(Object, [
     }
     Reflect.getAllPrototypesOf(target)
       .forEach(value => hashableValues.push(typeof (value.constructor) === 'function' ? value.constructor.toString() : value.toString()));
-    return hashableValues.join('|').hash();
+    return utilsHash(hashableValues.join('|'));
   },
 
   function remove<T, P>(this: Object, target: T, delegate: (target: T) => P): P {

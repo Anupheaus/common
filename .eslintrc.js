@@ -1,1 +1,1 @@
-module.exports = require('anux-package/linters/eslint');
+module.exports = require('anux-package/configs/eslint');

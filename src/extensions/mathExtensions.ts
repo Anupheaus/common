@@ -1,5 +1,5 @@
 import './object';
-import * as uuid from 'uuid/v4';
+import uuid from 'uuid/v4';
 
 const originalRound = Math.round;
 

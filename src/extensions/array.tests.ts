@@ -1,8 +1,15 @@
+/* eslint-disable max-classes-per-file */
 import './array';
 
-class TestClass { constructor(public value: number) { } }
+class TestClass {
+  public constructor(value: number) { this.value = value; }
+  public value: number;
+}
 
-class TestIdClass { constructor(public id: string) { } }
+class TestIdClass {
+  public constructor(id: string) { this.id = id; }
+  public id: string;
+}
 
 describe('extension > array', () => {
 
@@ -298,7 +305,7 @@ describe('extension > array', () => {
   describe('upsert', () => {
 
     describe('with objects with ids', () => {
-      let array: { id: string; name: string; }[] = null;
+      let array: { id: string; name: string }[] = null;
 
       beforeEach(() => {
         array = [1, 2, 3, 4, 5].map(id => ({ id: id.toString(), name: id.toString() }));
@@ -307,6 +314,15 @@ describe('extension > array', () => {
       afterEach(() => {
         array = null;
       });
+
+      function createTestData() {
+        return [
+          { id: '1', name: 'tony', surname: 'hales' },
+          { id: '2', name: 'jodie', surname: 'pearce' },
+          { id: '3', name: 'harrison', surname: 'george' },
+          { id: '4', name: 'lucas', surname: 'george' },
+        ];
+      }
 
       it('can update an existing item', () => {
         const result = array.upsert({ id: '2', name: 'Jodie' });
@@ -328,6 +344,21 @@ describe('extension > array', () => {
         const result = array.upsert({ id: '2', name: '2' }, 4);
         expect(result).not.to.eq(array);
         expect(result.map(item => item.name)).to.eql(['1', '3', '4', '5', '2']);
+      });
+
+      it('can update the correct object in an array', () => {
+        let data = createTestData();
+        data = data.upsert({ id: '2', surname: 'hales' });
+        expect(data[1]).to.eql({ id: '2', name: 'jodie', surname: 'hales' });
+        expect(data[2]).to.eql({ id: '3', name: 'harrison', surname: 'george' });
+      });
+
+      it('can insert a new object into the array', () => {
+        let data = createTestData();
+        const length = data.length;
+        data = data.upsert({ id: '5', name: 'hayden', surname: 'hales' });
+        expect(data.length).to.eq(length + 1);
+        expect(data[4]).to.eql({ id: '5', name: 'hayden', surname: 'hales' });
       });
 
     });
@@ -397,7 +428,7 @@ describe('extension > array', () => {
   describe('replace', () => {
 
     describe('with objects with ids', () => {
-      let array: { id: string; name: string; }[] = null;
+      let array: { id: string; name: string }[] = null;
 
       beforeEach(() => {
         array = [1, 2, 3, 4, 5].map(id => ({ id: id.toString(), name: id.toString() }));
@@ -539,7 +570,7 @@ describe('extension > array', () => {
   describe('except', () => {
 
     describe('with objects with ids', () => {
-      let array: { id: string; name: string; }[] = null;
+      let array: { id: string; name: string }[] = null;
 
       beforeEach(() => {
         array = [1, 2, 3, 4, 5].map(id => ({ id: id.toString(), name: id.toString() }));
@@ -596,7 +627,7 @@ describe('extension > array', () => {
   });
 
   describe('distinct', () => {
-    let array: { id: string; name: string; }[] = null;
+    let array: { id: string; name: string }[] = null;
 
     beforeEach(() => {
       array = [1, 2, 4, 3, 4, 8, 2, 7, 1, 5].map(id => ({ id: id.toString(), name: id.toString() }));
@@ -747,7 +778,7 @@ describe('extension > array', () => {
       const a = [{ id: 1, doCopy: true }, { id: 2, doCopy: false }, { id: 3, doCopy: true }];
       const b = [{ id: 3 }, { id: 1 }];
 
-      const c = b.mergeWith(a, { addNew: item => item.doCopy === true, matchOrder: true, updateMatched: (ia, _ib) => ia });
+      const c = b.mergeWith(a, { addNew: item => item.doCopy === true, matchOrder: true, updateMatched: ia => ia });
       expect(c).to.eql([{ id: 1 }, { id: 3 }]);
     });
 
@@ -825,34 +856,6 @@ describe('extension > array', () => {
       expect(c).to.eql([item2, item3]);
       expect(c[0]).to.eq(item2);
       expect(c[1].data).to.eq(itemC);
-    });
-
-  });
-
-  describe('upsert', () => {
-
-    function createTestData() {
-      return [
-        { id: '1', name: 'tony', surname: 'hales' },
-        { id: '2', name: 'jodie', surname: 'pearce' },
-        { id: '3', name: 'harrison', surname: 'george' },
-        { id: '4', name: 'lucas', surname: 'george' },
-      ];
-    }
-
-    it('can update the correct object in an array', () => {
-      let data = createTestData();
-      data = data.upsert({ id: '2', surname: 'hales' });
-      expect(data[1]).to.eql({ id: '2', name: 'jodie', surname: 'hales' });
-      expect(data[2]).to.eql({ id: '3', name: 'harrison', surname: 'george' });
-    });
-
-    it('can insert a new object into the array', () => {
-      let data = createTestData();
-      const length = data.length;
-      data = data.upsert({ id: '5', name: 'hayden', surname: 'hales' });
-      expect(data.length).to.eq(length + 1);
-      expect(data[4]).to.eql({ id: '5', name: 'hayden', surname: 'hales' });
     });
 
   });

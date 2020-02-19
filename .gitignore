@@ -1,15 +1,17 @@
 # NPM
 node_modules
-*.tgz
 
 # Logs
 *.log
 
-# Caches
-.awcache
+# caches
+.cache
 
 # vs code
 .vscode
 
-# webpack
+# package files
+package.tgz
+
+# generated code
 dist

@@ -1,4 +1,5 @@
 /* eslint-disable max-classes-per-file */
+import { hash } from './utils';
 import './math';
 
 interface IObfuscateOptions {
@@ -17,21 +18,8 @@ export class StringExtensions {
 
   public hash(): string;
   public hash(length: number): string;
-  public hash(this: string, length: number = 16): string {
-    if (this.length === 0 || length <= 0) { return ''; }
-    const createChunk = (value: string) => {
-      let hval = 0x811c9dc5;
-
-      for (let i = 0, l = value.length; i < l; i++) {
-        hval ^= value.charCodeAt(i);
-        hval += (hval << 1) + (hval << 4) + (hval << 7) + (hval << 8) + (hval << 24);
-      }
-      // Convert to 8 digit hex string
-      return (hval >>> 0).toString(36);
-    };
-    let result = createChunk(this);
-    while (result.length < length) result += createChunk(result + this);
-    return result.substr(0, length);
+  public hash(this: string, length = 16): string {
+    return hash(this, length);
   }
 
   public condenseWhitespace(): string;

@@ -1,9 +1,9 @@
+/* eslint-disable max-classes-per-file */
 import { bind } from './bind';
-// tslint:disable:max-classes-per-file no-unused-expression
 
 describe('Bind Decorator', () => {
 
-  function createBoundTestClass(delegate: (instance: any) => void) {
+  function createBoundTestClass(delegate: (instance: object) => void) {
     class TestClass {
       @bind
       public testMethod(): void {
@@ -13,7 +13,7 @@ describe('Bind Decorator', () => {
     return new TestClass();
   }
 
-  function createBoundDerivedTestClass(baseDelegate: (instance: any) => void, derivedDelegate: (instance: any) => void) {
+  function createBoundDerivedTestClass(baseDelegate: (instance: object) => void, derivedDelegate: (instance: object) => void) {
     class TestClass {
       @bind
       public testMethod(): void {
@@ -30,14 +30,14 @@ describe('Bind Decorator', () => {
     return new DerivedTestClass();
   }
 
-  function createBoundDerivedViaFunctionTestClass(baseDelegate: (instance: any) => void, derivedDelegate: (instance: any) => void) {
+  function createBoundDerivedViaFunctionTestClass(baseDelegate: (instance: object) => void, derivedDelegate: (instance: object) => void) {
     abstract class TestClass {
       @bind
       public testMethod(): void {
         baseDelegate(this);
       }
     }
-    function extendFrom<T>(cls: T): T { return cls as any; }
+    function extendFrom<T>(cls: T): T { return cls as T; }
     class DerivedTestClass extends extendFrom(TestClass) {
       @bind
       public testMethod(): void {
@@ -108,10 +108,12 @@ describe('Bind Decorator', () => {
 
   it('cannot be applied to class', () => {
     expect(() => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
       // @ts-ignore
       @bind
+      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
       // @ts-ignore
-      class FailTestClass {
+      class FailTestClass { // eslint-disable-line @typescript-eslint/no-unused-vars
 
       }
     }).to.throw('@bind decorator can only be applied to methods not a class');
@@ -119,8 +121,10 @@ describe('Bind Decorator', () => {
 
   it('cannot be applied to variable', () => {
     expect(() => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
       // @ts-ignore
-      class FailTestClass {
+      class FailTestClass { // eslint-disable-line @typescript-eslint/no-unused-vars
+        // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
         // @ts-ignore
         @bind
         public something: string;
@@ -141,10 +145,10 @@ describe('Bind Decorator', () => {
     let setTest = test.test;
     setTest('test');
     expect(test.value).to.eq('test');
-    let localValue: any;
-    test.test = function(value: string) {
-      localValue = (this as any).value;
-      (this as any).value = value;
+    let localValue: object;
+    test.test = function (value: string) {
+      localValue = this.value;
+      this.value = value;
     };
     setTest = test.test;
     expect(localValue).to.undefined;
@@ -164,8 +168,8 @@ describe('Bind Decorator', () => {
     }
     const test = new RebindTest();
     expect(test.value).to.undefined;
-    test.test = function(value: string) {
-      (this as any).value = value;
+    test.test = function (value: string) {
+      this.value = value;
     };
     const setTest = test.test;
     setTest('rebound');
@@ -177,14 +181,14 @@ describe('Bind Decorator', () => {
       public value: string;
 
       @bind
-      public test(value: string): void {
+      public testMethod(value: string): void {
         this.value = value;
       }
     }
     const instance = new DestructureTest();
     expect(instance.value).to.be.undefined;
-    const { test } = instance;
-    test('something');
+    const { testMethod } = instance;
+    testMethod('something');
     expect(instance.value).to.eq('something');
   });
 

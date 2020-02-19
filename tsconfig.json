@@ -1,3 +1,9 @@
 {
-    "extends": "./node_modules/anux-package/configs/tsconfig.json"
+  "extends": "anux-package/configs/tsconfig.json",
+  "compilerOptions": {
+    "typeRoots": [
+      "node_modules/@types",
+      "node_modules/anux-package/typings"
+    ]
+  }
 }

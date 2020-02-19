@@ -12,7 +12,6 @@ describe('extensions', () => {
         expect('something'.hash(-1)).to.eq('');
         expect('something'.hash()).to.be.a('string').with.lengthOf(16);
         expect('something'.hash(20)).to.be.a('string').with.lengthOf(20);
-
       });
 
     });

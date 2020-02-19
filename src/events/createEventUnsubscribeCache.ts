@@ -1,5 +1,5 @@
-import { Unsubscribe } from './createEvent';
 import { ObjectDisposedError } from '../errors/objectDisposed';
+import { Unsubscribe } from './createEvent';
 
 interface IEventUnsubscription {
   add(unsubscription: Unsubscribe): void;

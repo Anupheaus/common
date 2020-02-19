@@ -1,11 +1,19 @@
-import { CancellationCallback } from './models';
 import { bind } from '../decorators';
+import { CancellationCallback } from './models';
 
 export class CancellationToken {
   private constructor() {
     this._isCancelled = false;
     this._callbacks = [];
   }
+
+  //#region Static
+
+  public static create(): CancellationToken {
+    return new CancellationToken();
+  }
+
+  //#endregion
 
   //#region Variables
 
@@ -25,10 +33,6 @@ export class CancellationToken {
   //#endregion
 
   //#region Methods
-
-  public static create(): CancellationToken {
-    return new CancellationToken();
-  }
 
   public cancel(): void;
   public cancel(reason: string): void;
