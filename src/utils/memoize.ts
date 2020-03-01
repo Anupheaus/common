@@ -1,4 +1,5 @@
 import { AnyFunction } from '../extensions';
+import '../extensions/reflect';
 
 interface Cache {
   dependencies: unknown[];
@@ -13,26 +14,27 @@ interface MemoizeConfig {
 }
 
 export function memoize<T extends AnyFunction>(func: T, config?: MemoizeConfig): T {
-  config = {
+  const { dependencies, maxCacheLength } = {
     dependencies: [],
     maxCacheLength: 0,
     ...config,
   };
 
-  const funcCache: Cache[] = cache.has(func) ? cache.get(func) : [];
+  const funcCache: Cache[] = (cache.has(func) ? cache.get(func) : undefined) ?? [];
+  cache.set(func, funcCache);
 
   return ((...args: unknown[]) => {
-    const dependencies = [...args, ...config.dependencies];
+    const innerDependencies = [...args, ...dependencies];
 
-    let cacheItem = funcCache.find(item => Reflect.areShallowEqual(item.dependencies, dependencies));
+    let cacheItem = funcCache.find(item => Reflect.areShallowEqual(item.dependencies, innerDependencies));
     if (cacheItem) { return cacheItem.result; }
 
     const result = func(...args);
 
-    cacheItem = { dependencies, result };
+    cacheItem = { dependencies: innerDependencies, result };
     funcCache.push(cacheItem);
 
-    if (config.maxCacheLength > 0) { while (funcCache.length > config.maxCacheLength) { funcCache.shift(); } }
+    if (maxCacheLength > 0) { while (funcCache.length > maxCacheLength) { funcCache.shift(); } }
 
     return result;
   }) as T;

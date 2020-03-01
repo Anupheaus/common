@@ -19,6 +19,10 @@ describe('Bind Decorator', () => {
       public testMethod(): void {
         baseDelegate(this);
       }
+
+      public boo(): string {
+        return 'boo';
+      }
     }
     class DerivedTestClass extends TestClass {
       @bind
@@ -127,14 +131,14 @@ describe('Bind Decorator', () => {
         // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
         // @ts-ignore
         @bind
-        public something: string;
+        public something: string | undefined;
       }
     }).to.throw('@bind decorator can only be applied to methods not a variable');
   });
 
   it('rebinds if set after having called it first', () => {
     class RebindTest {
-      public value: string;
+      public value: string | undefined;
 
       @bind
       public test(value: string): void {
@@ -145,7 +149,7 @@ describe('Bind Decorator', () => {
     let setTest = test.test;
     setTest('test');
     expect(test.value).to.eq('test');
-    let localValue: object;
+    let localValue: string | undefined;
     test.test = function (value: string) {
       localValue = this.value;
       this.value = value;
@@ -159,7 +163,7 @@ describe('Bind Decorator', () => {
 
   it('rebinds if set before being called first', () => {
     class RebindTest {
-      public value: string;
+      public value: string | undefined;
 
       @bind
       public test(value: string): void {
@@ -178,7 +182,7 @@ describe('Bind Decorator', () => {
 
   it('binds correctly if destructured and called independently of the instance', () => {
     class DestructureTest {
-      public value: string;
+      public value: string | undefined;
 
       @bind
       public testMethod(value: string): void {

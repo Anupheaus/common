@@ -1,3 +1,4 @@
+// eslint-disable-next-line import/order
 import moment from 'moment';
 import 'moment/locale/en-gb';
 import { InternalError } from '../errors';
@@ -124,97 +125,96 @@ Object.addMethods(Date.prototype, [
 
 ]);
 
-if (!Date.periods) {
+function applyFractionTo(period: IDatePeriod, timeUnit: TimeUnits): void {
+  const fromPeriod = moment(period.from);
+  const endOfFullPeriod = fromPeriod.clone().add(1, TimeUnits.toMomentUnits(timeUnit)).valueOf();
+  if (endOfFullPeriod === period.to) { return; }
+  const fullPeriod = endOfFullPeriod - period.from;
+  const thisPeriod = period.to - period.from;
+  period.fraction = thisPeriod / fullPeriod;
+}
 
-  function applyFractionTo(period: IDatePeriod, timeUnit: TimeUnits): void {
-    const fromPeriod = moment(period.from);
-    const endOfFullPeriod = fromPeriod.clone().add(1, TimeUnits.toMomentUnits(timeUnit)).valueOf();
-    if (endOfFullPeriod === period.to) { return; }
-    const fullPeriod = endOfFullPeriod - period.from;
-    const thisPeriod = period.to - period.from;
-    period.fraction = thisPeriod / fullPeriod;
-  }
+function splitPeriods(periods: IDatePeriod[], toTimeUnits: TimeUnits): IDatePeriod[] {
+  const timeUnit = TimeUnits.toMomentUnits(toTimeUnits);
+  return periods.reduce<IDatePeriod[]>((newPeriods, period) => {
+    const absFrom = moment(period.from);
+    const absTo = moment(period.to);
+    const fromPeriod = absFrom.clone().startOf(timeUnit);
+    const to = absTo.clone().startOf(timeUnit);
+    if (to < absTo) { to.add(1, timeUnit); }
+    const length = to.diff(fromPeriod, timeUnit, true);
+    const first: IDatePeriod = { from: absFrom.valueOf(), to: fromPeriod.clone().add(1, timeUnit).valueOf(), fraction: 1 };
+    const last: IDatePeriod = { from: to.clone().add(-1, timeUnit).valueOf(), to: absTo.valueOf(), fraction: 1 };
+    applyFractionTo(first, toTimeUnits);
+    applyFractionTo(last, toTimeUnits);
+    const middle = length < 2 ? [] : Array.ofSize(length - 2)
+      .map((_ignore, index): IDatePeriod => ({
+        from: fromPeriod.clone().add(index + 1, timeUnit).valueOf(),
+        to: fromPeriod.clone().add(index + 2, timeUnit).valueOf(),
+        fraction: 1,
+      }));
+    return newPeriods.concat(first, ...middle, last);
+  }, []);
+}
 
-  function splitPeriods(periods: IDatePeriod[], toTimeUnits: TimeUnits): IDatePeriod[] {
-    const timeUnit = TimeUnits.toMomentUnits(toTimeUnits);
-    return periods
-      .reduce((newPeriods, period) => {
-        const absFrom = moment(period.from);
-        const absTo = moment(period.to);
-        const fromPeriod = absFrom.clone().startOf(timeUnit);
-        const to = absTo.clone().startOf(timeUnit);
-        if (to < absTo) { to.add(1, timeUnit); }
-        const length = to.diff(fromPeriod, timeUnit, true);
-        const first: IDatePeriod = { from: absFrom.valueOf(), to: fromPeriod.clone().add(1, timeUnit).valueOf(), fraction: 1 };
-        const last: IDatePeriod = { from: to.clone().add(-1, timeUnit).valueOf(), to: absTo.valueOf(), fraction: 1 };
-        applyFractionTo(first, toTimeUnits);
-        applyFractionTo(last, toTimeUnits);
-        const middle = length < 2 ? [] : Array.ofSize(length - 2)
-          .map((_ignore, index): IDatePeriod => ({
-            from: fromPeriod.clone().add(index + 1, timeUnit).valueOf(),
-            to: fromPeriod.clone().add(index + 2, timeUnit).valueOf(),
-            fraction: 1,
-          }));
-        return newPeriods.concat(first, ...middle, last);
-      }, []);
-  }
+function extents(periods: IDatePeriod[]): IDateExtents {
+  const fromPeriod = moment(Math.min(...periods.map(period => period.from))).valueOf();
+  const toPeriod = moment(Math.max(...periods.map(period => period.to))).valueOf();
+  return { from: fromPeriod, to: toPeriod };
+}
 
-  function extents(periods: IDatePeriod[]): IDateExtents {
-    const fromPeriod = moment(Math.min(...periods.map(period => period.from))).valueOf();
-    const toPeriod = moment(Math.max(...periods.map(period => period.to))).valueOf();
-    return { from: fromPeriod, to: toPeriod };
-  }
+function validatePeriod(period: IDatePeriod): IDatePeriod {
+  return {
+    from: Math.min(period.from, period.to),
+    to: Math.max(period.from, period.to),
+    fraction: typeof (period.fraction) === 'number' ? period.fraction : 1,
+  };
+}
 
-  function validatePeriod(period: IDatePeriod): IDatePeriod {
-    return {
-      from: Math.min(period.from, period.to),
-      to: Math.max(period.from, period.to),
-      fraction: typeof (period.fraction) === 'number' ? period.fraction : 1,
-    };
-  }
-
-  function from(activePeriods: IDatePeriod[], toTimeUnits?: TimeUnits): IFromPeriodsResult {
-    activePeriods = activePeriods.map(validatePeriod).orderBy(period => period.from);
-    const extentsPeriod = Date.periods.extents(activePeriods);
-    let joinedPeriods: IDatePeriod[] = [];
-    let fromPeriod = extentsPeriod.from;
-    let toPeriod = fromPeriod;
-    activePeriods.forEach((period, index) => {
-      if (period.from <= toPeriod) {
-        if (period.to > toPeriod) { toPeriod = period.to; }
-        if (index === activePeriods.length - 1) { joinedPeriods.push({ from: fromPeriod, to: toPeriod, fraction: 1 }); }
-      } else {
-        joinedPeriods.push({ from: fromPeriod, to: toPeriod, fraction: 1 });
-        fromPeriod = period.from;
-        toPeriod = period.to;
-      }
-    });
-    let inactivePeriods = joinedPeriods.reduce((inactive, period, index) => {
-      if (index === 0) { return inactive; }
-      const newPeriod: IDatePeriod = { from: joinedPeriods[index - 1].to, to: period.from, fraction: 1 };
-      return inactive.concat(newPeriod);
-    }, []);
-
-    if (toTimeUnits) {
-      activePeriods = splitPeriods(joinedPeriods, toTimeUnits);
-      inactivePeriods = splitPeriods(inactivePeriods, toTimeUnits);
+function from(activePeriods: IDatePeriod[], toTimeUnits?: TimeUnits): IFromPeriodsResult {
+  activePeriods = activePeriods.map(validatePeriod).orderBy(period => period.from);
+  const extentsPeriod = Date.periods.extents(activePeriods);
+  let joinedPeriods: IDatePeriod[] = [];
+  let fromPeriod = extentsPeriod.from;
+  let toPeriod = fromPeriod;
+  activePeriods.forEach((period, index) => {
+    if (period.from <= toPeriod) {
+      if (period.to > toPeriod) { toPeriod = period.to; }
+      if (index === activePeriods.length - 1) { joinedPeriods.push({ from: fromPeriod, to: toPeriod, fraction: 1 }); }
+    } else {
+      joinedPeriods.push({ from: fromPeriod, to: toPeriod, fraction: 1 });
+      fromPeriod = period.from;
+      toPeriod = period.to;
     }
+  });
+  let inactivePeriods = joinedPeriods.reduce<IDatePeriod[]>((inactive, period, index) => {
+    if (index === 0) { return inactive; }
+    const newPeriod: IDatePeriod = { from: joinedPeriods[index - 1].to, to: period.from, fraction: 1 };
+    return inactive.concat(newPeriod);
+  }, []);
 
-    activePeriods = activePeriods.orderBy(period => period.from);
-    inactivePeriods = inactivePeriods.orderBy(period => period.from);
-    joinedPeriods = joinedPeriods.orderBy(period => period.from);
-
-    return {
-      extents: extentsPeriod,
-      joinedPeriods,
-      activePeriods,
-      inactivePeriods,
-    };
+  if (toTimeUnits) {
+    activePeriods = splitPeriods(joinedPeriods, toTimeUnits);
+    inactivePeriods = splitPeriods(inactivePeriods, toTimeUnits);
   }
 
-  function doOverlap(period1: IDatePeriod, period2: IDatePeriod): boolean {
-    return period1.from <= period2.to && period1.to >= period2.from;
-  }
+  activePeriods = activePeriods.orderBy(period => period.from);
+  inactivePeriods = inactivePeriods.orderBy(period => period.from);
+  joinedPeriods = joinedPeriods.orderBy(period => period.from);
+
+  return {
+    extents: extentsPeriod,
+    joinedPeriods,
+    activePeriods,
+    inactivePeriods,
+  };
+}
+
+function doOverlap(period1: IDatePeriod, period2: IDatePeriod): boolean {
+  return period1.from <= period2.to && period1.to >= period2.from;
+}
+
+if (!Date.periods) {
 
   Date.periods = {
     extents,

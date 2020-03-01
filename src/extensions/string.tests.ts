@@ -120,7 +120,7 @@ describe('extensions', () => {
       });
 
       it('ignores invalid values', () => {
-        const message = String.pluralize`Testing ${[]} this ${undefined} with some ${['']} bad ${null} values.`;
+        const message = String.pluralize`Testing ${[]} this ${undefined as unknown as string} with some ${['']} bad ${null as unknown as string} values.`;
         expect(message(0)).to.eq('Testing  this  with some  bad  values.');
       });
 

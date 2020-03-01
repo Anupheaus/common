@@ -1,5 +1,5 @@
 import { hash as utilsHash } from './utils';
-import { IRecord, IDisposable } from './global';
+import { Record, Disposable, AnyObject } from './global';
 import { is } from './is';
 
 // tslint:disable-next-line:no-namespace
@@ -34,25 +34,26 @@ declare global {
     // extend<T1, T2, T3, T4>(target: T1, extension1: T2, extension2: T3, extension3: T4): T1 & T2 & T3 & T4;
     // extend<T>(target: T, ...extensions: T[]): T;
     clone<T>(target: T): T;
-    diff(target: object, comparison: object): object;
+    // diff(target: object, comparison: object): object;
     hash(target: object): number;
     remove<T, P>(value: T, removeProps: (propsToRemove: T) => P): P;
     // remove2<T, K extends Partial<T>>(value: T, removeProps: K): Pick<T, Diff<keyof T, keyof K>>;
-    values<T = any>(target: object): T[];
+    values<T = unknown>(target: object): T[];
     getValueOf<R>(delegate: () => R, defaultValue: R): R;
     getValueOf<T, R>(target: T, delegate: (target: T) => R, defaultValue: R): R;
     mixin(destinationClass: Function, sourceClass: Function): void;
-    using<T extends IDisposable, R>(object: T, use: (object: T) => R): R;
+    using<T extends Disposable, R>(object: T, use: (object: T) => R): R;
   }
 
 }
 
 if (!Object.addMethods) {
   Object.defineProperty(Object, 'addMethods', {
-    value: function addMethods(this: Object, target: object, methods: Function[]): void {
+    value: function addMethods(this: Object, target: AnyObject, methods: Function[]): void {
       methods.forEach(method => {
         const methodName = method.name;
-        if (typeof (target[methodName]) === 'function' && target[methodName].toString() === method.toString()) { return; }
+        const existingMethod = target[methodName] as Function | undefined;
+        if (is.function(existingMethod) && existingMethod.toString() === method.toString()) { return; }
         try {
           Object.defineProperty(target, methodName, {
             value: method,
@@ -61,11 +62,11 @@ if (!Object.addMethods) {
             writable: true,
           });
         } catch (error) {
-          // tslint:disable-next-line:no-console
+          // eslint-disable-next-line no-console
           console.error('An error has occurred trying to add the following method to the following target.', {
             target: target.constructor.name,
             method: methodName,
-            currentMethod: target[methodName].toString(),
+            currentMethod: existingMethod?.toString() ?? '<Undefined>',
             newMethod: method.toString(),
           });
         }
@@ -77,49 +78,39 @@ if (!Object.addMethods) {
   });
 }
 
-function isOverridableItemArray<T>(items: T[]): items is (T & IRecord)[] {
-  return items.every((item: any) => item != null && ((typeof (item.id) === 'string' && item.id.length > 0) || typeof (item.id) === 'number'));
+function isOverridableItemArray<T>(items: T[]): items is (T & Record)[] {
+  return items.cast<T & Record>().every(item => item != null && typeof (item) === 'object' && item.id != null);
 }
 
-function parseObject<T extends Object>(existingObject: T, newObject: T, checkForOverridableItems: boolean): T {
-  const changedObject = {} as unknown as T;
-  Reflect.ownKeys(existingObject || {}).forEach(key => Object.defineProperty(changedObject, key, Reflect.getDefinition(existingObject, key)));
-  let hasObjectChanged = false;
-  // tslint:disable-next-line:forin
-  Reflect.ownKeys(newObject || {}).forEach(key => {
-    const newPropertyDescriptor = Reflect.getDefinition(newObject, key);
-    const existingPropertyDescriptor = Reflect.getDefinition(changedObject, key);
-    if (newPropertyDescriptor.get) {
-      Object.defineProperty(changedObject, key, {
-        ...newPropertyDescriptor,
-        get: function () { return newPropertyDescriptor.get.call(this); },
-        set: newPropertyDescriptor.set ? function (...args: any[]) { return newPropertyDescriptor.set.call(this, ...args); } : undefined,
-      });
-      hasObjectChanged = true;
-      return;
-    }
-    const existingValue = existingPropertyDescriptor ? existingPropertyDescriptor.value : changedObject[key];
-    const newValue = newPropertyDescriptor.value;
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    const result = parseValue(existingValue, newValue, checkForOverridableItems);
-    if (result === existingValue) { return; }
-
-    Object.defineProperty(changedObject, key, {
-      ...newPropertyDescriptor,
-      value: result,
+function parseObject<T extends object>(existingObject: T, newObject: T, checkForOverridableItems: boolean): T {
+  if (newObject === undefined) return existingObject;
+  Reflect.ownKeys(newObject).forEach(key => {
+    let { get: existingGet, value: existingValue } = Object.getOwnPropertyDescriptor(existingObject, key) ?? {};
+    existingValue = existingGet ? existingGet.call(existingObject) : (typeof (existingValue) !== 'function' ? existingValue : undefined);
+    const { get: newGet, set: newSet, value: newValue, ...otherProps } = Object.getOwnPropertyDescriptor(newObject, key) ?? {};
+    const get = newGet ? () => {
+      return newGet.call(existingObject);
+    } : undefined;
+    const set = newSet ? (...args: any[]) => newSet.call(existingObject, args) : undefined; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const value = newValue ? (typeof (newValue) === 'function' ? (...args: any[]) => newValue.call(existingObject, args) : // eslint-disable-line @typescript-eslint/no-explicit-any
+      parseValue(existingValue, newValue, checkForOverridableItems)) : undefined; // eslint-disable-line @typescript-eslint/no-use-before-define    
+    Object.defineProperty(existingObject, key, {
+      ...otherProps,
+      ...(get ? { get } : {}),
+      ...(set ? { set } : {}),
+      ...(value ? { value } : {}),
     });
-    hasObjectChanged = true;
   });
-  return hasObjectChanged ? changedObject : existingObject;
+  return existingObject;
 }
 
-function parseArray(existingValue: any[], newValue: any[], checkForOverridableItems: boolean): any[] {
-  if (!(existingValue instanceof Array)) { return newValue; }
+function parseArray(existingValue: unknown[], newValue: unknown[], checkForOverridableItems: boolean): unknown[] {
+  if (!(existingValue instanceof Array)) { existingValue = []; }
   if (existingValue.length === 0 && newValue.length === 0) { return existingValue; }
   // Check to see if the items are overridable
   if (checkForOverridableItems && isOverridableItemArray(existingValue) && isOverridableItemArray(newValue)) {
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    existingValue = existingValue.syncWith(newValue, { updateMatched: (a, b) => parseValue(a, b, true) });
+    existingValue = existingValue.syncWith(newValue, { updateMatched: (a, b) => parseValue(a, b, true) as Record });
     return existingValue;
   }
   const changedArray = existingValue.slice();
@@ -138,14 +129,16 @@ function parseArray(existingValue: any[], newValue: any[], checkForOverridableIt
   return hasChangedArray ? changedArray : existingValue;
 }
 
-function parseValue(existingValue: any, newValue: any, checkForOverridableItems: boolean): any {
+function parseValue(existingValue: unknown, newValue: unknown, checkForOverridableItems: boolean): unknown {
   if (newValue === undefined || existingValue === newValue) { return existingValue; }
   if (is.date(newValue)) {
     return newValue;
   } else if (is.plainObject(newValue)) {
-    return parseObject(existingValue, newValue, checkForOverridableItems);
+    if (existingValue == null) { existingValue = {}; }
+    return parseObject(existingValue as object, newValue, checkForOverridableItems);
   } else if (is.array(newValue)) {
-    return parseArray(existingValue, newValue, checkForOverridableItems);
+    if (existingValue == null) { existingValue = []; }
+    return parseArray(existingValue as [], newValue, checkForOverridableItems);
   } else {
     return newValue;
   }
@@ -153,16 +146,17 @@ function parseValue(existingValue: any, newValue: any, checkForOverridableItems:
 
 Object.addMethods(Object, [
 
-  function extendPrototype(this: Object, targetPrototype: object, extensionPrototype: object): void {
-    const extensionMethods = Object
-      .getOwnPropertyNames(extensionPrototype)
-      .filter(method => method !== 'constructor')
-      .map(method => extensionPrototype[method]);
-    Object.addMethods(targetPrototype, extensionMethods);
+  function extendPrototype(this: Object, targetPrototype: object, extensionPrototype: AnyObject): void {
+    const map: PropertyDescriptorMap = {};
+    Object.entries<PropertyDescriptor>(Object.getOwnPropertyDescriptors(extensionPrototype)).forEach(([name, descriptor]) => {
+      if (name === 'constructor' || typeof (descriptor.value) !== 'function') return;
+      map[name] = descriptor;
+    });
+    Object.defineProperties(targetPrototype, map);
   },
 
-  function merge<T>(this: Object, target: T, ...extenders: any[]): T {
-    extenders.removeNull().forEach(extender => target = parseValue(target, extender, true));
+  function merge<T>(this: Object, target: T, ...extenders: unknown[]): T {
+    extenders.removeNull().forEach(extender => target = parseValue(target, extender, true) as T);
     return target;
   },
 
@@ -175,56 +169,56 @@ Object.addMethods(Object, [
     }
   },
 
-  function diff(this: Object, target: object, comparison: object): object {
+  // function diff(this: Object, target: object, comparison: object): object {
 
-    const compareObject = (targetObject: any, comparisonObject: any): object => {
-      const changes = {};
-      let hasChanged = false;
-      const keys = Reflect.ownKeys(targetObject)
-        .concat(Reflect.ownKeys(comparisonObject))
-        .reduce((list, key) => list.includes(key) ? list : list.concat([key]), new Array<PropertyKey>());
-      // tslint:disable-next-line:forin
-      for (const key of keys) {
-        // eslint-disable-next-line @typescript-eslint/no-use-before-define
-        const result = compareValue(targetObject[key], comparisonObject[key]);
-        if (result === undefined) { continue; }
-        changes[key] = result;
-        hasChanged = true;
-      }
-      if (!hasChanged) { return undefined; }
-      return changes;
-    };
+  //   const compareObject = (targetObject: AnyObject, comparisonObject: AnyObject): AnyObject | undefined => {
+  //     const changes: AnyObject = {};
+  //     let hasChanged = false;
+  //     const keys = Reflect.ownKeys(targetObject)
+  //       .concat(Reflect.ownKeys(comparisonObject))
+  //       .reduce((list, key) => list.includes(key) ? list : list.concat([key]), new Array<PropertyKey>());
+  //     // tslint:disable-next-line:forin
+  //     for (const key of keys) {
+  //       // eslint-disable-next-line @typescript-eslint/no-use-before-define
+  //       const result = compareValue(targetObject[key as string], comparisonObject[key as string]);
+  //       if (result === undefined) { continue; }
+  //       changes[key as string] = result;
+  //       hasChanged = true;
+  //     }
+  //     if (!hasChanged) { return; }
+  //     return changes;
+  //   };    
 
-    const compareArray = (targetArray: any[], comparisonArray: any[]): any[] => {
-      if (targetArray.length === comparisonArray.length && JSON.stringify(targetArray) === JSON.stringify(comparisonArray)) { return undefined; }
-      comparisonArray.forEach((item, index) => {
-        if (!item) { return; }
-        if (is.empty(item.id)) { return; }
-        const existingItem = targetArray.find(i => i && i.id === item.id);
-        if (!existingItem) { return; }
-        const result = compareObject(existingItem, item) || {} as any;
-        result.id = item.id;
-        comparisonArray[index] = result;
-      });
-      return comparisonArray;
-    };
+  //   const compareArray = (targetArray: unknown[], comparisonArray: unknown[]): unknown[] | undefined => {
+  //     if (targetArray.length === comparisonArray.length && JSON.stringify(targetArray) === JSON.stringify(comparisonArray)) { return; }
+  //     comparisonArray.forEach((item, index) => {
+  //       if (item == null) { return; }
+  //       if (!is.object<AnyObject>(item) || is.empty(item.id)) { return; }
+  //       const existingItem = targetArray.find(i => is.object<AnyObject>(i) && i.id === item.id);
+  //       if (!existingItem) { return; }
+  //       const result = compareObject(existingItem, item) || {} as any;
+  //       result.id = item.id;
+  //       comparisonArray[index] = result;
+  //     });
+  //     return comparisonArray;
+  //   };
 
-    const compareValue = (targetValue: any, comparisonValue: any): any => {
-      if (targetValue === comparisonValue) { return undefined; }
-      if (is.null(targetValue) && !is.null(comparisonValue)) { return comparisonValue; }
-      if (!is.null(targetValue) && is.null(comparisonValue)) { return undefined; }
-      if (typeof (targetValue) !== typeof (comparisonValue)) { return comparisonValue; }
-      if (is.plainObject(targetValue)) {
-        return compareObject(targetValue, comparisonValue);
-      } else if (is.array(targetValue)) {
-        return compareArray(targetValue, comparisonValue);
-      } else {
-        return comparisonValue;
-      }
-    };
+  //   const compareValue = (targetValue: any, comparisonValue: any): any => {
+  //     if (targetValue === comparisonValue) { return undefined; }
+  //     if (is.null(targetValue) && !is.null(comparisonValue)) { return comparisonValue; }
+  //     if (!is.null(targetValue) && is.null(comparisonValue)) { return undefined; }
+  //     if (typeof (targetValue) !== typeof (comparisonValue)) { return comparisonValue; }
+  //     if (is.plainObject(targetValue)) {
+  //       return compareObject(targetValue, comparisonValue);
+  //     } else if (is.array(targetValue)) {
+  //       return compareArray(targetValue, comparisonValue);
+  //     } else {
+  //       return comparisonValue;
+  //     }
+  //   };
 
-    return compareValue(target, comparison);
-  },
+  //   return compareValue(target, comparison);
+  // },
 
   function hash(this: Object, target: object): string {
     if (is.null(target)) { return ''; }
@@ -250,10 +244,10 @@ Object.addMethods(Object, [
     return delegate(target);
   },
 
-  function getValueOf<T, R>(this: Object, targetOrDelegate: any, delegateOrDefaultValue: R | ((target: T) => R), defaultValue?: R): R {
-    let target = targetOrDelegate;
-    let delegate = delegateOrDefaultValue as ((target: T) => R);
-    if (is.function(targetOrDelegate)) {
+  function getValueOf<T, R>(this: AnyObject, targetOrDelegate: T | (() => R), delegateOrDefaultValue: R | ((target: T) => R), defaultValue?: R): R | undefined {
+    let target = targetOrDelegate as T | undefined;
+    let delegate = delegateOrDefaultValue as ((target?: T) => R);
+    if (is.function<() => R>(targetOrDelegate)) {
       target = undefined;
       delegate = targetOrDelegate;
       defaultValue = delegateOrDefaultValue as R;
@@ -265,14 +259,14 @@ Object.addMethods(Object, [
       if (error instanceof TypeError) { return defaultValue; }
       throw error;
     }
-    return value != null ? value : defaultValue;
+    return value ?? defaultValue;
   },
 
   function mixin(destinationClass: Function, sourceClass: Function): void {
     Object.getOwnPropertyNames(sourceClass.prototype).forEach(name => destinationClass.prototype[name] = sourceClass.prototype[name]);
   },
 
-  function using<T extends IDisposable, R = any>(object: T, use: (object: T) => R): R {
+  function using<T extends Disposable, R = unknown>(object: T, use: (object: T) => R): R {
     let result: R;
     try {
       result = use(object);
@@ -287,7 +281,7 @@ Object.addMethods(Object, [
 if (!Object.values) {
   Object.addMethods(Object, [
 
-    function values(this: Object, target: Object): any[] {
+    function values(this: Object, target: AnyObject): unknown[] {
       return Object.keys(target).map(name => target[name]);
     },
 

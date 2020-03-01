@@ -9,8 +9,8 @@ interface IConfig {
 export class BaseError extends Error {
   protected constructor(config: IConfig, self: Function) {
     super(config.message);
-    this.name = config.name || this.constructor.name;
-    this.code = config.code || 500;
+    this.name = config.name ?? this.constructor.name;
+    this.code = config.code ?? 500;
     this.info = config.info;
     this.internalError = config.internalError;
     Object.setPrototypeOf(this, self.prototype);
@@ -18,12 +18,12 @@ export class BaseError extends Error {
 
   public name: string;
   public code: number;
-  public info: object;
-  public internalError: Error;
+  public info: object | undefined;
+  public internalError: Error | undefined;
 
   protected toJSON() {
-    const { message, name, code, info, internalError, stack } = (this as BaseError);
-    const infoAsString = info ? JSON.stringify(info) as string : undefined;
+    const { message, name, code, info, internalError, stack } = this;
+    const infoAsString = info ? JSON.stringify(info) : undefined;
     return {
       name,
       message,

@@ -1,12 +1,11 @@
-import numeral from 'numeral';
 import { NotImplementedError } from '../errors';
+import { MapOf } from './global';
 import { is } from './is';
-import { IMap } from './global';
+import numeral from 'numeral';
+
 export type BooleanOrFunc = boolean | (() => boolean);
 
 export type StandardDataTypes = 'string' | 'number' | 'bigint' | 'boolean' | 'symbol' | 'undefined' | 'object' | 'function' | 'date' | 'array' | Date | [];
-
-type StandardConversionFunction = (<T>(value: T) => T) | (<T>(value: unknown, defaultValue: T) => T) | ((value: unknown) => unknown);
 
 class To {
 
@@ -32,8 +31,8 @@ class To {
   public boolean(value: BooleanOrFunc, defaultValue: boolean): boolean;
   public boolean(value: unknown, defaultValue?: boolean): boolean {
     if (is.boolean(value)) { return value; }
-    if (is.function(value)) { return this.boolean(value(), defaultValue); }
-    return defaultValue;
+    if (is.function(value)) { return defaultValue != null ? this.boolean(value(), defaultValue) : this.boolean(value()); }
+    return defaultValue ?? false;
   }
 
   public date(value: unknown): Date;
@@ -43,19 +42,19 @@ class To {
     if (is.date(value)) { return value; }
     if (is.number(value)) { return new Date(value); }
     if (is.not.empty(value)) { return Date.parse(value); }
-    return defaultValue;
+    return defaultValue ?? new Date();
   }
 
   public number(value: unknown, defaultValue?: number): number {
     if (typeof (value) === 'number') { return value; }
     if (typeof (value) === 'string') {
       const intValue = parseInt(value, 0);
-      if (isNaN(intValue)) { return defaultValue; }
+      if (isNaN(intValue)) { return defaultValue ?? 0; }
       const floatValue = parseFloat(value);
       if (intValue === floatValue) { return intValue; }
       return floatValue;
     }
-    return defaultValue;
+    return defaultValue ?? 0;
   }
 
   public function<T extends Function>(value: T): T;
@@ -103,7 +102,7 @@ class To {
 
 export const to = new To();
 
-const standardDataTypesMapping: IMap<StandardConversionFunction> = {
+const standardDataTypesMapping: MapOf<Function> = {
   'string': to.string,
   'function': to.function,
   'object': to.object,

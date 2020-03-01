@@ -25,6 +25,6 @@ export class MathExtensions {
   public round(this: Math, x: number, decimalPlaces?: number): number {
     if (decimalPlaces == null) { return originalRound(x); }
     // tslint:disable-next-line:prefer-template
-    return +(originalRound(x + `e+${decimalPlaces}` as any) + `e-${decimalPlaces}`);
+    return +(originalRound(x + `e+${decimalPlaces}` as unknown as number) + `e-${decimalPlaces}`);
   }
 }

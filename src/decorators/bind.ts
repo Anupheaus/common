@@ -1,37 +1,35 @@
-const boundMethods = Symbol('boundMethods');
+const isPrototype = (target: object) => Object.getOwnPropertyNames(target).includes('constructor');
 
-function isAlreadyBound(target: object, key: PropertyKey): boolean {
-  const methodsBound = target[boundMethods];
-  if (!(methodsBound instanceof Array)) { return false; }
-  return methodsBound.includes(key);
-}
-
-function saveBinding(target: object, key: PropertyKey): void {
-  (target[boundMethods] = target[boundMethods] || []).push(key);
-}
-
-export function bind(target: any, key: PropertyKey, descriptor: PropertyDescriptor) {
-  let fn = (descriptor || {}).value;
-
-  if (typeof fn !== 'function') {
-    const bindTarget = key && !descriptor && target ? 'a variable' : 'a class';
-    throw new Error(`@bind decorator can only be applied to methods not ${bindTarget}`);
-  }
-
-  return {
-    configurable: true,
+function defineGetterOn(target: object, key: PropertyKey, func: Function): void {
+  if (Reflect.getOwnPropertyDescriptor(target, key)?.get != null) { return; }
+  Reflect.defineProperty(target, key, {
     get() {
-      const boundFn = fn.bind(this);
-      if (!isAlreadyBound(this, key)) {
-        saveBinding(this, key);
-        Object.defineProperty(this, key, {
-          configurable: true,
-          get() { return boundFn; },
-          set(value) { fn = value; delete this[key]; },
-        });
-      }
-      return boundFn;
+      return isPrototype(this) ? func : func.bind(this);
     },
-    set(value: any) { fn = value; },
+    configurable: true,
+    enumerable: true,
+  });
+}
+
+export function bind(target: object, key: PropertyKey, descriptor: PropertyDescriptor): PropertyDescriptor {
+  if (!key) throw new Error('@bind decorator can only be applied to methods not a class');
+  if (!descriptor) throw new Error('@bind decorator can only be applied to methods not a variable');
+  if (!descriptor.value) { return descriptor; }
+  const fn = descriptor.value;
+  return {
+    get() {
+      if (isPrototype(this)) {
+        defineGetterOn(this, key, fn);
+        return fn;
+      } else {
+        return fn.bind(this);
+      }
+    },
+    set(value) {
+      defineGetterOn(this, key, value);
+    },
+    configurable: true,
+    enumerable: true,
   };
 }
+

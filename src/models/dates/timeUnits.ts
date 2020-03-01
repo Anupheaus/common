@@ -1,5 +1,5 @@
-import * as moment from 'moment';
 import { InternalError } from '../../errors';
+import * as moment from 'moment';
 
 export enum TimeUnits {
   Day,

@@ -16,16 +16,16 @@ class Is {
 
   public get not() { return isNot; } // eslint-disable-line @typescript-eslint/no-use-before-define
 
-  public null<T>(value: T): value is null;
+  public null(value: unknown): value is null;
   public null<T>(value: unknown, defaultValue: () => T): T;
   public null<T>(value: T, defaultValue?: () => T): T | boolean {
     if (typeof (defaultValue) === 'number') { defaultValue = undefined; } // we are being used in a loop
-    return parseArguments(value, value == null, undefined, defaultValue, () => value, () => defaultValue());
+    return parseArguments(value, value == null, undefined, defaultValue, () => value, () => defaultValue ? defaultValue() : true);
   }
 
-  public function<T extends Function>(value: T): value is T;
+  public function<T extends Function>(value: unknown): value is T;
   public function(value: unknown): value is Function;
-  public function<T extends Function>(value: T): value is T {
+  public function<T extends Function>(value: unknown): value is T {
     return typeof (value) === 'function' && !value.toString().startsWith('class ');
   }
 
@@ -93,9 +93,10 @@ class Is {
     return typeof (value) === 'number' && !isNaN(value);
   }
 
-  public enum(value: unknown, enumDefinition: object): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public enum(value: any, enumDefinition: object): boolean {
     const keys = Reflect.ownKeys(enumDefinition);
-    return !is.null(value) && keys.includes(value.toString());
+    return value != null && keys.includes(value.toString());
   }
 
   public primitive<T extends string | number | boolean>(value: T): value is T {
@@ -110,10 +111,10 @@ class IsNot {
   public null<T>(value: unknown, defaultValue: () => T): T;
   public null<T>(value: T, defaultValue?: () => T): T | boolean {
     if (typeof (defaultValue) === 'number') { defaultValue = undefined; } // we are being used in a loop
-    return parseArguments(value, value != null, undefined, defaultValue, () => defaultValue(), () => value);
+    return parseArguments(value, value != null, undefined, defaultValue, () => defaultValue ? defaultValue() : false, () => value);
   }
 
-  public allNull<T>(...values: (() => T)[]): T {
+  public allNull<T>(...values: (() => T)[]): T | undefined {
     for (const delegate of values) {
       if (!is.function(delegate)) { continue; }
       try {

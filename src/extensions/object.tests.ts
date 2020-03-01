@@ -22,6 +22,7 @@ describe('object', () => {
 
       expect(b.b).to.eq(7);
       b = Object.merge({}, b, a);
+      expect(b.a).to.eq(1);
       expect(b.b).to.eq(1);
     });
 
@@ -118,7 +119,8 @@ describe('object', () => {
         b: 'something',
       };
       const d = Object.merge({}, b, c);
-      expect(d.a).to.eq(b.a);
+      expect(d.a).to.eql(b.a); // same values
+      expect(d.a).not.to.eq(b.a); // but not the same instance
     });
 
     it('can merge overridable items correctly', () => {
@@ -139,7 +141,6 @@ describe('object', () => {
       const b = { items: [{ boo: 3 }] };
       const result = Object.merge({}, a, b);
       expect(result.items[0].boo).to.eq(3);
-      expect(result.items[0]).not.to.eq(a.items[0]);
       expect(a.items[0].boo).to.eq(2);
       expect(b.items[0].boo).to.eq(3);
     })

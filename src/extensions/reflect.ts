@@ -2,16 +2,17 @@ import { createCustomEqual } from 'fast-equals';
 import { InternalError } from '../errors';
 import { is } from './is';
 import './object';
+import { AnyObject } from './global';
 
 export enum PropertyAccess {
   CanRead,
   CanWrite,
 }
 
-const fastEquals = (customComparer: (source, target) => boolean | void, isDeepComparison?: boolean) => {
-  const hasCustomComparer = typeof (customComparer) === 'function';
+const fastEquals = (customComparer?: (source: unknown, target: unknown) => boolean | void, isDeepComparison?: boolean) => {
+  customComparer = typeof (customComparer) === 'function' ? customComparer : undefined;
   return createCustomEqual(comparitor => (objA, objB) => {
-    if (hasCustomComparer) {
+    if (customComparer) {
       const result = customComparer(objA, objB);
       if (result === true || result === false) { return result; }
     }
@@ -24,12 +25,7 @@ const fastEquals = (customComparer: (source, target) => boolean | void, isDeepCo
   });
 };
 
-function performComparison(source: unknown, target: unknown,
-  customComparer: (source: unknown, target: unknown) => boolean | void, isDeepComparison: boolean): boolean {
-  if (typeof (customComparer) === 'function') {
-    const firstResult = customComparer(source, target);
-    if (firstResult === true || firstResult === false) { return firstResult; }
-  }
+function performComparison(source: unknown, target: unknown, customComparer?: (source: unknown, target: unknown) => boolean | void, isDeepComparison = false): boolean {
   return fastEquals(customComparer, isDeepComparison)(source, target);
 }
 
@@ -86,10 +82,10 @@ declare global {
 
     function parameterNames(func: Function): string[];
 
-    function areDeepEqual(source, target): boolean;
-    function areDeepEqual(source, target, customComparer: (objA, objB) => boolean | void): boolean;
-    function areShallowEqual(source, target): boolean;
-    function areShallowEqual(source, target, customComparer: (objA, objB) => boolean | void): boolean;
+    function areDeepEqual(source: unknown, target: unknown): boolean;
+    function areDeepEqual(source: unknown, target: unknown, customComparer: (objA: unknown, objB: unknown) => boolean | void): boolean;
+    function areShallowEqual(source: unknown, target: unknown): boolean;
+    function areShallowEqual(source: unknown, target: unknown, customComparer: (objA: unknown, objB: unknown) => boolean | void): boolean;
 
     function wrapMethod<T extends Function, R>(target: object, method: T, delegate: (originalFunc: T, args: unknown[]) => R): R;
 
@@ -99,25 +95,25 @@ declare global {
   }
 }
 
-function navigateToProperty(target: object, propertyName: string,
-  endOfPathAction: (target: object, propertyName: string) => Reflect.IEndOfPathAction = () => ({ value: null, shouldContinue: false })): [object, string] {
+function navigateToProperty(target: AnyObject, propertyName: string,
+  endOfPathAction: (target: object, propertyName: string) => Reflect.IEndOfPathAction = () => ({ value: null, shouldContinue: false })): [AnyObject | undefined, string] {
   const propertyNames = propertyName.split('.');
   let currentProperty = propertyNames.shift();
   let currentTarget = target;
-  while (propertyNames.length > 0) {
+  while (propertyNames.length > 0 && currentProperty) {
     const value = currentTarget[currentProperty];
     if (value === undefined) {
-      const result = endOfPathAction(value, currentProperty);
-      if (!is.null(result.value)) {
+      const result = endOfPathAction(currentTarget, currentProperty);
+      if (result.value != null) {
         Reflect.defineProperty(currentTarget, currentProperty, { value: result.value, enumerable: false, writable: true, configurable: true });
         if (!result.shouldContinue) { break; }
       }
     }
-    currentTarget = currentTarget[currentProperty];
+    currentTarget = currentTarget[currentProperty] as never;
     currentProperty = propertyNames.shift();
   }
-  if (propertyNames.length > 0) { return [null, '']; }
-  return [currentTarget, currentProperty];
+  if (propertyNames.length > 0) { return [undefined, '']; }
+  return [currentTarget, currentProperty ?? ''];
 }
 
 Object.addMethods(Reflect, [
@@ -139,15 +135,15 @@ Object.addMethods(Reflect, [
     return constructor.name;
   },
 
-  function getDefinition(target: object, memberKey: PropertyKey): PropertyDescriptor {
+  function getDefinition(target: object, memberKey: PropertyKey): PropertyDescriptor | undefined {
     if (!target) { return undefined; }
-    let definition: PropertyDescriptor = null;
+    let definition: PropertyDescriptor | undefined;
     // if (target.prototype) { target = target.prototype; }
     // if (target.constructor && target.constructor.prototype) { target = target.constructor.prototype; }
     do {
-      definition = Reflect.getOwnPropertyDescriptor(target, memberKey) || null;
-      if (definition === null) { target = Reflect.getPrototypeOf(target); }
-    } while (definition === null && target !== Object.prototype);
+      definition = Reflect.getOwnPropertyDescriptor(target, memberKey);
+      if (definition == null) { target = Reflect.getPrototypeOf(target); }
+    } while (definition == null && target !== Object.prototype);
     return definition;
   },
 
@@ -164,7 +160,9 @@ Object.addMethods(Reflect, [
   function getAllDefinitions(target: object): PropertyDescriptorMap {
     const descriptors: PropertyDescriptorMap = {};
     Reflect.getAllPrototypesOf(target)
-      .mapMany(prototype => Object.getOwnPropertyNames(prototype).map(key => ({ key, descriptor: Reflect.getOwnPropertyDescriptor(prototype, key) })))
+      .mapMany(prototype => Object.getOwnPropertyNames(prototype)
+        .map(key => ({ key, descriptor: Reflect.getOwnPropertyDescriptor(prototype, key) as PropertyDescriptor }))
+        .filter(item => item.descriptor != null))
       .forEach(item => {
         if (descriptors[item.key]) { return; }
         descriptors[item.key] = item.descriptor;
@@ -172,32 +170,33 @@ Object.addMethods(Reflect, [
     return descriptors;
   },
 
-  function getProperty<T>(target: object, propertyName: string, defaultValue: T = null, addIfNotExists = false): T {
-    [target, propertyName] = navigateToProperty(target, propertyName, () => {
+  function getProperty<T>(target: AnyObject, propertyName: string, defaultValue?: T, addIfNotExists = false): T | undefined {
+    const [newTarget, newPropertyName] = navigateToProperty(target, propertyName, () => {
       if (!addIfNotExists) { return { value: null, shouldContinue: false }; }
       return { value: {}, shouldContinue: true };
     });
-    if (target === null) { return defaultValue; }
-    let result = target[propertyName];
-    if (result === undefined && addIfNotExists) { Reflect.setProperty(target, propertyName, defaultValue); result = defaultValue; }
-    return result;
+    if (newTarget == null) { return defaultValue; }
+    let result = newTarget[newPropertyName];
+    if (result === undefined && addIfNotExists) { Reflect.setProperty(newTarget, newPropertyName, defaultValue); result = defaultValue; }
+    return result as T;
   },
 
-  function setProperty<T>(target: object, propertyName: string, value: T): void {
-    [target, propertyName] = navigateToProperty(target, propertyName, () => ({ value: {}, shouldContinue: true }));
-    if (target[propertyName] === undefined) {
-      Reflect.defineProperty(target, propertyName, { value, writable: true, configurable: true, enumerable: false });
-    } else if (Reflect.checkPropertyAccess(target, propertyName, PropertyAccess.CanWrite)) {
-      target[propertyName] = value;
+  function setProperty<T>(target: AnyObject, propertyName: string, value: T): void {
+    const [newTarget, newPropertyName] = navigateToProperty(target, propertyName, () => ({ value: {}, shouldContinue: true }));
+    if (newTarget == null) { throw new Error('This error should not occur, it means something went wrong within navigateToProperty'); }
+    if (newTarget[newPropertyName] === undefined) {
+      Reflect.defineProperty(newTarget, newPropertyName, { value, writable: true, configurable: true, enumerable: false });
+    } else if (Reflect.checkPropertyAccess(newTarget, newPropertyName, PropertyAccess.CanWrite)) {
+      newTarget[newPropertyName] = value;
     } else {
-      throw new InternalError('Unable to set property value because the property does not permit write access.', { target, property: propertyName });
+      throw new InternalError('Unable to set property value because the property does not permit write access.', { target: newTarget, property: newPropertyName });
     }
   },
 
-  function checkPropertyAccess(target: object, propertyName: string, access: PropertyAccess): boolean {
-    [target, propertyName] = navigateToProperty(target, propertyName);
-    if (target === null) { throw new InternalError('Access was requested on a property that does not exist.', { target, propertyName, access }); }
-    const definition = Reflect.getDefinition(target, propertyName);
+  function checkPropertyAccess(target: AnyObject, propertyName: string, access: PropertyAccess): boolean {
+    const [newTarget, newPropertyName] = navigateToProperty(target, propertyName);
+    if (newTarget === null) { throw new InternalError('Access was requested on a property that does not exist.', { target, propertyName, access }); }
+    const definition = Reflect.getDefinition(newTarget, newPropertyName);
     if (definition === null) { return false; }
     switch (access) {
       case PropertyAccess.CanWrite:
@@ -213,7 +212,6 @@ Object.addMethods(Reflect, [
     let prototype = target;
     const prototypes = new Array<object>();
     if (is.function(prototype)) { prototype = prototype.prototype; prototypes.push(prototype); }
-    // tslint:disable-next-line:no-conditional-assignment
     while ((prototype = Reflect.getPrototypeOf(prototype)) !== Object.prototype) { prototypes.push(prototype); }
     return prototypes;
   },
@@ -222,8 +220,8 @@ Object.addMethods(Reflect, [
     return Reflect.getAllPrototypesOf(target)
       .map(prototype => {
         const methodDescriptor = Reflect.getOwnPropertyDescriptor(prototype, name);
-        if (!is.null(methodDescriptor) && is.function(methodDescriptor.value)) { return methodDescriptor.value; }
-        return null;
+        if (methodDescriptor == null || !is.function(methodDescriptor.value)) return;
+        return methodDescriptor.value;
       })
       .removeNull()
       .map(method => method.apply(target, args));
@@ -233,8 +231,8 @@ Object.addMethods(Reflect, [
     const results = Reflect.getAllPrototypesOf(target)
       .map(prototype => {
         const propertyDescriptor = Reflect.getOwnPropertyDescriptor(prototype, propertyName);
-        if (!is.null(propertyDescriptor) && is.function(propertyDescriptor.get)) { return propertyDescriptor.get; }
-        return null;
+        if (propertyDescriptor == null || !is.function(propertyDescriptor.get)) return;
+        return propertyDescriptor.get;
       })
       .removeNull()
       .map(method => method.call(target))
@@ -258,7 +256,7 @@ Object.addMethods(Reflect, [
     Object.defineProperty(target, method.name, {
       value(...args: unknown[]) {
         args.unshift(method.bind(target));
-        return delegate.apply(target, args);
+        return delegate.apply(target, args as never);
       },
       configurable: true,
       enumerable: false,
@@ -273,11 +271,11 @@ Object.addMethods(Reflect, [
       .distinct();
   },
 
-  function areDeepEqual(source, target, customComparer?: (objA, objB) => boolean | void): boolean {
+  function areDeepEqual(source: unknown, target: unknown, customComparer?: (objA: unknown, objB: unknown) => boolean | void): boolean {
     return performComparison(source, target, customComparer, true);
   },
 
-  function areShallowEqual(source, target, customComparer?: (source, target) => boolean | void): boolean {
+  function areShallowEqual(source: unknown, target: unknown, customComparer?: (source: unknown, target: unknown) => boolean | void): boolean {
     return performComparison(source, target, customComparer, false);
   },
 

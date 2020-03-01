@@ -55,23 +55,26 @@ Object.addMethods(Function.prototype, [
   },
 
   function getStackTrace(this: Function): IFunctionStackTraceInfo[] {
-    const errorStack = new Error().stack;
+    const errorStack = new Error().stack ?? '';
     const matches = errorStack.match(callStackRegExp);
     if (!matches || matches.length < 2) { return []; }
-    return matches.skip(1).map((match): IFunctionStackTraceInfo => {
-      const result = new RegExp(callStackRegExp, 'gmi').exec(match);
-      const methodName = result[1];
-      const file = result[2];
-      const line = parseInt(result[3], 10);
-      const column = parseInt(result[4], 10);
+    return matches.skip(1)
+      .map((match): IFunctionStackTraceInfo | undefined => {
+        const result = new RegExp(callStackRegExp, 'gmi').exec(match);
+        if (result == null) { return; }
+        const methodName = result[1];
+        const file = result[2];
+        const line = parseInt(result[3], 10);
+        const column = parseInt(result[4], 10);
 
-      return {
-        methodName,
-        file,
-        line,
-        column,
-      }
-    });
+        return {
+          methodName,
+          file,
+          line,
+          column,
+        }
+      })
+      .removeNull();
   }
 
 ]);

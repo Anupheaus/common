@@ -27,7 +27,7 @@ describe('events', () => {
 
     it('can be invoked', () => {
       const a = new EventTesting();
-      let result: string;
+      let result: string | undefined;
       a.subscribe(something => { result = something; });
       expect(result).to.be.undefined;
       a.invoke('hey');

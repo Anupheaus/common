@@ -1,5 +1,6 @@
 /* eslint-disable max-classes-per-file */
 import './array';
+import { AnyObject } from './global';
 
 class TestClass {
   public constructor(value: number) { this.value = value; }
@@ -45,107 +46,107 @@ describe('extension > array', () => {
 
   });
 
-  describe('singleOrDefault', () => {
+  describe('single', () => {
 
     it('can select at most one', () => {
       const array = [1];
-      const result = array.singleOrDefault();
+      const result = array.single();
       expect(result).to.eql(1);
     });
 
     it('errors if more than one is found', () => {
       const array = [1, 2];
-      expect(() => array.singleOrDefault()).to.throw('Multiple items were found when only one was expected.');
+      expect(() => array.single()).to.throw('Multiple items were found when only one was expected.');
     });
 
     it('returns undefined if none are found', () => {
-      const array = [];
-      const result = array.singleOrDefault();
+      const array: string[] = [];
+      const result = array.single();
       expect(result).to.be.undefined;
     });
 
     it('can apply a filter', () => {
       const array = [1, 2];
-      const result = array.singleOrDefault(item => item === 2);
+      const result = array.single(item => item === 2);
       expect(result).to.eql(2);
     });
 
     it('errors if more than one is found when applying a filter', () => {
       const array = [1, 2, 3];
-      expect(() => array.singleOrDefault(item => item % 2 === 1)).to.throw('Multiple items were found when only one was expected.');
+      expect(() => array.single(item => item % 2 === 1)).to.throw('Multiple items were found when only one was expected.');
     });
 
     it('returns undefined if none are found when applying a filter', () => {
       const array = [1, 2, 3];
-      const result = array.singleOrDefault(() => false);
+      const result = array.single(() => false);
       expect(result).to.be.undefined;
     });
 
   });
 
-  describe('firstOrDefault', () => {
+  describe('first', () => {
 
     it('can select at most one', () => {
       const array = [1];
-      const result = array.firstOrDefault();
+      const result = array.first();
       expect(result).to.eql(1);
     });
 
     it('returns only the first in an array', () => {
       const array = [1, 2];
-      const result = array.firstOrDefault();
+      const result = array.first();
       expect(result).to.eql(1);
     });
 
     it('returns undefined if none are found', () => {
-      const array = [];
-      const result = array.firstOrDefault();
+      const array: string[] = [];
+      const result = array.first();
       expect(result).to.be.undefined;
     });
 
     it('can apply a filter', () => {
       const array = [1, 2];
-      const result = array.firstOrDefault(item => item === 2);
+      const result = array.first(item => item === 2);
       expect(result).to.eql(2);
     });
 
     it('returns the correct value when applying a filter', () => {
       const array = [1, 2, 3, 4, 5, 6];
-      const result = array.firstOrDefault(item => item % 2 === 0);
+      const result = array.first(item => item % 2 === 0);
       expect(result).to.eql(2);
     });
 
     it('returns undefined if none are found when applying a filter', () => {
       const array = [1, 2, 3];
-      const result = array.firstOrDefault(() => false);
+      const result = array.first(() => false);
       expect(result).to.be.undefined;
     });
 
   });
 
-  describe('lastOrDefault', () => {
+  describe('last', () => {
 
     it('can select at most one and is the last in the array', () => {
       const array = [1, 2, 3, 4, 5, 6];
-      const result = array.lastOrDefault();
+      const result = array.last();
       expect(result).to.eql(6);
     });
 
     it('returns undefined if none are found', () => {
-      const array = [];
-      const result = array.lastOrDefault();
+      const array: string[] = [];
+      const result = array.last();
       expect(result).to.be.undefined;
     });
 
     it('can apply a filter and returns the correct value', () => {
       const array = [1, 2, 3, 4, 4, 4, 5, 6, 7].map(value => new TestClass(value));
-      const result = array.lastOrDefault(item => item.value === 4);
+      const result = array.last(item => item.value === 4);
       expect(result).to.eq(array[5]);
     });
 
     it('returns undefined if none are found when applying a filter', () => {
       const array = [1, 2, 3];
-      const result = array.lastOrDefault(() => false);
+      const result = array.last(() => false);
       expect(result).to.be.undefined;
     });
 
@@ -162,14 +163,14 @@ describe('extension > array', () => {
   });
 
   describe('remove', () => {
-    let array: TestClass[] = null;
+    let array: TestClass[];
 
     beforeEach(() => {
       array = [1, 2, 3, 4, 5].map(value => new TestClass(value));
     });
 
     afterEach(() => {
-      array = null;
+      array = undefined as unknown as TestClass[];
     });
 
     it('can remove an item', () => {
@@ -192,14 +193,14 @@ describe('extension > array', () => {
   });
 
   describe('removeByFilter', () => {
-    let array: TestClass[] = null;
+    let array: TestClass[];
 
     beforeEach(() => {
       array = [1, 2, 3, 4, 5].map(value => new TestClass(value));
     });
 
     afterEach(() => {
-      array = null;
+      array = undefined as unknown as TestClass[];
     });
 
     it('can remove an item using a filter', () => {
@@ -220,20 +221,21 @@ describe('extension > array', () => {
     });
 
     it('will error if no filter is given', () => {
-      expect(() => array.removeByFilter(undefined)).to.throw('The argument \'filter\' was invalid.');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(() => array.removeByFilter(undefined as any)).to.throw('The argument \'filter\' was invalid.');
     });
 
   });
 
   describe('removeById', () => {
-    let array: TestIdClass[] = null;
+    let array: TestIdClass[];
 
     beforeEach(() => {
       array = [1, 2, 3, 4, 5].map(value => new TestIdClass(value.toString()));
     });
 
     afterEach(() => {
-      array = null;
+      array = undefined as unknown as TestIdClass[];
     });
 
     it('can remove an item using the id', () => {
@@ -257,14 +259,14 @@ describe('extension > array', () => {
 
   describe('indexOfId', () => {
 
-    let array: TestIdClass[] = null;
+    let array: TestIdClass[];
 
     beforeEach(() => {
       array = [1, 2, 3, 4, 5].map(value => new TestIdClass(value.toString()));
     });
 
     afterEach(() => {
-      array = null;
+      array = undefined as unknown as TestIdClass[];
     });
 
     it('can find the index of an item with id', () => {
@@ -280,14 +282,14 @@ describe('extension > array', () => {
   });
 
   describe('findById', () => {
-    let array: TestIdClass[] = null;
+    let array: TestIdClass[];
 
     beforeEach(() => {
       array = [1, 2, 3, 4, 5].map(value => new TestIdClass(value.toString()));
     });
 
     afterEach(() => {
-      array = null;
+      array = undefined as unknown as TestIdClass[];
     });
 
     it('can find the item with the correct id', () => {
@@ -305,14 +307,15 @@ describe('extension > array', () => {
   describe('upsert', () => {
 
     describe('with objects with ids', () => {
-      let array: { id: string; name: string }[] = null;
+      let array: { id: string; name: string }[];
 
       beforeEach(() => {
         array = [1, 2, 3, 4, 5].map(id => ({ id: id.toString(), name: id.toString() }));
       });
 
       afterEach(() => {
-        array = null;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        array = undefined as any;
       });
 
       function createTestData() {
@@ -428,14 +431,15 @@ describe('extension > array', () => {
   describe('replace', () => {
 
     describe('with objects with ids', () => {
-      let array: { id: string; name: string }[] = null;
+      let array: { id: string; name: string }[];
 
       beforeEach(() => {
         array = [1, 2, 3, 4, 5].map(id => ({ id: id.toString(), name: id.toString() }));
       });
 
       afterEach(() => {
-        array = null;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        array = undefined as any;
       });
 
       it('can replace an existing item', () => {
@@ -543,14 +547,14 @@ describe('extension > array', () => {
       name: string;
       additionalProperty: number;
     }
-    let array: IArrayItem[] = null;
+    let array: IArrayItem[];
 
     beforeEach(() => {
       array = [1, 2, 3, 4, 5].map((id): IArrayItem => ({ id: id.toString(), name: id.toString(), additionalProperty: id }));
     });
 
     afterEach(() => {
-      array = null;
+      array = undefined as unknown as IArrayItem[];
     });
 
     it('can update where a filter is matched', () => {
@@ -570,14 +574,15 @@ describe('extension > array', () => {
   describe('except', () => {
 
     describe('with objects with ids', () => {
-      let array: { id: string; name: string }[] = null;
+      let array: { id: string; name: string }[];
 
       beforeEach(() => {
         array = [1, 2, 3, 4, 5].map(id => ({ id: id.toString(), name: id.toString() }));
       });
 
       afterEach(() => {
-        array = null;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        array = undefined as any;
       });
 
       it('can except an existing item', () => {
@@ -627,14 +632,15 @@ describe('extension > array', () => {
   });
 
   describe('distinct', () => {
-    let array: { id: string; name: string }[] = null;
+    let array: { id: string; name: string }[];
 
     beforeEach(() => {
       array = [1, 2, 4, 3, 4, 8, 2, 7, 1, 5].map(id => ({ id: id.toString(), name: id.toString() }));
     });
 
     afterEach(() => {
-      array = null;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      array = undefined as any;
     });
 
     it('can distinct an array', () => {
@@ -714,8 +720,8 @@ describe('extension > array', () => {
     });
 
     it('removes any unmatched items', () => {
-      const a = [1, 2, 7, 3, 4];
-      const b = [];
+      const a: number[] = [1, 2, 7, 3, 4];
+      const b: number[] = [];
 
       const c = a.mergeWith(b, { removeUnmatched: true });
 
@@ -723,8 +729,8 @@ describe('extension > array', () => {
     });
 
     it('matches the target order with no target items', () => {
-      const a = [1, 2, 7, 3, 4];
-      const b = [];
+      const a: number[] = [1, 2, 7, 3, 4];
+      const b: number[] = [];
 
       const c = a.mergeWith(b, { matchOrder: true });
 
@@ -732,8 +738,8 @@ describe('extension > array', () => {
     });
 
     it('matches the target order with no source items', () => {
-      const a = [];
-      const b = [1, 2, 7, 3, 4];
+      const a: number[] = [];
+      const b: number[] = [1, 2, 7, 3, 4];
 
       const c = a.mergeWith(b, { matchOrder: true, removeUnmatched: true });
 
@@ -751,7 +757,7 @@ describe('extension > array', () => {
 
     it('matches the target where all target items are filtered', () => {
       const a = [{ doCopy: false }];
-      const b = [];
+      const b: typeof a = [];
 
       const c = b.mergeWith(a, { addNew: item => item.doCopy === true });
       expect(c).to.eq(b);
@@ -760,7 +766,7 @@ describe('extension > array', () => {
 
     it('matches the target where some target items are filtered', () => {
       const a = [{ id: 1, doCopy: true }, { id: 2, doCopy: false }, { id: 3, doCopy: true }];
-      const b = [];
+      const b: typeof a = [];
 
       const c = b.mergeWith(a, { addNew: item => item.doCopy === true });
       expect(c).to.eql([{ id: 1, doCopy: true }, { id: 3, doCopy: true }]);
@@ -812,11 +818,11 @@ describe('extension > array', () => {
     });
 
     it('correctly returns a converted array if no source array', () => {
-      const a = [];
       const b = [1, 2, 3];
+      const a: AnyObject[] = [];
 
       const c = a.syncWith(b, {
-        matchBy: (aa, bb) => aa.id === bb,
+        matchBy: (aa, bb) => 'id' in aa && aa.id === bb,
         createBy: bb => ({ id: bb }),
       });
 
@@ -939,7 +945,7 @@ describe('extension > array', () => {
     });
 
     it('returns the same array if the length is zero and the count is not', () => {
-      const array = [];
+      const array: string[] = [];
       const result = array.skip(10);
       expect(result).to.eq(array);
     });

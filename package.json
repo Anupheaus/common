@@ -1,5 +1,6 @@
 {
   "name": "anux-common",
+  "type": "library",
   "version": "1.0.45",
   "main": "./dist/index.js",
   "repository": "https://github.com/Anupheaus/anux-common.git",
@@ -9,7 +10,7 @@
   "scripts": {
     "build": "anux build",
     "build:dev": "anux build dev",
-    "test": "anux test"
+    "test": "mocha --config c:\\code\\personal\\anux-common\\node_modules\\anux-package\\configs\\mocha.js"
   },
   "files": [
     "dist"
@@ -29,6 +30,7 @@
     "@types/datejs": "^0.0.30",
     "@types/numeral": "^0.0.26",
     "@types/uuid": "^3.4.5",
-    "anux-package": "file:C:\\code\\personal\\anux-package\\package.tgz"
+    "anux-package": "file:c:\\code\\personal\\anux-package\\package.tgz",
+    "typescript": "^3.8.2"
   }
 }

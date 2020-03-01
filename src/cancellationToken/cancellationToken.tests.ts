@@ -23,7 +23,7 @@ describe('cancellationToken', () => {
   it('calls the callbacks when cancelled', () => {
     const token = CancellationToken.create();
     let onCancelledCallCount = 0;
-    let reason: string;
+    let reason: string | undefined;
     token.onCancelled(r => {
       onCancelledCallCount++;
       reason = r;
@@ -38,7 +38,7 @@ describe('cancellationToken', () => {
   it('can be disposed and will not call callbacks if cancelled after dispose', () => {
     const token = CancellationToken.create();
     let onCancelledCallCount = 0;
-    let reason: string;
+    let reason: string | undefined;
     token.onCancelled(r => {
       onCancelledCallCount++;
       reason = r;
@@ -54,7 +54,7 @@ describe('cancellationToken', () => {
   it('calls callbacks immediately if already cancelled', () => {
     const token = CancellationToken.create();
     let onCancelledCallCount = 0;
-    let reason: string;
+    let reason: string | undefined;
     token.cancel('my reason');
     expect(reason).to.be.undefined;
     expect(onCancelledCallCount).to.eq(0);
@@ -71,7 +71,7 @@ describe('cancellationToken', () => {
     expect(token['_callbacks']).to.have.lengthOf(0);
     token.dispose();
     token.onCancelled(() => void 0);
-    expect(token['_callbacks']).to.be.undefined;
+    expect(token['_callbacks']).to.have.lengthOf(0);
   });
 
 });

@@ -3,6 +3,7 @@ import { ObjectDisposedError } from '../errors/objectDisposed';
 import { PromiseMaybe } from '../extensions/global';
 import { NotImplementedError } from '../errors';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type EventDefinition = (...args: any[]) => PromiseMaybe;
 
 export type Unsubscribe = () => void;
@@ -26,11 +27,11 @@ interface ICreateEventOptions<TEventDefinition extends EventDefinition> {
 export function createEvent<TEventDefinition extends EventDefinition>(): ICreateEvent<TEventDefinition>;
 export function createEvent<TEventDefinition extends EventDefinition>(options: ICreateEventOptions<TEventDefinition>): ICreateEvent<TEventDefinition>;
 export function createEvent<TEventDefinition extends EventDefinition>(options?: ICreateEventOptions<TEventDefinition>): ICreateEvent<TEventDefinition> {
-  options = {
+  const { onSubscribe } = {
     onSubscribe: null,
     ...options,
   };
-  let subscribers: TEventDefinition[] = [];
+  const subscribers: TEventDefinition[] = [];
   let hasBeenDisposed = false;
   const event = {
 
@@ -38,14 +39,14 @@ export function createEvent<TEventDefinition extends EventDefinition>(options?: 
 
     subscribe(delegate: TEventDefinition, subscribeOptions?: ICreateEventSubscribeOptions): Unsubscribe {
       subscribeOptions = {
-        immediatelyInvoke: options.onSubscribe != null,
+        immediatelyInvoke: onSubscribe != null,
         ...subscribeOptions,
       };
       if (hasBeenDisposed) { throw new ObjectDisposedError('This event has been disposed and cannot be subscribed to.'); }
       subscribers.push(delegate);
       if (subscribeOptions.immediatelyInvoke) {
-        if (options.onSubscribe) {
-          options.onSubscribe(delegate);
+        if (onSubscribe) {
+          onSubscribe(delegate);
         } else {
           throw new NotImplementedError('A onSubscribe delegate has not been provided for this event, so it cannot be immediately invoked at the source.');
         }
@@ -58,6 +59,7 @@ export function createEvent<TEventDefinition extends EventDefinition>(options?: 
       };
     },
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     invoke: ((...args: any[]): PromiseMaybe => {
       if (hasBeenDisposed) { throw new ObjectDisposedError('This event has been disposed and cannot be invoked.'); }
       if (!event.isEnabled) { return; }
@@ -77,7 +79,6 @@ export function createEvent<TEventDefinition extends EventDefinition>(options?: 
       if (hasBeenDisposed) { throw new ObjectDisposedError('This event has already been disposed and cannot be disposed again.'); }
       hasBeenDisposed = true;
       subscribers.clear();
-      subscribers = undefined;
       options = undefined; // potential memory leak if we don't clear this - allows the onSubscribe et al to be released
     },
   };

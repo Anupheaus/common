@@ -37,8 +37,8 @@ describe('wrappers', () => {
 
       it('can work with an error everytime', () => {
         let callCount = 0;
-        let error: Error = null;
-        let result: string = null;
+        let error: Error | undefined;
+        let result: string | undefined;
         try {
           result = repeatOnError(() => {
             callCount++;
@@ -49,13 +49,13 @@ describe('wrappers', () => {
         }
         expect(callCount).to.eq(3);
         expect(error).to.have.property('message', 'Error raised!');
-        expect(result).to.be.null;
+        expect(result).to.be.undefined;
       });
 
       it('can work with an onFailure delegate', () => {
         let callCount = 0;
-        let error: Error = null;
-        let result: string = null;
+        let error: Error | undefined;
+        let result: string | undefined;
         try {
           result = repeatOnError(() => {
             callCount++;
@@ -65,7 +65,7 @@ describe('wrappers', () => {
           error = e;
         }
         expect(callCount).to.eq(3);
-        expect(error).to.be.null;
+        expect(error).to.be.undefined;
         expect(result).to.eq('boo');
       });
 
@@ -105,8 +105,8 @@ describe('wrappers', () => {
 
       it('can work with an error everytime', async () => {
         let callCount = 0;
-        let error: Error = null;
-        let result: string = null;
+        let error: Error | undefined;
+        let result: string | undefined;
         try {
           result = await repeatOnError(async () => {
             callCount++;
@@ -118,13 +118,13 @@ describe('wrappers', () => {
         }
         expect(callCount).to.eq(3);
         expect(error).to.have.property('message', 'Error raised!');
-        expect(result).to.be.null;
+        expect(result).to.be.undefined;
       });
 
       it('can work with an onFailure delegate', async () => {
         let callCount = 0;
-        let error: Error = null;
-        let result: string = null;
+        let error: Error | undefined;
+        let result: string | undefined;
         try {
           result = await repeatOnError(async () => {
             callCount++;
@@ -135,7 +135,7 @@ describe('wrappers', () => {
           error = e;
         }
         expect(callCount).to.eq(3);
-        expect(error).to.be.null;
+        expect(error).to.be.undefined;
         expect(result).to.eq('boo');
       });
 

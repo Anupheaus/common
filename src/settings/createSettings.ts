@@ -18,7 +18,7 @@ interface ISettingsFrom {
 function createSettingsFrom(): ISettingsFrom {
   const from = {
     env<T>(key: string, options?: ISettingsFromOptions<T>): T {
-      const hasDefaultValue = options && Object.prototype.hasOwnProperty.call(options, 'defaultValue');
+      const hasDefaultValue = options && 'defaultValue' in options;
       const { defaultValue, isRequired, transform }: ISettingsFromOptions<T> = {
         defaultValue: undefined,
         isRequired: !hasDefaultValue,
@@ -34,9 +34,9 @@ function createSettingsFrom(): ISettingsFrom {
         ...options,
       };
 
-      if (Object.prototype.hasOwnProperty.call(process.env, key)) { return transform(process.env[key]); }
+      if (key in process.env) { return transform(process.env[key] ?? ''); }
       if (isRequired) { throw new Error(`The setting "${key}" was not found in the environment variables, but this is a required setting.`); }
-      return defaultValue;
+      return defaultValue as T;
     },
   };
 

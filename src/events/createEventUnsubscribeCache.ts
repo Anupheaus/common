@@ -7,7 +7,7 @@ interface IEventUnsubscription {
 }
 
 export function createEventUnsubscribeCache(): IEventUnsubscription {
-  let unsubscriptions: Unsubscribe[] = [];
+  const unsubscriptions: Unsubscribe[] = [];
   let hasBeenDisposed = false;
   return {
     add(unsubscription: Unsubscribe): void {
@@ -19,7 +19,6 @@ export function createEventUnsubscribeCache(): IEventUnsubscription {
       hasBeenDisposed = true;
       unsubscriptions.forEach(unsubscribe => unsubscribe());
       unsubscriptions.clear();
-      unsubscriptions = null;
     },
   };
 }

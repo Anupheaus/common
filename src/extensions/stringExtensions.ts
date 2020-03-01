@@ -12,7 +12,8 @@ export class StringExtensions {
 
   public asTemplate(values: object): string;
   public asTemplate(this: string, values: object): string {
-    const mapped = Reflect.ownKeys(values).map(key => [key, values[key]]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mapped = Reflect.ownKeys(values).map(key => [key, (values as any)[key]]);
     return new Function(...mapped.map(item => item[0]), `return \`${this}\`;`)(...mapped.map(item => item[1]));
   }
 

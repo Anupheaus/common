@@ -3,26 +3,33 @@ import './object';
 import { MapDelegate, SimpleMapDelegate, IArrayOrderByConfig, IArrayDiff, IMergeWithOptions, MergeWithUpdateOperations } from '../models';
 import { ArgumentInvalidError, InternalError } from '../errors';
 import { SortDirections } from '../models/sort';
-import { DeepPartial, IRecord, TypeOf, Upsertable, Updatable, IsPrimitiveOrRecordType } from './global';
+import { DeepPartial, Record, TypeOf, Upsertable, Updatable, IsPrimitiveOrRecordType } from './global';
 import './reflect';
 
 type FilterDelegate<T> = (item: T, index: number) => boolean;
 type UpdateDelegate<T> = MapDelegate<T, DeepPartial<T>>;
 type CalculationDelegate<T> = (item: T, index: number, prevItem: T, nextItem: T) => number;
 type DiffMatcherDelegate<T, P> = (sourceItem: T, targetItem: P, sourceIndex: number, targetIndex: number) => boolean;
+type RemoveNull<T> = Exclude<T, null | undefined>;
 
-function performUpsert<T>(target: T[], foundIndex: number, found: UpdateDelegate<T>, notFound: () => T, index: number): T[] {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function isRecord(item: any): item is Record {
+  return item != null && typeof (item) === 'object' && 'id' in item;
+}
+
+function performUpsert<T>(target: T[], foundIndex: number, found: UpdateDelegate<T>, notFound?: (() => T), index?: number): T[] {
   const array = target.slice();
-  let item: T = null;
+  let item: T = undefined as unknown as T;
   if (foundIndex !== -1) {
     const originalItem = target[foundIndex];
-    item = found(target[foundIndex], foundIndex) as any;
+    const partialItem = found(target[foundIndex], foundIndex);
     const isPrimitive = ['string', 'number', 'boolean'].includes(typeof (originalItem));
     const isIndexChanged = !(index == null || foundIndex === index);
     if (isPrimitive) {
+      item = partialItem as T;
       if (originalItem === item && !isIndexChanged) { return target; }
     } else {
-      item = Object.merge({}, originalItem, item);
+      item = Object.merge({}, originalItem, partialItem);
       if (Reflect.areShallowEqual(item, originalItem) && !isIndexChanged) { return target; } // no change
     }
     array.splice(foundIndex, 1);
@@ -35,7 +42,8 @@ function performUpsert<T>(target: T[], foundIndex: number, found: UpdateDelegate
   return array;
 }
 
-const emptyArray: any[] = [];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const emptyArray: Readonly<any[]> = [];
 
 export class ArrayExtensions<T> {
 
@@ -47,8 +55,8 @@ export class ArrayExtensions<T> {
   public mapMany<V>(map: MapDelegate<T, V[]>): V[];
   public mapMany<V>(this: T[], map: MapDelegate<T, V[]>): V[] {
     const data = this.map(map);
-    let result = [];
-    data.chunk(65534).forEach(block => result = Array.prototype.concat.apply(result, block));
+    let result: V[] = [];
+    data.chunk(65534).forEach(block => { result = Array.prototype.concat.apply(result, block) as unknown as V[]; });
     return result;
   }
 
@@ -59,36 +67,36 @@ export class ArrayExtensions<T> {
     if (typeof (type) === 'string') {
       return this.filter(item => typeof (item) === type).cast<V>();
     } else {
-      return this.filter(item => item instanceof type as any).cast<V>();
+      return this.filter(item => item instanceof type).cast<V>();
     }
   }
 
   public cast<V>(): V[];
   public cast<V>(this: T[]): V[] {
-    return this as any as V[];
+    return this as unknown as V[];
   }
 
-  public singleOrDefault(): T;
-  public singleOrDefault(filter: FilterDelegate<T>): T;
-  public singleOrDefault(this: T[], filter?: FilterDelegate<T>): T {
+  public single(): T | undefined;
+  public single(filter: FilterDelegate<T>): T | undefined;
+  public single(this: T[], filter?: FilterDelegate<T>): T | undefined {
     const result = filter ? this.filter(filter) : this;
     if (result.length > 1) { throw new Error('Multiple items were found when only one was expected.'); }
     if (result.length === 1) { return result[0]; }
     return undefined; // needs to be undefined so that when spread, a default can be set instead if required
   }
 
-  public firstOrDefault(): T;
-  public firstOrDefault(filter: FilterDelegate<T>): T;
-  public firstOrDefault(this: T[], filter?: FilterDelegate<T>): T {
-    if (this.length === 0) { return undefined; }
+  public first(): T | undefined;
+  public first(filter: FilterDelegate<T>): T | undefined;
+  public first(this: T[], filter?: FilterDelegate<T>): T | undefined {
+    if (this.length === 0) { return; }
     if (typeof (filter) !== 'function') { return this[0]; }
     return this.find(filter);
   }
 
-  public lastOrDefault(): T;
-  public lastOrDefault(filter: FilterDelegate<T>): T;
-  public lastOrDefault(this: T[], filter?: FilterDelegate<T>): T {
-    if (this.length === 0) { return undefined; }
+  public last(): T | undefined;
+  public last(filter: FilterDelegate<T>): T | undefined;
+  public last(this: T[], filter?: FilterDelegate<T>): T | undefined {
+    if (this.length === 0) { return undefined as unknown as T; }
     if (typeof (filter) !== 'function') { return this[this.length - 1]; }
     return this.slice().reverse().find(filter);
   }
@@ -128,50 +136,48 @@ export class ArrayExtensions<T> {
 
   public removeById(id: string): T[];
   public removeById(this: T[], id: string): T[] {
-    return this.removeByFilter(item => item && item['id'] === id);
+    return this.removeByFilter(item => isRecord(item) && item.id === id);
   }
 
   public indexOfId(id: string): number;
   public indexOfId(this: T[], id: string): number {
-    return this.findIndex(item => item && item['id'] === id);
+    return this.findIndex(item => isRecord(item) && item.id === id);
   }
 
-  public findById(id: string): T;
-  public findById(this: T[], id: string): T {
-    return this.find(item => item && item['id'] === id);
+  public findById(id: string): T | undefined;
+  public findById(this: T[], id: string): T | undefined {
+    return this.find(item => isRecord(item) && item.id === id);
   }
 
   public upsert(item: Upsertable<IsPrimitiveOrRecordType<T>>): T[];
   public upsert(item: Upsertable<IsPrimitiveOrRecordType<T>>, index: number): T[];
   public upsert(this: T[], item: Upsertable<IsPrimitiveOrRecordType<T>>, index?: number): T[] {
-    const isLiteral = typeof (item) === 'string' || typeof (item) === 'number' || typeof (item) === 'boolean';
-    const foundIndex = item && !isLiteral && item['id'] ? this.indexOfId(item['id']) : this.indexOf(item as T);
+    const foundIndex = isRecord(item) ? this.indexOfId(item.id) : this.indexOf(item as T);
     return performUpsert(this, foundIndex, () => item as T, () => item as T, index);
   }
 
   public upsertMany(this: T[], items: Upsertable<IsPrimitiveOrRecordType<T>>[], newIndex?: number): T[] {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     let self = this;
-    items.forEach((item, index) => self = self.upsert(item, newIndex == null ? undefined : newIndex + index));
+    items.forEach((item, index) => self = newIndex == null ? self.upsert(item) : self.upsert(item, newIndex + index));
     return self;
   }
 
-  public upsertWhere(filter: FilterDelegate<T>, update: UpdateDelegate<T>): T[];
-  public upsertWhere(this: T[], filter: FilterDelegate<T>, update: UpdateDelegate<T>): T[] {
+  public upsertWhere(filter: FilterDelegate<T>, update: UpdateDelegate<T | undefined>): T[];
+  public upsertWhere(this: T[], filter: FilterDelegate<T>, update: UpdateDelegate<T | undefined>): T[] {
     let hasUpserted = false;
     const array = this.map((innerItem, index) => {
       if (!filter(innerItem, index)) { return innerItem; }
       hasUpserted = true;
       return Object.merge({}, innerItem, update(innerItem, index));
     });
-    return hasUpserted ? array : array.concat(update(undefined, undefined) as T);
+    return hasUpserted ? array : array.concat(update(undefined, array.length) as T);
   }
 
   public replace(item: T): T[];
   public replace(item: T, index: number): T[];
   public replace(this: T[], item: T, index?: number): T[] {
-    const isLiteral = typeof (item) === 'string' || typeof (item) === 'number';
-    const foundIndex = item && !isLiteral && item['id'] ? this.indexOfId(item['id']) : typeof (index) === 'number' ? Math.max(index, -1) : -1;
+    const foundIndex = isRecord(item) ? this.indexOfId(item.id) : typeof (index) === 'number' ? Math.max(index, -1) : -1;
     if (foundIndex === -1) { return this; }
     return performUpsert(this, foundIndex, () => item, undefined, index);
   }
@@ -181,38 +187,38 @@ export class ArrayExtensions<T> {
   public replaceMany(this: T[], items: T[], index?: number): T[] {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     let self = this;
-    items.forEach((item, innerIndex) => self = self.replace(item, index == null ? undefined : index + innerIndex));
+    items.forEach((item, innerIndex) => self = index == null ? self.replace(item) : self.replace(item, index + innerIndex));
     return self;
   }
 
-  public update(item: Updatable<T & IRecord>): T[];
+  public update(item: Updatable<T & Record>): T[];
   public update(filter: FilterDelegate<T>, update: UpdateDelegate<T>): T[];
-  public update(this: T[], filterOrItem: FilterDelegate<T> | Updatable<T & IRecord>, update?: UpdateDelegate<T>): T[] {
+  public update(this: T[], filterOrItem: FilterDelegate<T> | Updatable<T & Record>, update?: UpdateDelegate<T>): T[] {
     if (typeof (filterOrItem) === 'function') {
       const filter = filterOrItem as FilterDelegate<T>;
       let hasUpdated = false;
-      let array: T[];
+      let array = undefined as unknown as T[];
       for (let index = 0; index < this.length; index++) {
         if (filter(this[index], index)) {
           hasUpdated = true;
-          if (!array) { array = this.slice(); }
-          array = performUpsert(array, index, update, undefined, index);
+          array = array ?? this.slice();
+          array = performUpsert(array, index, update ?? (item => item), undefined, index);
         }
       }
       if (!hasUpdated) { return this; }
       return array;
-    } else if (filterOrItem) {
-      const item = filterOrItem as IRecord;
-      const foundIndex = this.indexOfId(item.id);
+    } else if (isRecord(filterOrItem)) {
+      const foundIndex = this.indexOfId(filterOrItem.id);
       if (foundIndex === -1) { return this; }
-      return this.upsert(item as any);
+      return this.insert(filterOrItem as T);
     }
+    return this;
   }
 
   public insert(item: T): T[];
   public insert(item: T, index: number): T[];
   public insert(this: T[], item: T, index?: number): T[] {
-    const foundIndex = item && item['id'] ? this.indexOfId(item['id']) : this.indexOf(item);
+    const foundIndex = isRecord(item) ? this.indexOfId(item.id) : this.indexOf(item);
     if (foundIndex !== -1) { throw new InternalError('The item being inserted already exists in this array.'); }
     const result = this.slice();
     index = index == null ? this.length - 1 : index;
@@ -252,33 +258,35 @@ export class ArrayExtensions<T> {
         .slice()
         .sort((a, b) => {
           for (const item of delegates) {
-            const aVal = item.delegate(a);
-            const bVal = item.delegate(b);
+            const aVal: any = item.delegate(a); // eslint-disable-line @typescript-eslint/no-explicit-any
+            const bVal: any = item.delegate(b); // eslint-disable-line @typescript-eslint/no-explicit-any
             const result = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
             if (result !== 0) { return (item.direction === SortDirections.Descending ? -1 : 1) * result; }
           }
           return 0;
         });
     }
+    return this;
   }
 
-  public removeNull(): T[];
-  public removeNull(this: T[]): T[] {
-    return this.filter(item => item != null);
+  public removeNull(): RemoveNull<T>[];
+  public removeNull(this: T[]): RemoveNull<T>[] {
+    return this.filter(item => item != null) as RemoveNull<T>[];
   }
 
   public except(array: T[]): T[];
-  public except<U extends IRecord>(array: U[]): T[];
-  public except<U extends IRecord>(this: T[], array: T[] | U[]): T[] {
+  public except<U extends Record>(array: U[]): T[];
+  public except<U extends Record>(this: T[], array: T[] | U[]): T[] {
     const results = this
       .slice()
-      .filter(item => item && item['id'] != null ? array.findById(item['id']) == null : !array.includes(item as any));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .filter(item => item && isRecord(item) && item.id != null ? array.findById(item.id) == null : !array.includes(item as any));
     return results.length === this.length ? this : results;
   }
 
   public distinct(): T[];
   public distinct<V>(delegate: MapDelegate<T, V>): T[];
-  public distinct<V>(this: T[], delegate: (item: T, index: number) => V = item => item as any): T[] {
+  public distinct<V>(this: T[], delegate: (item: T, index: number) => V = item => item as unknown as V): T[] {
     const values = new Array<V>();
     const results = new Array<T>();
     this.forEach((item, index) => {
@@ -306,34 +314,34 @@ export class ArrayExtensions<T> {
   public sum(): number;
   public sum(delegate: CalculationDelegate<T>): number;
   public sum(this: T[], delegate?: CalculationDelegate<T>): number {
-    if (typeof (delegate) !== 'function') { delegate = item => item as any; }
-    return this.reduce((a, b, i) => a + delegate(b, i, this[i - 1], this[i + 1]), 0);
+    const newDelegate = typeof (delegate) === 'function' ? delegate : (item: T) => item as unknown as number;
+    return this.reduce((a, b, i) => a + newDelegate(b, i, this[i - 1], this[i + 1]), 0);
   }
 
   public min(): number;
   public min(delegate: CalculationDelegate<T>): number;
   public min(this: T[], delegate?: CalculationDelegate<T>): number {
-    if (typeof (delegate) !== 'function') { delegate = item => item as any; }
+    const newDelegate = typeof (delegate) === 'function' ? delegate : (item: T) => item as unknown as number;
     return this
-      .map((t, i, a) => delegate(t, i, a[i - 1], a[i + 1]))
+      .map((t, i, a) => newDelegate(t, i, a[i - 1], a[i + 1]))
       .sort((a, b) => a != null && b != null ? a - b : a == null ? 1 : b == null ? -1 : 0)
-      .firstOrDefault() || 0;
+      .first() ?? 0;
   }
 
   public max(): number;
   public max(delegate: CalculationDelegate<T>): number;
   public max(this: T[], delegate?: CalculationDelegate<T>): number {
-    if (typeof (delegate) !== 'function') { delegate = item => item as any; }
+    const newDelegate = typeof (delegate) === 'function' ? delegate : (item: T) => item as unknown as number;
     return this
-      .map((t, i, a) => delegate(t, i, a[i - 1], a[i + 1]))
+      .map((t, i, a) => newDelegate(t, i, a[i - 1], a[i + 1]))
       .sort((a, b) => a != null && b != null ? a - b : a == null ? -1 : b == null ? 1 : 0)
-      .lastOrDefault() || 0;
+      .last() ?? 0;
   }
 
   public average(): number;
   public average(delegate: CalculationDelegate<T>): number;
   public average(this: T[], delegate?: CalculationDelegate<T>): number {
-    if (typeof (delegate) !== 'function') { delegate = item => item as any; }
+    if (typeof (delegate) !== 'function') { delegate = item => item as unknown as number; }
     const values: number[] = [];
     for (let index = 0; index < this.length; index++) {
       const item = this[index];
@@ -374,14 +382,10 @@ export class ArrayExtensions<T> {
     return results;
   }
 
-  public diff<P extends IRecord>(items: P[]): IArrayDiff<T, P>;
+  public diff<P extends Record>(items: P[]): IArrayDiff<T, P>;
   public diff<P>(items: P[], matcher: DiffMatcherDelegate<T, P>): IArrayDiff<T, P>;
   public diff<P>(this: T[], items: P[], matcher?: DiffMatcherDelegate<T, P>): IArrayDiff<T, P> {
-    matcher = typeof (matcher) === 'function'
-      ? matcher
-      : (source, target) => source && target && (source['id'] || target['id'])
-        ? source['id'] === target['id']
-        : source === target as any;
+    matcher = typeof (matcher) === 'function' ? matcher : (source, target) => isRecord(source) && isRecord(target) ? source.id === target.id : source === target as unknown;
     const targetItems = items.map((item, index) => ({ item, index }));
     const result: IArrayDiff<T, P> = {
       added: [],
@@ -392,7 +396,7 @@ export class ArrayExtensions<T> {
       let matchFound = false;
       targetItems.some((target, targetActualIndex) => {
         const { item: targetItem, index: targetIndex } = target;
-        if (matcher(sourceItem, targetItem, sourceIndex, targetIndex)) {
+        if (matcher?.(sourceItem, targetItem, sourceIndex, targetIndex)) {
           matchFound = true;
           result.matched.push({ sourceItem, targetItem });
           targetItems.splice(targetActualIndex, 1);
@@ -408,43 +412,45 @@ export class ArrayExtensions<T> {
   public ids(): string[];
   public ids(this: T[]): string[] {
     const results: string[] = [];
-    for (const item of this) { if (item && item['id']) { results.push(item['id']); } }
+    for (const item of this) { if (isRecord(item)) { results.push(item.id); } }
     return results;
   }
 
   public mergeWith<P>(items: P[]): T[];
   public mergeWith<P>(items: P[], options: IMergeWithOptions<T, P>): T[];
   public mergeWith<P>(this: T[], items: P[], options?: IMergeWithOptions<T, P>): T[] {
-    options = {
-      matchBy: (a: any, b: any) => a === b || (a != null && b != null && a.id != null && a.id === b.id),
+    const newOptions: Required<IMergeWithOptions<T, P>> = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      matchBy: (a: any, b: any) => a === b || (isRecord(a) && isRecord(b) && a.id != null && a.id === b.id),
       updateMatched: MergeWithUpdateOperations.KeepSource,
       updateUnmatched: a => a,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       createBy: (b: any) => b,
       removeUnmatched: false,
       addNew: true,
       matchOrder: false,
       ...options,
     };
-    let result = [];
+    let result: unknown[] = [];
     let changeFound = false;
 
-    if (options.matchOrder) {
+    if (newOptions.matchOrder) {
       result = items.mergeWith(this, {
-        matchBy: (b, a) => options.matchBy(a, b),
+        matchBy: (b, a) => newOptions.matchBy(a, b),
         updateMatched: (b, a, bi, ai): P => {
-          const u = options.updateMatched(a, b, ai, bi);
+          const u = newOptions.updateMatched(a, b, ai, bi);
           if (ai !== bi || u !== a) { changeFound = true; }
           return u as unknown as P;
         },
-        updateUnmatched: (b): any => { changeFound = true; return options.createBy(b); },
-        createBy: (b): any => { changeFound = true; return b; },
-        removeUnmatched: item => typeof (options.addNew) === 'function' ? !options.addNew(item) : !options.addNew,
-        addNew: item => typeof (options.removeUnmatched) === 'function' ? !options.removeUnmatched(item) : !options.removeUnmatched,
+        updateUnmatched: b => { changeFound = true; return newOptions.createBy(b) as unknown as P; },
+        createBy: b => { changeFound = true; return b as unknown as P; },
+        removeUnmatched: item => typeof (newOptions.addNew) === 'function' ? !newOptions.addNew(item) : !newOptions.addNew,
+        addNew: item => typeof (newOptions.removeUnmatched) === 'function' ? !newOptions.removeUnmatched(item) : !newOptions.removeUnmatched,
         matchOrder: false,
       });
-      if (result === items) { return result.slice(); }
+      if (result === items) { return result.slice() as T[]; }
       if (!changeFound) { return this; }
-      return result;
+      return result as T[];
     }
 
     const matchedItems: P[] = [];
@@ -452,8 +458,8 @@ export class ArrayExtensions<T> {
     this.forEach((a, ai) => {
       let matchFound = false;
       items.forEach((b, bi) => {
-        if (options.matchBy(a, b)) {
-          const u = options.updateMatched(a, b, ai, bi);
+        if (newOptions.matchBy(a, b)) {
+          const u = newOptions.updateMatched(a, b, ai, bi);
           if (u !== a) { changeFound = true; }
           result.push(u);
           matchedItems.push(b);
@@ -461,19 +467,19 @@ export class ArrayExtensions<T> {
         }
       });
       if (!matchFound) {
-        if (typeof (options.removeUnmatched) === 'function' ? options.removeUnmatched(a) : options.removeUnmatched) {
+        if (typeof (newOptions.removeUnmatched) === 'function' ? newOptions.removeUnmatched(a) : newOptions.removeUnmatched) {
           changeFound = true;
         } else {
-          const u = options.updateUnmatched(a);
+          const u = newOptions.updateUnmatched(a);
           if (u !== a) { changeFound = true; }
           result.push(u);
         }
       }
     });
 
-    if (typeof (options.addNew) === 'function' || options.addNew) {
-      const addNewFilter = typeof (options.addNew) === 'function' ? options.addNew : () => true;
-      const newItems = items.except(matchedItems).filter(addNewFilter).map(options.createBy);
+    if (typeof (newOptions.addNew) === 'function' || newOptions.addNew) {
+      const addNewFilter = typeof (newOptions.addNew) === 'function' ? newOptions.addNew : () => true;
+      const newItems = items.except(matchedItems).filter(addNewFilter).map(newOptions.createBy);
 
       if (newItems.length > 0) {
         result.absorb(newItems);
@@ -482,7 +488,7 @@ export class ArrayExtensions<T> {
     }
 
     if (!changeFound) { return this; }
-    return result;
+    return result as T[];
   }
 
   public syncWith<P>(items: P[]): T[];
@@ -527,11 +533,13 @@ export class ArrayExtensions<T> {
 
 export class ArrayConstructorExtensions {
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public ofSize<T = any>(length: number): T[] {
     return new Array(length).fill(undefined, 0, length);
   }
 
-  public empty(): any[] {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public empty(): Readonly<any[]> {
     return emptyArray;
   }
 
