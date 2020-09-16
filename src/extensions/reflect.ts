@@ -76,6 +76,7 @@ declare global {
 
     function getAllPrototypesOf(target: unknown): Object[];
 
+    function invoke(target: unknown, name: string, ...args: unknown[]): unknown;
     function invokeAll(target: unknown, name: string, ...args: unknown[]): unknown[];
 
     function getAndCombineAll<T extends {}>(target: unknown, propertyName: string): T;
@@ -214,6 +215,18 @@ Object.addMethods(Reflect, [
     if (is.function(prototype)) { prototype = prototype.prototype; prototypes.push(prototype); }
     while ((prototype = Reflect.getPrototypeOf(prototype)) !== Object.prototype) { prototypes.push(prototype); }
     return prototypes;
+  },
+
+  function invoke(target: object, name: string, ...args: unknown[]): unknown {
+    if (typeof (target) !== 'object' || target == null) throw new Error('Invalid target for invocation.');
+    let obj: AnyObject = target;
+    let func: Function | undefined;
+    name.split('.').forEach((propertyName, index, array) => {
+      func = obj[propertyName];
+      if (typeof (func) === 'object' && func != null && index < array.length - 1) obj = func;
+    });
+    if (typeof (func) !== 'function') throw new Error(`Unable to find "${name}" on the object provided.`);
+    return func.apply(obj, args);
   },
 
   function invokeAll(target: object, name: string, ...args: unknown[]): unknown[] {

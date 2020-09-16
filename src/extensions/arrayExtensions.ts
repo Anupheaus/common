@@ -174,6 +174,17 @@ export class ArrayExtensions<T> {
     return hasUpserted ? array : array.concat(update(undefined, array.length) as T);
   }
 
+  public resert(item: Upsertable<IsPrimitiveOrRecordType<T>>): T[];
+  public resert(item: Upsertable<IsPrimitiveOrRecordType<T>>, index: number): T[];
+  public resert(this: T[], item: Upsertable<IsPrimitiveOrRecordType<T>>, index?: number): T[] {
+    const foundIndex = isRecord(item) ? this.indexOfId(item.id) : this.indexOf(item as T);
+    if (foundIndex === index) return this;
+    const array = this.slice();
+    if (foundIndex !== -1) array.splice(foundIndex, 1);
+    array.splice(index ?? foundIndex ?? array.length, 0, item as T);
+    return array;
+  }
+
   public replace(item: T): T[];
   public replace(item: T, index: number): T[];
   public replace(this: T[], item: T, index?: number): T[] {

@@ -12,7 +12,7 @@ export interface MapOf<T> {
 }
 
 export interface AnyObject {
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export type AnyFunction<ReturnType = any> = (...args: any[]) => ReturnType;
@@ -45,6 +45,7 @@ export type IsPrimitiveOrObjectType<T> = T extends PrimitiveOrObjectType ? T : n
 export type IsPrimitiveOrRecordType<T> = T extends PrimitiveOrRecordType ? T : never;
 
 export type PromiseMaybe<T = void> = T | Promise<T>;
+export type VoidPromise = Promise<void>;
 
 export type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends (infer U)[] ? DeepPartial<U>[] : T[P] extends readonly (infer U)[] ? readonly DeepPartial<U>[] : DeepPartial<T[P]>

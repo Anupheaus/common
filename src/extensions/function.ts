@@ -13,7 +13,7 @@ export interface IFunctionStackTraceInfo {
 declare global {
   // tslint:disable-next-line:interface-name
   interface Function {
-    setName(name: string): Function;
+    setName<T extends Function>(this: T, name: string): T;
     wrap(instance: object, delegate: (args: unknown[], next: (args: unknown[]) => unknown) => unknown): void;
     empty<TReturn = void>(): () => TReturn;
     emptyAsync<TReturn = void>(): () => Promise<TReturn>;
