@@ -277,10 +277,10 @@ Object.addMethods(Reflect, [
     });
   },
 
-  function hashesOf(target: unknown): number[] {
+  function hashesOf(target: unknown): string[] {
     return Reflect.getAllPrototypesOf(target)
       .map(prototype => Object.hash(prototype))
-      .removeByFilter(hash => hash === 0)
+      .removeByFilter(hash => hash === '' || hash == null)
       .distinct();
   },
 

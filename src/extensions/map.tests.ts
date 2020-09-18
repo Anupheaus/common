@@ -24,4 +24,13 @@ describe('map', () => {
 
   });
 
+  describe('fromPlainObject', () => {
+
+    it('can convert an object into a map', () => {
+      const a = Map.fromPlainObject({ a: 1, b: 2, c: 'e' });
+      expect(a.toArray()).to.eql([['a', 1], ['b', 2], ['c', 'e']]);
+    });
+
+  });
+
 });

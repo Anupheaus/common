@@ -1,4 +1,7 @@
+/* eslint-disable max-classes-per-file */
 import './object';
+import { MapOf } from './global';
+import { is } from './is';
 
 class MapExtensions<K, V> {
 
@@ -19,6 +22,19 @@ class MapExtensions<K, V> {
 
 }
 
-Object.extendPrototype(Map.prototype, MapExtensions.prototype);
+class MapConstructorExtensions {
 
-declare global { interface Map<K, V> extends MapExtensions<K, V> { } }
+  public fromPlainObject<V>(object: MapOf<V>): Map<string, V> {
+    if (!is.plainObject(object)) throw new Error('Unable to convert provided object to a map, the object was either invalid or missing.');
+    return new Map(Object.entries(object));
+  }
+
+}
+
+Object.extendPrototype(Map.prototype, MapExtensions.prototype);
+Object.extendPrototype(Map, MapConstructorExtensions.prototype);
+
+declare global {
+  interface Map<K, V> extends MapExtensions<K, V> { }
+  interface MapConstructor extends MapConstructorExtensions { }
+}

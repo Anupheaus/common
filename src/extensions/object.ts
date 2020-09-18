@@ -35,7 +35,7 @@ declare global {
     // extend<T>(target: T, ...extensions: T[]): T;
     clone<T>(target: T): T;
     // diff(target: object, comparison: object): object;
-    hash(target: object): number;
+    hash(target: object): string;
     remove<T, P>(value: T, removeProps: (propsToRemove: T) => P): P;
     // remove2<T, K extends Partial<T>>(value: T, removeProps: K): Pick<T, Diff<keyof T, keyof K>>;
     values<T = unknown>(target: object): T[];
