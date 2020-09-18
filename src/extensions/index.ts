@@ -7,6 +7,7 @@ import './math';
 import './promise';
 import './reflect';
 import './string';
+import './map';
 
 export * from './is';
 export * from './global';
