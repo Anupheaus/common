@@ -76,8 +76,12 @@ export const Event = {
     if (!data) throw new ObjectDisposedError('Unable to determine the state of an event after it has been disposed.');
     return data.isEnabled;
   },
-  dispose<EventType extends EventDelegate>(event: EventType): void {
-    if (!eventData.has(event)) throw new ObjectDisposedError('Unable to dispose of event as it has already been disposed.');
-    eventData.delete(event);
+  dispose<EventType extends EventDelegate>(...events: EventType[]): void {
+    let throwError = false;
+    events.forEach(event => {
+      if (!eventData.has(event)) { throwError = true; return; }
+      eventData.delete(event);
+    });
+    if (throwError) throw new ObjectDisposedError('Unable to dispose of event as it has already been disposed.');
   },
 }

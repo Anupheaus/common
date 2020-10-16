@@ -115,6 +115,16 @@ describe('events', () => {
       Event.dispose(a);
     });
 
+    it('can dispose of multiple events at the same time', () => {
+      const a = createEvent();
+      const b = createEvent();
+      expect(() => Event.raise(a, 'hey')).not.to.throw();
+      expect(() => Event.raise(b, 'hey')).not.to.throw();
+      Event.dispose(a, b);
+      expect(() => Event.raise(a, 'hey')).to.throw();
+      expect(() => Event.raise(b, 'hey')).to.throw();
+    });
+
   });
 
 });
