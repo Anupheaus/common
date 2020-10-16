@@ -1,2 +1,1 @@
-export * from './createEvent';
-export * from './createEventUnsubscribeCache';
+export * from './Event';
