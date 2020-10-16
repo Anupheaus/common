@@ -1,4 +1,4 @@
-import { IMap, to } from '../extensions';
+import { AnyObject, StandardDataTypes, to } from '../extensions';
 
 interface ISettingsFromOptions<T> {
   defaultValue?: T;
@@ -19,13 +19,13 @@ function createSettingsFrom(): ISettingsFrom {
   const from = {
     env<T>(key: string, options?: ISettingsFromOptions<T>): T {
       const hasDefaultValue = options && 'defaultValue' in options;
-      const { defaultValue, isRequired, transform }: ISettingsFromOptions<T> = {
+      const settings: ISettingsFromOptions<T> = {
         defaultValue: undefined,
         isRequired: !hasDefaultValue,
         transform: value => {
           if (!hasDefaultValue) { return value; }
           const valueType = to.type(value);
-          const defaultType = to.type(defaultValue);
+          const defaultType: StandardDataTypes = to.type(settings.defaultValue);
           if (valueType === defaultType) { return value; }
           if (defaultType === 'array') { return value.split('|') as unknown as T; }
           if (defaultType === 'object') { return JSON.parse(value); }
@@ -34,7 +34,8 @@ function createSettingsFrom(): ISettingsFrom {
         ...options,
       };
 
-      if (key in process.env) { return transform(process.env[key] ?? ''); }
+      const { defaultValue, isRequired, transform } = settings;
+      if (key in process.env && transform) { return transform(process.env[key] ?? ''); }
       if (isRequired) { throw new Error(`The setting "${key}" was not found in the environment variables, but this is a required setting.`); }
       return defaultValue as T;
     },
@@ -54,4 +55,4 @@ function createSettingsFrom(): ISettingsFrom {
   return from as ISettingsFrom;
 }
 
-export const createSettings = <TSettings extends IMap>(delegate: (from: ISettingsFrom) => TSettings): TSettings => delegate(createSettingsFrom());
+export const createSettings = <TSettings extends AnyObject>(delegate: (from: ISettingsFrom) => TSettings): TSettings => delegate(createSettingsFrom());
