@@ -54,3 +54,6 @@ export type DeepPartial<T> = {
 export interface Disposable {
   dispose(): void;
 }
+
+export type MakePromise<T> = T extends Promise<infer P> ? Promise<P> : Promise<T>;
+export type NotPromise<T> = T extends Promise<infer P> ? P : T;

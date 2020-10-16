@@ -13,3 +13,4 @@ export * from './is';
 export * from './global';
 export * from './date';
 export * from './to';
+export * from './promise';
