@@ -1,8 +1,8 @@
 {
   "name": "anux-common",
-  "type": "library",
-  "version": "1.0.61",
+  "version": "1.0.71",
   "main": "./dist/index.js",
+  "ts:main": "./src/index.ts",
   "repository": "https://github.com/Anupheaus/anux-common.git",
   "author": "Anupheaus",
   "license": "Apache-2.0",
@@ -18,6 +18,7 @@
   "dependencies": {
     "chalk": "^4.1.0",
     "datejs": "^1.0.0-rc3",
+    "dotenv": "^8.2.0",
     "fast-equals": "^2.0.0",
     "moment": "^2.29.1",
     "numeral": "^2.0.6",
@@ -25,9 +26,10 @@
   },
   "devDependencies": {
     "@types/datejs": "^0.0.31",
+    "@types/dotenv": "^8.2.0",
     "@types/numeral": "^0.0.28",
     "@types/uuid": "^8.3.0",
-    "anux-package": "^1.0.54",
-    "typescript": "^4.0.3"
+    "@types/node": "^14.14.10",
+    "typescript": "^4.1.2"
   }
 }

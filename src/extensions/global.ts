@@ -24,9 +24,9 @@ export interface Record {
 export type ConstructorOf<T = {}> = new (...args: any[]) => T;
 
 // tslint:disable-next-line:callable-types
-export type TypeOf<T> = { new(...args: any[]): T } | ((...args: any[]) => T) | Function; // Function & { prototype: T };
+export type TypeOf<T> = { new(...args: any[]): T; } | ((...args: any[]) => T) | Function; // Function & { prototype: T };
 
-export type Diff<T extends string | number | symbol, U extends string | number | symbol> = ({ [P in T]: P } & { [P in U]: never } & { [x: string]: never })[T];
+export type Diff<T extends string | number | symbol, U extends string | number | symbol> = ({ [P in T]: P } & { [P in U]: never } & { [x: string]: never; })[T];
 
 export type Omit<T, K extends keyof T> = Pick<T, Diff<keyof T, K>>;
 
@@ -51,9 +51,16 @@ export type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends (infer U)[] ? DeepPartial<U>[] : T[P] extends readonly (infer U)[] ? readonly DeepPartial<U>[] : DeepPartial<T[P]>
 };
 
+export type DeepRequired<T> = {
+  [P in keyof T]-?: T[P] extends (infer U)[] ? DeepRequired<U>[] : T[P] extends readonly (infer U)[] ? readonly DeepRequired<U>[] : DeepRequired<T[P]>
+};
+
 export interface Disposable {
   dispose(): void;
 }
 
 export type MakePromise<T> = T extends Promise<infer P> ? Promise<P> : Promise<T>;
 export type NotPromise<T> = T extends Promise<infer P> ? P : T;
+
+export type SoundType = string | number | object | boolean | Function;
+export type IsSoundType<T> = T extends SoundType ? true : false;

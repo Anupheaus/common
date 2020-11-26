@@ -1,25 +1,27 @@
 import { AnyObject, StandardDataTypes, to } from '../extensions';
 
-interface ISettingsFromOptions<T> {
+interface SettingsFromOptions<T> {
   defaultValue?: T;
   isRequired?: boolean;
   transform?(value: string): T;
 }
 
-interface ISettingsFrom {
-  env: {
-    <T>(key: string): T;
-    (key: string): string;
-    <T>(key: string, options: ISettingsFromOptions<T>): T;
-    mode: 'production' | 'development';
+interface SettingsFrom {
+  env(key: string): string;
+  env<T>(key: string): T;
+  env(key: string): string;
+  env(key: string, options: SettingsFromOptions<string>): string;
+  env<T>(key: string, options: SettingsFromOptions<T>): T;
+  preset: {
+    readonly mode: 'production' | 'development';
   };
 }
 
-function createSettingsFrom(): ISettingsFrom {
-  const from = {
-    env<T>(key: string, options?: ISettingsFromOptions<T>): T {
+function createSettingsFrom(): SettingsFrom {
+  const from: SettingsFrom = {
+    env<T>(key: string, options?: SettingsFromOptions<T>): T {
       const hasDefaultValue = options && 'defaultValue' in options;
-      const settings: ISettingsFromOptions<T> = {
+      const settings: SettingsFromOptions<T> = {
         defaultValue: undefined,
         isRequired: !hasDefaultValue,
         transform: value => {
@@ -39,20 +41,18 @@ function createSettingsFrom(): ISettingsFrom {
       if (isRequired) { throw new Error(`The setting "${key}" was not found in the environment variables, but this is a required setting.`); }
       return defaultValue as T;
     },
+    preset: {
+      get mode() {
+        return from.env('NODE_ENV', {
+          defaultValue: 'production',
+          isRequired: true,
+          transform: value => ['dev', 'development'].includes((value || '').toLowerCase()) ? 'development' : 'production'
+        }) as SettingsFrom['preset']['mode'];
+      },
+    },
   };
 
-  Object.defineProperties(from.env, {
-    mode: {
-      get: () => from.env('NODE_ENV', {
-        defaultValue: 'production',
-        transform: value => ['dev', 'development'].includes((value || '').toLowerCase()) ? 'development' : 'production'
-      }),
-      enumerable: true,
-      configurable: false,
-    },
-  });
-
-  return from as ISettingsFrom;
+  return from;
 }
 
-export const createSettings = <TSettings extends AnyObject>(delegate: (from: ISettingsFrom) => TSettings): TSettings => delegate(createSettingsFrom());
+export const createSettings = <TSettings extends AnyObject>(delegate: (from: SettingsFrom) => TSettings): TSettings => delegate(createSettingsFrom());

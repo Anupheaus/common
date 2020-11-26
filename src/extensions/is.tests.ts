@@ -1,3 +1,4 @@
+/* eslint-disable max-classes-per-file */
 import { is } from './is';
 
 describe('is', () => {
@@ -74,15 +75,14 @@ describe('is', () => {
 
     it('returns undefined if not found', () => {
       expect(is.not.allNull(() => null, () => undefined, () => undefined, () => null)).to.be.undefined;
-    })
+    });
 
   });
 
   describe('function', () => {
 
     it('detects functions correctly', () => {
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      function myFunc() { }
+      function myFunc() { /* do nothing */ }
       expect(is.function(() => void 0)).to.be.true;
       expect(is.function(myFunc)).to.be.true;
     });
@@ -94,6 +94,23 @@ describe('is', () => {
       expect(is.function(new Object())).to.be.false;
       expect(is.function({})).to.be.false;
       expect(is.function(MyClass)).to.be.false;
+    });
+
+  });
+
+  describe('class', () => {
+
+    it('detects classes correctly', () => {
+      class MyClass { }
+      expect(is.class(MyClass)).to.be.true;
+    });
+
+    it('detects non-classes correctly', () => {
+      expect(is.class('')).to.be.false;
+      expect(is.class(2)).to.be.false;
+      expect(is.class(new Object())).to.be.false;
+      expect(is.class({})).to.be.false;
+      expect(is.class(() => void 0)).to.be.false;
     });
 
   });
@@ -110,6 +127,24 @@ describe('is', () => {
       expect(is.array(2)).to.be.false;
       expect(is.array(new Object())).to.be.false;
       expect(is.array({})).to.be.false;
+    });
+
+    it('does not have any type issues', () => {
+      const parseUnknown = (value: unknown) => value;
+      const parseNumber = (value: number) => value;
+      const unknownValue: unknown = null;
+      const anyArray: unknown[] = [];
+      const numberArray: number[] = [];
+      const combinedArray = null as unknown as number | number[];
+      const mixedArray: (string | number)[] = [];
+      if (is.array(combinedArray)) combinedArray.filter(parseNumber);
+      if (is.array(unknownValue)) unknownValue.filter(parseUnknown);
+      if (is.array(unknownValue)) unknownValue.filter(parseNumber);
+      if (is.array(anyArray)) anyArray.filter(parseUnknown);
+      if (is.array(anyArray)) anyArray.filter(parseNumber);
+      if (is.array<number>(anyArray)) anyArray.filter(parseNumber);
+      if (is.array(numberArray)) numberArray.filter(parseNumber);
+      if (is.array<number>(mixedArray)) mixedArray.filter(parseNumber);
     });
 
   });

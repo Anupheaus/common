@@ -1,7 +1,6 @@
 import './object';
 import { v4 as uuid } from 'uuid';
 
-const originalRound = Math.round;
 
 export class MathExtensions {
 
@@ -17,14 +16,18 @@ export class MathExtensions {
 
   public between(value: number, min: number, max: number): number;
   public between(this: Math, value: number, min: number, max: number): number {
-    return Math.max(min, Math.min(max, value));
+    return this.max(min, Math.min(max, value));
   }
 
-  public round(x: number): number;
-  public round(x: number, decimalPlaces: number): number;
-  public round(this: Math, x: number, decimalPlaces?: number): number {
-    if (decimalPlaces == null) { return originalRound(x); }
-    // tslint:disable-next-line:prefer-template
-    return +(originalRound(x + `e+${decimalPlaces}` as unknown as number) + `e-${decimalPlaces}`);
+  public roundTo(x: number, decimalPlaces: number): number;
+  public roundTo(this: Math, x: number, decimalPlaces: number): number {
+    return +(this.round(x + `e+${decimalPlaces}` as unknown as number) + `e-${decimalPlaces}`);
   }
+
+  public toPercentage(value: number): number;
+  public toPercentage(value: number, decimalPlaces: number): number;
+  public toPercentage(this: Math, value: number, decimalPlaces = 1): number {
+    return this.roundTo(value * 100, decimalPlaces);
+  }
+
 }

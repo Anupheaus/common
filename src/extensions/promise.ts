@@ -13,8 +13,8 @@ export enum PromiseState {
 
 export class DeferredPromise<T = void> extends Promise<T> {
   constructor();
-  constructor(executor?: (resolve: (value?: T | PromiseLike<T>) => void, reject: (reason?: unknown) => void) => void);
-  constructor(executor?: (resolve: (value?: T | PromiseLike<T>) => void, reject: (reason?: unknown) => void) => void, meta: AnyObject = {}) {
+  constructor(executor?: (resolve: (value: T | PromiseLike<T>) => void, reject: (reason?: unknown) => void) => void);
+  constructor(executor?: (resolve: (value: T | PromiseLike<T>) => void, reject: (reason?: unknown) => void) => void, meta: AnyObject = {}) {
     super((resolve, reject) => {
       meta.resolve = resolve;
       meta.reject = reject;
