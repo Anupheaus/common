@@ -84,6 +84,18 @@ export class StringExtensions {
     return `${this.substr(0, startVisibleCount)}${character.repeat(hiddenCount)}${this.substr(endVisibleStart, endVisibleLength)}`;
   }
 
+  public between(start: string | number, end: string | number): string;
+  public between(start: string | number, end: string | number, inclusive: boolean): string;
+  public between(this: string, start: string | number, end: string | number, inclusive = false): string {
+    let startIndex = typeof (start) === 'number' ? start : this.indexOf(start);
+    let endIndex = typeof (end) === 'number' ? end : this.indexOf(end, startIndex + 1);
+    if (startIndex < 0) throw new Error('The starting index was invalid or starting search string was not found.');
+    if (endIndex < 0) throw new Error('The ending index was invalid or ending search string was not found.');
+    if (typeof (start) === 'string' && !inclusive) startIndex += start.length;
+    if (typeof (end) === 'string' && inclusive) endIndex += end.length;
+    return this.substr(startIndex, endIndex - startIndex);
+  }
+
 }
 
 export class StringConstructorExtensions {

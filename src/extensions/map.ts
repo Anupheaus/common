@@ -20,6 +20,14 @@ class MapExtensions<K, V> {
     return Array.from(this.values());
   }
 
+  public getOrSet(key: K, defaultValue: () => V): V;
+  public getOrSet(this: Map<K, V>, key: K, defaultValue: () => V): V {
+    if (this.has(key)) return this.get(key)!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    const value = defaultValue();
+    this.set(key, value);
+    return value;
+  }
+
 }
 
 class MapConstructorExtensions {

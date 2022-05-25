@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable max-classes-per-file */
-import { NotPromise, AnyObject, SoundType } from './global';
-
-type SoundTypeArray<T> = T extends SoundType ? T[] : [];
+import { NotPromise, AnyObject, AnyFunction } from './global';
 
 function parseArguments<R, T = unknown>(value: T, result: boolean, type?: string, defaultValue?: () => T | R, isIncorrectType?: () => T | R,
   isCorrectType?: (value: T) => T | R): T | R | boolean {
@@ -13,7 +11,7 @@ function parseArguments<R, T = unknown>(value: T, result: boolean, type?: string
   return isIncorrectType();
 }
 
-class Is {
+export class Is {
 
   public get not() { return isNot; } // eslint-disable-line @typescript-eslint/no-use-before-define
 
@@ -24,9 +22,9 @@ class Is {
     return parseArguments(value, value == null, undefined, defaultValue, () => value, () => defaultValue ? defaultValue() : true);
   }
 
-  public function<T extends Function>(value: T): value is T;
-  public function<T extends Function = Function>(value: unknown): value is T;
-  public function<T>(value: unknown): value is T {
+  public function(value: unknown): value is Function;
+  public function<T extends AnyFunction>(value: T): value is T;
+  public function(value: unknown): value is AnyFunction {
     return typeof (value) === 'function' && !value.toString().startsWith('class ');
   }
 
@@ -36,7 +34,16 @@ class Is {
     return typeof (value) === 'function' && value.toString().startsWith('class ');
   }
 
-  public array<T>(value: T | T[]): value is SoundTypeArray<T>;
+  public prototype<T extends Object>(value: T): value is T;
+  public prototype<T>(value: unknown): value is T {
+    if (this.object(value) && typeof (value.constructor) === 'function' && Object.getOwnPropertyNames(value).includes('constructor')) return true;
+    if (this.class(value)) return true;
+    return false;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public array(value: unknown | unknown[]): value is any[];
+  public array<T>(value: T | T[]): value is T[];
   public array<T>(value: unknown): value is T[];
   public array(value: unknown): value is [] {
     return value instanceof Array;
@@ -51,20 +58,25 @@ class Is {
     return is.function(result.catch) && is.function(result.then);
   }
 
-  public keyValuePair(value: unknown): boolean {
+  public guid(value: unknown): value is string {
+    if (!is.string(value)) return false;
+    return /^[{(]?[0-9A-F]{8}[-]?(?:[0-9A-F]{4}[-]?){3}[0-9A-F]{12}[)}]?$/gmi.test(value);
+  }
+
+  public keyValuePair(value: unknown): value is { key: unknown; value: unknown; } {
     if (!is.object(value)) { return false; }
     return Object.prototype.hasOwnProperty.call(value, 'key') && Object.prototype.hasOwnProperty.call(value, 'value');
   }
 
-  public object<T extends object>(value: T): value is T;
-  public object<T extends object = object>(value: unknown): value is T;
-  public object(value: unknown): value is object {
-    return typeof (value) === 'object' && value !== null;
+  public object<T extends AnyObject>(value: T): value is T;
+  public object<T extends AnyObject = AnyObject>(value: unknown): value is T;
+  public object(value: unknown): value is AnyObject {
+    return typeof (value) === 'object' && !this.array(value) && !this.null(value) && !this.date(value);
   }
 
-  public plainObject<T extends object>(value: T): value is T;
-  public plainObject<T extends object = object>(value: unknown): value is T;
-  public plainObject(value: unknown): value is object {
+  public plainObject<T extends AnyObject>(value: T): value is T;
+  public plainObject<T extends AnyObject = AnyObject>(value: unknown): value is T;
+  public plainObject(value: unknown): value is AnyObject {
     if (typeof (value) !== 'object' || value === null) { return false; }
     if (is.function(Object.getPrototypeOf)) {
       const proto = Object.getPrototypeOf(value);
@@ -96,8 +108,8 @@ class Is {
    * @param {any} value The value to be tested.
    * @returns {boolean} True if the value is not a string or is zero length.
    */
-  public empty(value: unknown): boolean {
-    return !(is.string(value) && value.length > 0);
+  public empty<T extends string | null | void | undefined>(value: T): value is Exclude<T, string> {
+    return typeof (value) !== 'string' || value.length === 0;
   }
 
   public error(value: AnyObject): value is Error {
@@ -122,28 +134,28 @@ class Is {
 
 }
 
-class IsNot {
+export class IsNot {
 
-  public null<T>(value: T): value is T;
+  public null<T>(value: T): value is Exclude<T, null | undefined>;
   public null<T>(value: unknown, defaultValue: () => T): T;
   public null<T>(value: T, defaultValue?: () => T): T | boolean {
     if (typeof (defaultValue) === 'number') { defaultValue = undefined; } // we are being used in a loop
     return parseArguments(value, value != null, undefined, defaultValue, () => defaultValue ? defaultValue() : false, () => value);
   }
 
-  public allNull<T>(...values: (() => T)[]): T | undefined {
-    for (const delegate of values) {
-      if (!is.function(delegate)) { continue; }
-      try {
-        const value = delegate();
-        if (value == null) { continue; }
-        return value;
-      } catch {
-        // ignore errors
-      }
-    }
-    return undefined;
-  }
+  // public allNull<T>(...values: (() => T)[]): T | undefined {
+  //   for (const delegate of values) {
+  //     if (!is.function(delegate)) { continue; }
+  //     try {
+  //       const value = delegate();
+  //       if (value == null) { continue; }
+  //       return value;
+  //     } catch {
+  //       // ignore errors
+  //     }
+  //   }
+  //   return undefined;
+  // }
 
   public empty(value: unknown): value is string;
   public empty(...values: unknown[]): boolean;

@@ -1,6 +1,5 @@
 import { ArrayExtensions, ArrayConstructorExtensions } from './arrayExtensions';
 
-
 Object.extendPrototype(Array.prototype, ArrayExtensions.prototype);
 Object.extendPrototype(Array, ArrayConstructorExtensions.prototype);
 

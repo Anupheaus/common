@@ -5,19 +5,25 @@
     "noUnusedParameters": false,
     "experimentalDecorators": true,
     "removeComments": true,
-    "module": "amd",
-    "outFile": "./dist/index.js",
+    "noEmit": true,
+    "module": "CommonJS",
     "resolveJsonModule": true,
     "esModuleInterop": true,
-    "declaration": true,
     "moduleResolution": "node",
-    "target": "esnext",
-    "sourceMap": true
+    "target": "es6",
+    "sourceMap": true,
+    "lib": [
+      "ESNext"
+    ],
+    "typeRoots": [
+      "node_modules/@types",
+      "node_modules/anux-package/typings"
+    ]
   },
   "include": [
     "src"
   ],
   "exclude": [
-    "src/**/*.tests.ts",
+    "dist"
   ]
 }

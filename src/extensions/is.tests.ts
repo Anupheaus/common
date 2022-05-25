@@ -67,17 +67,17 @@ describe('is', () => {
 
   });
 
-  describe('not allNull', () => {
+  // describe('not allNull', () => {
 
-    it('detects null values and returns the first non-null value', () => {
-      expect(is.not.allNull(() => null, () => undefined, () => 'blah', () => 'foo')).to.eq('blah');
-    });
+  //   it('detects null values and returns the first non-null value', () => {
+  //     expect(is.not.allNull(() => null, () => undefined, () => 'blah', () => 'foo')).to.eq('blah');
+  //   });
 
-    it('returns undefined if not found', () => {
-      expect(is.not.allNull(() => null, () => undefined, () => undefined, () => null)).to.be.undefined;
-    });
+  //   it('returns undefined if not found', () => {
+  //     expect(is.not.allNull(() => null, () => undefined, () => undefined, () => null)).to.be.undefined;
+  //   });
 
-  });
+  // });
 
   describe('function', () => {
 
@@ -115,6 +115,27 @@ describe('is', () => {
 
   });
 
+  describe('guid', () => {
+
+    it('detects guids correctly', () => {
+      expect(is.guid('ca761232ed4211cebacd00aa0057b223')).to.be.true;
+      expect(is.guid('CA761232-ED42-11CE-BACD-00AA0057B223')).to.be.true;
+      expect(is.guid('{CA761232-ED42-11CE-BACD-00AA0057B223}')).to.be.true;
+      expect(is.guid('(CA761232-ED42-11CE-BACD-00AA0057B223)')).to.be.true;
+    });
+
+    it('detects non-guids correctly', () => {
+      expect(is.guid('ca76132ed4211cebacd00aa0057b223')).to.be.false;
+      expect(is.guid('CA761232_ED42-11CE-BACD-00AA0057B223')).to.be.false;
+      expect(is.guid('[CA761232-ED42-11CE-BACD-00AA0057B223]')).to.be.false;
+      expect(is.guid(2)).to.be.false;
+      expect(is.guid({})).to.be.false;
+      expect(is.guid(() => void 0)).to.be.false;
+      expect(is.guid([])).to.be.false;
+    });
+
+  });
+
   describe('array', () => {
 
     it('detects arrays correctly', () => {
@@ -128,6 +149,14 @@ describe('is', () => {
       expect(is.array(new Object())).to.be.false;
       expect(is.array({})).to.be.false;
     });
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    function test<T extends {}>(records: T[]) {
+      if (is.array(records)) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const a: T = records[0];
+      }
+    }
 
     it('does not have any type issues', () => {
       const parseUnknown = (value: unknown) => value;

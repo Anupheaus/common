@@ -21,7 +21,7 @@ class To {
     if (is.number(value)) {
       return is.string(defaultValueOrFormat) ? numeral(value).format(defaultValueOrFormat) : value.toString();
     } else if (is.date(value)) {
-      return is.string(defaultValueOrFormat) ? value.toString(defaultValueOrFormat) : value.toString('dd/MM/yyyy hh:mm:ss');
+      return is.string(defaultValueOrFormat) ? value.format(defaultValueOrFormat) : value.format('dd/MM/yyyy hh:mm:ss');
     }
     if (typeof (value) === 'string' && (allowEmpty || value.length > 0)) { return value; }
     return typeof (defaultValueOrFormat) === 'string' ? defaultValueOrFormat : '';
@@ -41,7 +41,7 @@ class To {
     if (!(defaultValue instanceof Date)) { defaultValue = undefined; }
     if (is.date(value)) { return value; }
     if (is.number(value)) { return new Date(value); }
-    if (is.not.empty(value)) { return Date.parse(value); }
+    if (is.not.empty(value)) { return new Date(Date.parse(value)); }
     return defaultValue ?? new Date();
   }
 

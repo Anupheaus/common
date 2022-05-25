@@ -1,5 +1,5 @@
 import { PromiseState } from './promise';
-import './date';
+import './date_old';
 
 describe('promise', () => {
 
@@ -8,8 +8,7 @@ describe('promise', () => {
     it('can cause a delay', async () => {
       const timeStarted = Date.now();
       await Promise.delay(6);
-      const timeTaken = Date.now() - timeStarted;
-      expect(timeTaken).to.be.at.least(5);
+      expect(Date.timeTaken(timeStarted)).to.be.at.least(5);
     });
 
   });
@@ -42,7 +41,7 @@ describe('promise', () => {
       setTimeout(() => deferred.resolve('Hey there!'), 6);
       await expect(deferred).to.eventually.eq('Hey there!');
       expect(deferred.state).to.eq(PromiseState.Fulfilled);
-      expect(Date.now() - startTime).to.be.greaterThan(4);
+      expect(Date.timeTaken(startTime)).to.be.greaterThan(4);
     });
 
     it('can be rejected', async () => {
@@ -56,7 +55,7 @@ describe('promise', () => {
       expect(deferred.state).to.eq(PromiseState.Rejected);
       await Promise.delay(1);
       expect(result).to.be.instanceOf(Error);
-      expect(deferred).is.rejectedWith('Hey there!')
+      expect(deferred).is.rejectedWith('Hey there!');
     });
 
     it('can be waited to be rejected', async () => {
@@ -66,7 +65,7 @@ describe('promise', () => {
       setTimeout(() => deferred.reject(new Error('Hey there!')), 6);
       await expect(deferred).to.eventually.be.rejectedWith('Hey there!');
       expect(deferred.state).to.eq(PromiseState.Rejected);
-      expect(Date.now() - startTime).to.be.greaterThan(4);
+      expect(Date.timeTaken(startTime)).to.be.greaterThan(4);
     });
 
     it('cannot be rejected after being resolved', async () => {
@@ -76,7 +75,7 @@ describe('promise', () => {
       setTimeout(() => deferred.resolve('Success!'), 6);
       await expect(deferred).to.eventually.be.eq('Success!');
       expect(deferred.state).to.eq(PromiseState.Fulfilled);
-      expect(Date.now() - startTime).to.be.greaterThan(4);
+      expect(Date.timeTaken(startTime)).to.be.greaterThan(4);
       deferred.reject(new Error('Failure!'));
       expect(deferred.state).to.eq(PromiseState.Fulfilled);
       expect(await deferred).to.eq('Success!');

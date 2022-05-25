@@ -1,6 +1,9 @@
+/* eslint-disable max-classes-per-file */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { hash as utilsHash } from './utils';
 import { Record, Disposable, AnyObject } from './global';
 import { is } from './is';
+import { v4 as uuid } from 'uuid';
 
 // tslint:disable-next-line:no-namespace
 declare global {
@@ -36,6 +39,7 @@ declare global {
     clone<T>(target: T): T;
     // diff(target: object, comparison: object): object;
     hash(target: object): string;
+    hash(target: object, performShallowHash: boolean): string;
     remove<T, P>(value: T, removeProps: (propsToRemove: T) => P): P;
     // remove2<T, K extends Partial<T>>(value: T, removeProps: K): Pick<T, Diff<keyof T, keyof K>>;
     values<T = unknown>(target: object): T[];
@@ -43,6 +47,7 @@ declare global {
     getValueOf<T, R>(target: T, delegate: (target: T) => R, defaultValue: R): R;
     mixin(destinationClass: Function, sourceClass: Function): void;
     using<T extends Disposable, R>(object: T, use: (object: T) => R): R;
+    stringify(target: object, replacer?: (key: string, value: unknown) => unknown, space?: string | number): string;
   }
 
 }
@@ -91,14 +96,14 @@ function parseObject<T extends object>(existingObject: T, newObject: T, checkFor
     const get = newGet ? () => {
       return newGet.call(existingObject);
     } : undefined;
-    const set = newSet ? (...args: any[]) => newSet.call(existingObject, args) : undefined; // eslint-disable-line @typescript-eslint/no-explicit-any
-    const value = newValue ? (typeof (newValue) === 'function' ? (...args: any[]) => newValue.call(existingObject, args) : // eslint-disable-line @typescript-eslint/no-explicit-any
-      parseValue(existingValue, newValue, checkForOverridableItems)) : undefined; // eslint-disable-line @typescript-eslint/no-use-before-define    
+    const set = newSet ? (...args: any[]) => newSet.call(existingObject, args) : undefined;
+    const value = newValue !== undefined ? (typeof (newValue) === 'function' ? (...args: any[]) => newValue.apply(existingObject, args) :
+      parseValue(existingValue, newValue, checkForOverridableItems)) : undefined; // eslint-disable-line @typescript-eslint/no-use-before-define
     Object.defineProperty(existingObject, key, {
       ...otherProps,
       ...(get ? { get } : {}),
       ...(set ? { set } : {}),
-      ...(value ? { value } : {}),
+      ...(value !== undefined ? { value } : {}),
     });
   });
   return existingObject;
@@ -109,7 +114,7 @@ function parseArray(existingValue: unknown[], newValue: unknown[], checkForOverr
   if (existingValue.length === 0 && newValue.length === 0) { return existingValue; }
   // Check to see if the items are overridable
   if (checkForOverridableItems && isOverridableItemArray(existingValue) && isOverridableItemArray(newValue)) {
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define    
     existingValue = existingValue.syncWith(newValue, { updateMatched: (a, b) => parseValue(a, b, true) as Record });
     return existingValue;
   }
@@ -224,7 +229,7 @@ Object.addMethods(Object, [
     if (is.null(target)) { return ''; }
     const hashableValues: string[] = [];
     if (target && typeof (target) === 'object' && typeof (target.constructor) === 'function') {
-      const isPrototype = Object.getOwnPropertyNames(target).includes('constructor');
+      const isPrototype = is.prototype(target);
       if (isPrototype) {
         target = target.constructor;
       } else {
@@ -247,7 +252,7 @@ Object.addMethods(Object, [
   function getValueOf<T, R>(this: AnyObject, targetOrDelegate: T | (() => R), delegateOrDefaultValue: R | ((target: T) => R), defaultValue?: R): R | undefined {
     let target = targetOrDelegate as T | undefined;
     let delegate = delegateOrDefaultValue as ((target?: T) => R);
-    if (is.function<() => R>(targetOrDelegate)) {
+    if (is.function(targetOrDelegate)) {
       target = undefined;
       delegate = targetOrDelegate;
       defaultValue = delegateOrDefaultValue as R;
@@ -274,6 +279,22 @@ Object.addMethods(Object, [
       object.dispose();
     }
     return result;
+  },
+
+  function stringify(target: object, replacer?: (key: string, value: unknown) => unknown, space?: string | number): string {
+    const existingObjects = new Map<object, string>();
+    const providedReplacer = replacer ?? ((key, value) => value);
+    return JSON.stringify(target, (key, value: unknown) => {
+      value = providedReplacer(key, value);
+      if (is.function(value)) return value.toString();
+      if (!is.object(value) && !is.plainObject(value)) return value;
+      if (is.function(value.toJSON)) return value.toJSON();
+      if (existingObjects.has(value)) return { __replaceWithStringifyUniqueObjectId: existingObjects.get(value) };
+      const id = uuid();
+      value['__stringifyUniqueObjectId'] = id;
+      existingObjects.set(value, id);
+      return value;
+    }, space);
   },
 
 ]);

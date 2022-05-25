@@ -143,7 +143,33 @@ describe('object', () => {
       expect(result.items[0].boo).to.eq(3);
       expect(a.items[0].boo).to.eq(2);
       expect(b.items[0].boo).to.eq(3);
-    })
+    });
+
+    it('does not ignore falsy values in merge', () => {
+      const result = Object.merge({}, { previous: [{ date: 0, something: false, other: undefined }] });
+      expect(result.previous).to.be.an('array').and.have.lengthOf(1);
+      expect(result.previous[0]).to.eql({ date: 0, something: false, other: undefined });
+    });
+
+  });
+
+  describe('stringify', () => {
+
+    it('can stringify recursive objects', () => {
+      class MyTest {
+        constructor(value: object) {
+          this.value = value;
+        }
+        public value: object;
+        public test(): void {
+          /* do nothing */
+        }
+      }
+      const myPlainObject = { test: 2, get myClass() { return myClass; } };
+      const myClass = new MyTest(myPlainObject);
+
+      expect(Object.stringify({ myPlainObject }).length).to.eq(329);
+    });
 
   });
 

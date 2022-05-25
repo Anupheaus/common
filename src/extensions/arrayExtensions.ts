@@ -1,9 +1,9 @@
 /* eslint-disable max-classes-per-file */
 import './object';
-import { MapDelegate, SimpleMapDelegate, IArrayOrderByConfig, IArrayDiff, IMergeWithOptions, MergeWithUpdateOperations } from '../models';
+import { MapDelegate, SimpleMapDelegate, IArrayOrderByConfig, IArrayDiff, IMergeWithOptions, MergeWithUpdateOperations, GroupingDelegate } from '../models';
 import { ArgumentInvalidError, InternalError } from '../errors';
 import { SortDirections } from '../models/sort';
-import { DeepPartial, Record, TypeOf, Upsertable, Updatable, IsPrimitiveOrRecordType } from './global';
+import { DeepPartial, Record, TypeOf, Upsertable, Updatable } from './global';
 import './reflect';
 
 type FilterDelegate<T> = (item: T, index: number) => boolean;
@@ -11,6 +11,8 @@ type UpdateDelegate<T> = MapDelegate<T, DeepPartial<T>>;
 type CalculationDelegate<T> = (item: T, index: number, prevItem: T, nextItem: T) => number;
 type DiffMatcherDelegate<T, P> = (sourceItem: T, targetItem: P, sourceIndex: number, targetIndex: number) => boolean;
 type RemoveNull<T> = Exclude<T, null | undefined>;
+
+type FlattenedArray<Arr> = Arr extends unknown[] ? (Arr extends unknown[][] ? FlattenedArray<Arr[number]> : Arr) : Arr[];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isRecord(item: any): item is Record {
@@ -58,6 +60,27 @@ export class ArrayExtensions<T> {
     let result: V[] = [];
     data.chunk(65534).forEach(block => { result = Array.prototype.concat.apply(result, block) as unknown as V[]; });
     return result;
+  }
+
+  public flatten(): FlattenedArray<T>;
+  public flatten(this: T[]): FlattenedArray<T> {
+    const result: T[] = [];
+    const parseArrayItem = (items: T | T[]) => {
+      if (items instanceof Array) {
+        items.forEach(parseArrayItem);
+      } else {
+        result.push(items);
+      }
+    };
+    parseArrayItem(this);
+    return result as FlattenedArray<T>;
+  }
+
+  public groupBy<K>(groupingDelegate: GroupingDelegate<T, K>): Map<K, T[]>;
+  public groupBy<K>(this: T[], groupingDelegate: GroupingDelegate<T, K>): Map<K, T[]> {
+    const groups = new Map<K, T[]>();
+    this.forEach((item, index) => (key => groups.set(key, (groups.get(key) ?? []).concat(item)))(groupingDelegate(item, index, Array.from(groups.keys()))));
+    return groups;
   }
 
   public ofType<V>(type: TypeOf<V>): V[];
@@ -118,6 +141,11 @@ export class ArrayExtensions<T> {
     return clone;
   }
 
+  public removeMany(items: T[]): T[];
+  public removeMany(this: T[], items: T[]): T[] {
+    return this.filter(item => items.indexOf(item) === -1);
+  }
+
   public removeAt(index: number): T[];
   public removeAt(this: T[], index: number): T[] {
     const clone = this.slice();
@@ -149,14 +177,14 @@ export class ArrayExtensions<T> {
     return this.find(item => isRecord(item) && item.id === id);
   }
 
-  public upsert(item: Upsertable<IsPrimitiveOrRecordType<T>>): T[];
-  public upsert(item: Upsertable<IsPrimitiveOrRecordType<T>>, index: number): T[];
-  public upsert(this: T[], item: Upsertable<IsPrimitiveOrRecordType<T>>, index?: number): T[] {
+  public upsert(item: Upsertable<T>): T[];
+  public upsert(item: Upsertable<T>, index: number): T[];
+  public upsert(this: T[], item: Upsertable<T>, index?: number): T[] {
     const foundIndex = isRecord(item) ? this.indexOfId(item.id) : this.indexOf(item as T);
     return performUpsert(this, foundIndex, () => item as T, () => item as T, index);
   }
 
-  public upsertMany(this: T[], items: Upsertable<IsPrimitiveOrRecordType<T>>[], newIndex?: number): T[] {
+  public upsertMany(this: T[], items: Upsertable<T>[], newIndex?: number): T[] {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     let self = this;
     items.forEach((item, index) => self = newIndex == null ? self.upsert(item) : self.upsert(item, newIndex + index));
@@ -172,17 +200,6 @@ export class ArrayExtensions<T> {
       return Object.merge({}, innerItem, update(innerItem, index));
     });
     return hasUpserted ? array : array.concat(update(undefined, array.length) as T);
-  }
-
-  public resert(item: Upsertable<IsPrimitiveOrRecordType<T>>): T[];
-  public resert(item: Upsertable<IsPrimitiveOrRecordType<T>>, index: number): T[];
-  public resert(this: T[], item: Upsertable<IsPrimitiveOrRecordType<T>>, index?: number): T[] {
-    const foundIndex = isRecord(item) ? this.indexOfId(item.id) : this.indexOf(item as T);
-    if (foundIndex === index) return this;
-    const array = this.slice();
-    if (foundIndex !== -1) array.splice(foundIndex, 1);
-    array.splice(index ?? foundIndex ?? array.length, 0, item as T);
-    return array;
   }
 
   public replace(item: T): T[];
@@ -362,6 +379,18 @@ export class ArrayExtensions<T> {
     return values.length > 0 ? values.sum() / values.length : 0;
   }
 
+  public aggregate(method: 'sum' | 'max' | 'min' | 'average'): number;
+  public aggregate(method: 'sum' | 'max' | 'min' | 'average', delegate: CalculationDelegate<T>): number;
+  public aggregate(method: 'sum' | 'max' | 'min' | 'average', delegate?: CalculationDelegate<T>): number {
+    const providedDelegate = delegate as CalculationDelegate<T>;
+    switch (method) {
+      case 'max': return this.max(providedDelegate);
+      case 'min': return this.min(providedDelegate);
+      case 'average': return this.average(providedDelegate);
+      default: return this.sum(providedDelegate);
+    }
+  }
+
   public absorb(array: T[]): T[];
   public absorb(this: T[], array: T[]): T[] {
     if (array.length < 65535) {
@@ -538,6 +567,20 @@ export class ArrayExtensions<T> {
     if (this.length === 0 || count === 0) { return this; }
     if (this.length < count) { return []; }
     return this.slice(count);
+  }
+
+  public toMap(): Map<string, T>;
+  public toMap<K>(createKey: (item: T, index: number, array: T[]) => K): Map<K, T>;
+  public toMap<K = string>(this: T[], createKey?: (item: T, index: number, array: T[]) => K): Map<K, T> {
+    const throwError = (index: number): K => {
+      throw new Error(`Item at index ${index} of this array is not a record and no createKey delegate was provided to generate the key.`);
+    };
+    return new Map(this.map((item, index, arr) => [createKey ? createKey(item, index, arr) : isRecord(item) ? item.id as unknown as K : throwError(index), item]));
+  }
+
+  public toSet(): Set<T>;
+  public toSet(this: T[]): Set<T> {
+    return new Set(this);
   }
 
 }

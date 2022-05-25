@@ -1,13 +1,14 @@
-import 'datejs';
+// import 'datejs';
 import './object';
 import './array';
-import './date';
+import './date_old';
 import './function';
 import './math';
 import './promise';
 import './reflect';
 import './string';
 import './map';
+import './set';
 
 export * from './is';
 export * from './global';

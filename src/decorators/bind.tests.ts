@@ -112,10 +112,10 @@ describe('Bind Decorator', () => {
 
   it('cannot be applied to class', () => {
     expect(() => {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       @bind
-      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       class FailTestClass { // eslint-disable-line @typescript-eslint/no-unused-vars
 
@@ -125,10 +125,10 @@ describe('Bind Decorator', () => {
 
   it('cannot be applied to variable', () => {
     expect(() => {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       class FailTestClass { // eslint-disable-line @typescript-eslint/no-unused-vars
-        // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         @bind
         public something: string | undefined;

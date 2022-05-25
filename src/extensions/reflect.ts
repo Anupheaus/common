@@ -1,6 +1,7 @@
 import { createCustomEqual } from 'fast-equals';
 import { InternalError } from '../errors';
 import { is } from './is';
+import './array';
 import './object';
 import { AnyObject } from './global';
 
@@ -38,7 +39,7 @@ declare global {
       shouldContinue: boolean;
     }
 
-    export interface ITypeOf<T = object> {
+    export interface TypeOf<T = object> {
       type: string;
       isArray: boolean;
       isObject: boolean;
@@ -54,6 +55,16 @@ declare global {
       isFunction: boolean;
       isDate: boolean;
       value: T;
+    }
+
+    export interface WalkerProperty<T = unknown> {
+      name: string;
+      path: (string | number)[];
+      parent: object | undefined;
+      descriptor: PropertyDescriptor;
+      propertyIndex: number;
+      get(): T;
+      set(value: T): void;
     }
 
     function isOrDerivesFrom(source: unknown, derivesFrom: unknown): boolean;
@@ -76,6 +87,8 @@ declare global {
 
     function getAllPrototypesOf(target: unknown): Object[];
 
+    function bindAllMethodsOn(target: unknown): void;
+
     function invoke(target: unknown, name: string, ...args: unknown[]): unknown;
     function invokeAll(target: unknown, name: string, ...args: unknown[]): unknown[];
 
@@ -92,7 +105,14 @@ declare global {
 
     function hashesOf(target: unknown): number[];
 
-    function typeOf<T = object>(value: T): ITypeOf<T>;
+    function typeOf<T = object>(value: T): TypeOf<T>;
+
+    function walk(target: object, onProperty: (property: Reflect.WalkerProperty) => void | false): void;
+
+    function getByPath<T = unknown>(target: object, propertyKey: string): { wasFound: boolean; value: T; };
+    function setByPath<T = unknown>(target: object, propertyKey: string, value: T): boolean;
+    function setByPath<T = unknown>(target: object, propertyKey: string, value: T, createPathIfNotExists: boolean): boolean;
+
   }
 }
 
@@ -130,10 +150,11 @@ Object.addMethods(Reflect, [
     return false;
   },
 
-  function className(instance: object): string {
-    const prototype = Reflect.getPrototypeOf(instance);
-    const constructor: Function = prototype.constructor;
-    return constructor.name;
+  function className(target: unknown): string {
+    const type = Reflect.typeOf(target);
+    if (type.isInstance) return (target as object).constructor.name;
+    if (type.isPrototype) return (target as Function).name;
+    throw new Error('The type of the target provided was neither an instance or a class definition.');
   },
 
   function getDefinition(target: object, memberKey: PropertyKey): PropertyDescriptor | undefined {
@@ -141,20 +162,24 @@ Object.addMethods(Reflect, [
     let definition: PropertyDescriptor | undefined;
     // if (target.prototype) { target = target.prototype; }
     // if (target.constructor && target.constructor.prototype) { target = target.constructor.prototype; }
+    let nullableTarget: object | null = target;
     do {
-      definition = Reflect.getOwnPropertyDescriptor(target, memberKey);
-      if (definition == null) { target = Reflect.getPrototypeOf(target); }
-    } while (definition == null && target !== Object.prototype);
+      if (nullableTarget == null || nullableTarget == Object.prototype) break;
+      definition = Reflect.getOwnPropertyDescriptor(nullableTarget, memberKey);
+      if (definition == null) { nullableTarget = Reflect.getPrototypeOf(nullableTarget); }
+    } while (definition == null);
     return definition;
   },
 
   function getAllDefinitionsForMember(target: object, memberName: string): PropertyDescriptor[] {
     const definitions = new Array<PropertyDescriptor>();
+    let nullableTarget: object | null = target;
     do {
-      const definition = Reflect.getOwnPropertyDescriptor(target, memberName) || null;
-      if (!is.null(definition)) { definitions.push(definition); }
-      target = Reflect.getPrototypeOf(target);
-    } while (target !== Object.prototype);
+      if (nullableTarget == null || nullableTarget === Object.prototype) break;
+      const definition = Reflect.getOwnPropertyDescriptor(nullableTarget, memberName) || null;
+      if (definition != null) { definitions.push(definition); }
+      nullableTarget = Reflect.getPrototypeOf(nullableTarget);
+    } while (true); // eslint-disable-line no-constant-condition
     return definitions;
   },
 
@@ -169,6 +194,23 @@ Object.addMethods(Reflect, [
         descriptors[item.key] = item.descriptor;
       });
     return descriptors;
+  },
+
+  function bindAllMethodsOn(target: AnyObject): void {
+    const type = Reflect.typeOf(target);
+    const prototype = type.isInstance ? target.constructor.prototype : type.isPrototype ? target.prototype : undefined;
+    if (!prototype) throw new Error('Unable to retrieve prototype from target provided.');
+    const definitions = Reflect.getAllDefinitions(target);
+    Object.entries(definitions)
+      .filter(([, definition]) => typeof (definition.value) === 'function')
+      .forEach(([property, definition]) => {
+        const fn = definition.value;
+        Reflect.defineProperty(prototype, property, {
+          get() { return fn.bind(this); },
+          configurable: true,
+          enumerable: true,
+        });
+      });
   },
 
   function getProperty<T>(target: AnyObject, propertyName: string, defaultValue?: T, addIfNotExists = false): T | undefined {
@@ -209,12 +251,18 @@ Object.addMethods(Reflect, [
     }
   },
 
-  function getAllPrototypesOf(target: object | Function): object[] {
-    let prototype = target;
-    const prototypes = new Array<object>();
-    if (is.function(prototype)) { prototype = prototype.prototype; prototypes.push(prototype); }
+  function getAllPrototypesOf(target: object | Function): Object[] {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let prototype: any = undefined;
+    const prototypes = new Array<unknown>();
+    const type = Reflect.typeOf(target);
+    if (type.isPrototype) { prototype = (target as Function).prototype; }
+    if (type.isInstance) { prototype = Reflect.getPrototypeOf(target); }
+    if (type.isObject) { prototype = target; }
+    if (prototype == null) return [];
+    prototypes.push(prototype);
     while ((prototype = Reflect.getPrototypeOf(prototype)) !== Object.prototype) { prototypes.push(prototype); }
-    return prototypes;
+    return prototypes.cast<Object>();
   },
 
   function invoke(target: object, name: string, ...args: unknown[]): unknown {
@@ -292,7 +340,7 @@ Object.addMethods(Reflect, [
     return performComparison(source, target, customComparer, false);
   },
 
-  function typeOf<T extends object = object>(value: T): Reflect.ITypeOf<T> {
+  function typeOf<T extends object = object>(value: T): Reflect.TypeOf<T> {
     let type: string = typeof (value);
     const isArray = value instanceof Array;
     const isNull = value === null;
@@ -334,6 +382,112 @@ Object.addMethods(Reflect, [
       isPrimitive,
       value,
     };
+  },
+
+  function walk(target: object | Function, onProperty: (property: Reflect.WalkerProperty) => void | false): void {
+    const walkFunc = (innerTarget: unknown, parent: Reflect.WalkerProperty | undefined, arrayIndex?: number) => {
+      Object.entries(Reflect.getAllDefinitions(innerTarget))
+        .forEach(([name, descriptor], index) => {
+          const property: Reflect.WalkerProperty = {
+            name,
+            descriptor,
+            propertyIndex: index,
+            parent,
+            get path() {
+              if (parent == null) return [name];
+              return parent.path.concat([arrayIndex, name].removeNull());
+            },
+            get: () => {
+              if (Reflect.has(descriptor, 'get')) return descriptor.get?.();
+              if (Reflect.has(descriptor, 'value')) return descriptor.value;
+            },
+            set: (value: unknown) => {
+              if (Reflect.has(descriptor, 'set') || descriptor.writable) Reflect.set(innerTarget as object, name, value);
+            },
+          };
+          const result = onProperty(property);
+          if (result === false) return;
+          const value = property.get();
+          if (is.array(value)) value.forEach((item, itemIndex) => walkFunc(item, property, itemIndex));
+          if (is.plainObject(value)) walkFunc(value, property);
+        });
+    };
+    walkFunc(target, undefined);
+  },
+
+  function getByPath<T = unknown>(target: object, propertyKey: string): { wasFound: boolean, value: T; } {
+    if (typeof (propertyKey) === 'string') {
+      const keys = propertyKey.split(/\.|\[|\]/).filter(v => v.length > 0);
+      if (keys.length > 1) {
+        const firstKey = keys.shift();
+        if (firstKey != null) {
+          const { wasFound, value } = getByPath(target, firstKey);
+          if (wasFound) {
+            if (is.plainObject(value) || is.array(value))
+              // it doesn't matter that the keys only get rejoined here as . in between because JS still treats an index as a property, i.e.
+              // mydata[0].something === mydata.0.something
+              return getByPath(value, keys.join('.'));
+          }
+        }
+        return { wasFound: false, value: undefined as unknown as T };
+      }
+    }
+    if (!Reflect.has(target, propertyKey)) return { wasFound: false, value: undefined as unknown as T };
+    return { wasFound: true, value: Reflect.get(target, propertyKey) };
+  },
+
+  function setByPath<T = unknown>(target: object, propertyKey: string, value: T, createPathIfNotExists = true): boolean {
+    if (typeof (propertyKey) === 'string') {
+      const keys = propertyKey.split(/(\.|\[|\])/).filter(v => v.length > 0);
+      if (keys.length > 1) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const firstKey = keys.shift()!;
+        const separator = keys.shift();
+        const isArray = separator === '[';
+        let index = 0;
+        if (isArray) {
+          let indexAsString = '';
+          do { indexAsString += keys.shift(); } while (!indexAsString.includes(']') && keys.length > 0);
+          index = parseInt(indexAsString.substr(0, indexAsString.length - 1));
+          keys.shift(); // remove the .
+        }
+        let { wasFound, value: innerValue } = Reflect.getByPath(target, firstKey);
+        if (innerValue == null) wasFound = false;
+        if (wasFound) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if (isArray && is.array<any>(innerValue)) {
+            if (innerValue.length <= index) {
+              if (!createPathIfNotExists) return false;
+              innerValue.length = index + 1;
+            }
+            if (keys.length === 0) {
+              innerValue[index] = value;
+              return true;
+            }
+            if (innerValue[index] == null) innerValue[index] = {};
+            return setByPath(innerValue[index], keys.join(''), value, createPathIfNotExists);
+          }
+          return setByPath(innerValue as object, keys.join(''), value, createPathIfNotExists);
+        } else {
+          if (!createPathIfNotExists) return false;
+          if (isArray) {
+            const array = new Array(index + 1);
+            Reflect.set(target, firstKey, array);
+            if (keys.length === 0) {
+              array[index] = value;
+              return true;
+            } else {
+              array[index] = {};
+              return setByPath(array[index], keys.join(''), value, createPathIfNotExists);
+            }
+          }
+          const subObject = {};
+          Reflect.set(target, firstKey, subObject);
+          return setByPath(subObject, keys.join(''), createPathIfNotExists);
+        }
+      }
+    }
+    return Reflect.set(target, propertyKey, value);
   },
 
 ]);

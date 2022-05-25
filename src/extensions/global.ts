@@ -32,10 +32,11 @@ export type Omit<T, K extends keyof T> = Pick<T, Diff<keyof T, K>>;
 
 export type Minus<T, U> = { [P in Diff<keyof T, keyof U>]: T[P] };
 
-type UpsertableObject<T extends Record, TKey extends keyof T = keyof T> = (Pick<T, TKey> | Partial<T>) & Record;
-type IfElsePrimitiveType<T, U> = T extends PrimitiveType ? T : U;
+type UpsertableObject<T extends Record, TKey extends keyof T = keyof T> = (Pick<T, TKey> | Partial<T>);
+// type IfElsePrimitiveType<T, U> = T extends PrimitiveType ? T : U;
 export type Updatable<T extends Record, TKey extends keyof T = keyof T> = UpsertableObject<T & Record, TKey>;
-export type Upsertable<T extends Record | PrimitiveType, TKey extends keyof T = keyof T> = IfElsePrimitiveType<T, UpsertableObject<T & Record, TKey>>;
+export type UpsertableRecord<T extends Record> = T | (Omit<T, keyof Record> & Partial<Record>);
+export type Upsertable<T> = T | (T extends Record ? UpsertableRecord<T> : T);
 export type EnsureId<T> = T extends Record ? T : never;
 export type PrimitiveType = string | number | boolean;
 export type PrimitiveOrObjectType = PrimitiveType | AnyObject;

@@ -1,6 +1,7 @@
 /* eslint-disable max-classes-per-file */
 import './array';
-import { AnyObject } from './global';
+import './map';
+import { AnyObject, Record, Upsertable } from './global';
 
 class TestClass {
   public constructor(value: number) { this.value = value; }
@@ -307,7 +308,7 @@ describe('extension > array', () => {
   describe('upsert', () => {
 
     describe('with objects with ids', () => {
-      let array: { id: string; name: string }[];
+      let array: { id: string; name: string; }[];
 
       beforeEach(() => {
         array = [1, 2, 3, 4, 5].map(id => ({ id: id.toString(), name: id.toString() }));
@@ -351,7 +352,7 @@ describe('extension > array', () => {
 
       it('can update the correct object in an array', () => {
         let data = createTestData();
-        data = data.upsert({ id: '2', surname: 'hales' });
+        data = data.upsert({ id: '2', name: 'jodie', surname: 'hales' });
         expect(data[1]).to.eql({ id: '2', name: 'jodie', surname: 'hales' });
         expect(data[2]).to.eql({ id: '3', name: 'harrison', surname: 'george' });
       });
@@ -426,12 +427,36 @@ describe('extension > array', () => {
       expect(result).to.eql([1, 2, 5, 6, 7, 3, 4]);
     });
 
+    interface UpsertTestRecord extends Record {
+      something: string;
+    }
+
+    it('can upsert many records', () => {
+      function testUpsert<T extends Record>(array: T[], items: T[]) {
+        return array.upsertMany(items);
+      }
+      const records: UpsertTestRecord[] = [{ id: '1', something: 'hey1' }, { id: '2', something: 'bee' }, { id: '3', something: 'new' }];
+      let result: UpsertTestRecord[] = [];
+      result = testUpsert<UpsertTestRecord>(result, records);
+      expect(result).to.eql(records);
+    });
+
+    it('can upsert many upsertable records', () => {
+      function testUpsert<T extends Record>(array: T[], items: Upsertable<T>[]) {
+        return array.upsertMany(items);
+      }
+      const records: Upsertable<UpsertTestRecord>[] = [{ id: '1', something: 'hey1' }, { id: '2', something: 'bee' }, { something: 'new' }];
+      let result: UpsertTestRecord[] = [];
+      result = testUpsert<UpsertTestRecord>(result, records);
+      expect(result).to.eql(records);
+    });
+
   });
 
   describe('replace', () => {
 
     describe('with objects with ids', () => {
-      let array: { id: string; name: string }[];
+      let array: { id: string; name: string; }[];
 
       beforeEach(() => {
         array = [1, 2, 3, 4, 5].map(id => ({ id: id.toString(), name: id.toString() }));
@@ -574,7 +599,7 @@ describe('extension > array', () => {
   describe('except', () => {
 
     describe('with objects with ids', () => {
-      let array: { id: string; name: string }[];
+      let array: { id: string; name: string; }[];
 
       beforeEach(() => {
         array = [1, 2, 3, 4, 5].map(id => ({ id: id.toString(), name: id.toString() }));
@@ -632,7 +657,7 @@ describe('extension > array', () => {
   });
 
   describe('distinct', () => {
-    let array: { id: string; name: string }[];
+    let array: { id: string; name: string; }[];
 
     beforeEach(() => {
       array = [1, 2, 4, 3, 4, 8, 2, 7, 1, 5].map(id => ({ id: id.toString(), name: id.toString() }));
@@ -948,6 +973,81 @@ describe('extension > array', () => {
       const array: string[] = [];
       const result = array.skip(10);
       expect(result).to.eq(array);
+    });
+
+  });
+
+  describe('toMap', () => {
+
+    it('can create a map of an array', () => {
+      const array = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
+      const result = array.toMap(id => id);
+      expect(result).to.instanceOf(Map);
+      expect(result.size).to.eq(9);
+    });
+
+    it('can create a map of a record array', () => {
+      const array = [{ id: '1' }, { id: '2' }, { id: '3' }, { id: '4' }, { id: '5' }, { id: '6' }, { id: '7' }, { id: '8' }, { id: '9' }];
+      const result = array.toMap();
+      expect(result).to.instanceOf(Map);
+      expect(result.size).to.eq(9);
+    });
+
+    it('errors when there is no way to identify the key', () => {
+      const array = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
+      expect(() => {
+        array.toMap();
+      }).to.throw('Item at index 0 of this array is not a record and no createKey delegate was provided to generate the key.');
+    });
+
+  });
+
+  describe('toSet', () => {
+
+    it('can create a set of an array', () => {
+      const array = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
+      const result = array.toSet();
+      expect(result).to.instanceOf(Set);
+      expect(result.size).to.eq(9);
+    });
+
+  });
+
+  describe('flatten', () => {
+
+    it('can flatten a very deep array', () => {
+      const a = [[[[[[[{ a: 1 }, { b: 2 }]]]]]]];
+      const b = a.flatten();
+      expect(b).to.eql([{ a: 1 }, { b: 2 }]);
+    });
+
+    it('can flatten a very shallow array', () => {
+      const a = [{ a: 1 }, { b: 2 }];
+      const b = a.flatten();
+      expect(b).to.eql([{ a: 1 }, { b: 2 }]);
+    });
+
+    it('can flatten a mixed array', () => {
+      const a = [{ a: 1 }, { b: 2 }, [{ c: 3 }, [[{ d: 4 }]]]];
+      const b = a.flatten();
+      expect(b).to.eql([{ a: 1 }, { b: 2 }, { c: 3 }, { d: 4 }]);
+    });
+
+  });
+
+  describe('groupBy', () => {
+
+    it('can group objects together', () => {
+      const values = [{ key: 'a', value: 1 }, { key: 'b', value: 2 }, { key: 'a', value: 3 }, { key: 'b', value: 4 }, { key: 'a', value: 5 }, { key: 'c', value: 6 }];
+      const result = values.groupBy(({ key }) => key);
+      expect(result).to.be.instanceOf(Map);
+      expect(result.size).to.eql(3);
+      const resultAsArray = result.toArray();
+      expect(resultAsArray).to.eql([
+        ['a', [{ key: 'a', value: 1 }, { key: 'a', value: 3 }, { key: 'a', value: 5 }]],
+        ['b', [{ key: 'b', value: 2 }, { key: 'b', value: 4 }]],
+        ['c', [{ key: 'c', value: 6 }]],
+      ]);
     });
 
   });

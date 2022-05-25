@@ -132,6 +132,26 @@ describe('extensions', () => {
 
     });
 
+    describe('between', () => {
+
+      it('can get the value between two search strings', () => {
+        const result = 'Hey @you@ there'.between('@', '@');
+        expect(result).to.eq('you');
+      });
+
+      it('can get the value between two search strings inclusively', () => {
+        const result = 'Hey @you@ there'.between('@', '@', true);
+        expect(result).to.eq('@you@');
+      });
+
+      it('can get the value between two search index points', () => {
+        expect('Hey @you@ there'.between(5, 8)).to.eq('you');
+        expect('Hey @you@ there'.between(0, 3)).to.eq('Hey');
+        expect('Hey @you@ there'.between(10, 15)).to.eq('there');
+      });
+
+    });
+
   });
 
 });

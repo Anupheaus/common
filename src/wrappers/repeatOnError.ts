@@ -46,7 +46,7 @@ export function repeatOnError<T>(delegate: () => T, config: IConfig<T>): T {
       if (successResult !== undefined) { result = successResult as T; }
       return result;
     } catch (error) {
-      return handleError(error);
+      return handleError(error as Error);
     }
   };
 
