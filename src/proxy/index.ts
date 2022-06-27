@@ -1,2 +1,3 @@
-export * from './DynamicProxy';
-export * from './models';
+export * from './createProxyOf';
+export * from './publicModels';
+export * from './traverse';

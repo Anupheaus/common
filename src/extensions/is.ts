@@ -132,6 +132,10 @@ export class Is {
     return !is.object(value);
   }
 
+  public deepEqual(value: unknown, other: unknown): boolean {
+    return Reflect.areDeepEqual(value, other);
+  }
+
 }
 
 export class IsNot {
