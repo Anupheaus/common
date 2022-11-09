@@ -14,6 +14,13 @@ type RemoveNull<T> = Exclude<T, null | undefined>;
 
 type FlattenedArray<Arr> = Arr extends unknown[] ? (Arr extends unknown[][] ? FlattenedArray<Arr[number]> : Arr) : Arr[];
 
+interface MergeOptions<T, R, V> {
+  matchBy(firstItem: T, secondItem: R): boolean;
+  mapMatchedTo?(firstItem: T, secondItem: R, firstItemIndex: number, secondItemIndex: number): V;
+  mapUnmatchedLeftTo?(firstItem: T, firstItemIndex: number): V | undefined;
+  mapUnmatchedRightTo?(secondItem: R): V | undefined;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isRecord(item: any): item is Record {
   return item != null && typeof (item) === 'object' && 'id' in item;
@@ -456,6 +463,7 @@ export class ArrayExtensions<T> {
     return results;
   }
 
+  /** @deprecated Please use merge */
   public mergeWith<P>(items: P[]): T[];
   public mergeWith<P>(items: P[], options: IMergeWithOptions<T, P>): T[];
   public mergeWith<P>(this: T[], items: P[], options?: IMergeWithOptions<T, P>): T[] {
@@ -529,6 +537,26 @@ export class ArrayExtensions<T> {
 
     if (!changeFound) { return this; }
     return result as T[];
+  }
+
+  public merge<R, V = [T | undefined, R | undefined][]>(secondArray: R[], options: MergeOptions<T, R, V>): V[];
+  public merge<R, V = [T | undefined, R | undefined][]>(this: T[], secondArray: R[], options: MergeOptions<T, R, V>): V[] {
+    const { matchBy, mapMatchedTo, mapUnmatchedLeftTo, mapUnmatchedRightTo } = options;
+    const results: V[] = [];
+    const cloneOfSecondArray = new Set(secondArray);
+
+    this.forEach((firstItem, firstItemIndex) => {
+      let hasFirstMatched = false;
+      secondArray.forEach((secondItem, secondItemIndex) => {
+        if (!matchBy(firstItem, secondItem)) return;
+        cloneOfSecondArray.delete(secondItem);
+        hasFirstMatched = true;
+        results.push((mapMatchedTo == null ? [firstItem, secondItem] : mapMatchedTo(firstItem, secondItem, firstItemIndex, secondItemIndex)) as V);
+      });
+      if (!hasFirstMatched) results.push((mapUnmatchedLeftTo == null ? [firstItem, undefined] : mapUnmatchedLeftTo(firstItem, firstItemIndex)) as V);
+    });
+    cloneOfSecondArray.forEach(secondItem => results.push((mapUnmatchedRightTo == null ? [undefined, secondItem] : mapUnmatchedRightTo(secondItem)) as V));
+    return results;
   }
 
   public syncWith<P>(items: P[]): T[];

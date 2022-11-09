@@ -1,0 +1,43 @@
+name: Publish Package
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js 14.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14.x          
+      - run: npm ci
+      - run: npm run build --if-present
+      - run: npm pack
+      - name: Upload
+        uses: actions/upload-artifact@v2
+        with:
+          name: package
+          path: *.tgz
+
+  publish:
+    needs: [build]
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'anupheaus'
+    steps:
+      - name: Download
+        uses: actions/download-artifact@v2
+        with:
+          name: package
+      - name: Publish
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14.x
+          registry-url: https://npm.pkg.github.com/
+          scope: "@anupheaus"
+      - run: echo "registry=https://npm.pkg.github.com/@anupheaus" >> .npmrc
+      - run: npm publish $(ls *.tgz)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
