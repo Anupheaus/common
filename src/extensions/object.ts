@@ -4,6 +4,7 @@ import { hash as utilsHash } from './utils';
 import { Record, Disposable, AnyObject } from './global';
 import { is } from './is';
 import { v4 as uuid } from 'uuid';
+import type { } from './array';
 
 // tslint:disable-next-line:no-namespace
 declare global {

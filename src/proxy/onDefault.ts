@@ -4,7 +4,7 @@ import { TraverseProps } from './traverse';
 import { pathFromArgs, pathsMatch } from './proxyUtils';
 import { Unsubscribe } from '../events';
 
-interface OnDefaultProps {
+export interface OnDefaultProps {
   includeSubProperties?: boolean;
 }
 

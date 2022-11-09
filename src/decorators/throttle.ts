@@ -1,3 +1,5 @@
+import '../extensions/math';
+
 interface Props {
   timeout: number;
   ignoreArguments?: boolean;

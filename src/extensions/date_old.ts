@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/order
 // import moment from 'moment';
 // import 'moment/locale/en-gb';
 // import { InternalError } from '../errors';

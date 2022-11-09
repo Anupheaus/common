@@ -5,7 +5,7 @@
     "noUnusedParameters": false,
     "experimentalDecorators": true,
     "removeComments": true,
-    "noEmit": true,
+    "noEmit": false,
     "module": "CommonJS",
     "resolveJsonModule": true,
     "esModuleInterop": true,
@@ -16,13 +16,10 @@
       "ESNext"
     ],
     "typeRoots": [
-      "node_modules/@types",
-      "node_modules/anux-package/typings"
+      "./node_modules/@types",
+      "./types"
     ]
   },
-  "include": [
-    "src"
-  ],
   "exclude": [
     "dist"
   ]

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable max-classes-per-file */
 import { NotPromise, AnyObject, AnyFunction } from './global';
+import { isEqual } from './is.equal';
 
 function parseArguments<R, T = unknown>(value: T, result: boolean, type?: string, defaultValue?: () => T | R, isIncorrectType?: () => T | R,
   isCorrectType?: (value: T) => T | R): T | R | boolean {
@@ -15,7 +16,7 @@ export class Is {
 
   public get not() { return isNot; } // eslint-disable-line @typescript-eslint/no-use-before-define
 
-  public null(value: unknown): value is null;
+  public null(value: unknown): value is null | undefined;
   public null<T>(value: unknown, defaultValue: () => T): T;
   public null<T>(value: T, defaultValue?: () => T): T | boolean {
     if (typeof (defaultValue) === 'number') { defaultValue = undefined; } // we are being used in a loop
@@ -34,10 +35,9 @@ export class Is {
     return typeof (value) === 'function' && value.toString().startsWith('class ');
   }
 
-  public prototype<T extends Object>(value: T): value is T;
-  public prototype<T>(value: unknown): value is T {
-    if (this.object(value) && typeof (value.constructor) === 'function' && Object.getOwnPropertyNames(value).includes('constructor')) return true;
-    if (this.class(value)) return true;
+  public prototype<T extends Function>(value: T | unknown): value is T {
+    if (is.object(value) && typeof (value.constructor) === 'function' && Object.getOwnPropertyNames(value).includes('constructor')) return true;
+    if (is.class(value)) return true;
     return false;
   }
 
@@ -128,12 +128,20 @@ export class Is {
     return value != null && keys.includes(value.toString());
   }
 
-  public primitive<T extends string | number | boolean>(value: T): value is T {
-    return !is.object(value);
+  public instance<T extends object>(value: T | unknown): value is T {
+    return !is.prototype(value) && is.object(value) && value.constructor.name !== 'Object';
+  }
+
+  public primitive<T extends string | number | boolean>(value: T | unknown): value is T {
+    return is.not.null(value) && !is.object(value);
   }
 
   public deepEqual(value: unknown, other: unknown): boolean {
-    return Reflect.areDeepEqual(value, other);
+    return isEqual(value, other, false);
+  }
+
+  public shallowEqual(value: unknown, other: unknown): boolean {
+    return isEqual(value, other, true);
   }
 
 }
@@ -145,6 +153,10 @@ export class IsNot {
   public null<T>(value: T, defaultValue?: () => T): T | boolean {
     if (typeof (defaultValue) === 'number') { defaultValue = undefined; } // we are being used in a loop
     return parseArguments(value, value != null, undefined, defaultValue, () => defaultValue ? defaultValue() : false, () => value);
+  }
+
+  public array<T>(value: T | unknown[]): value is T {
+    return !(value instanceof Array);
   }
 
   // public allNull<T>(...values: (() => T)[]): T | undefined {

@@ -98,6 +98,10 @@ class To {
     }
   }
 
+  public switchMap<T extends string | number, R>(value: T, map: Partial<Record<T, R>> & { '*': R; }): R {
+    return map[value] ?? map['*'];
+  }
+
 }
 
 export const to = new To();

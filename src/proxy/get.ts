@@ -3,7 +3,7 @@ import { OnGetCallback, OnGetEvent } from './publicModels';
 import { pathFromArgs, pathsMatch } from './proxyUtils';
 import { Unsubscribe } from '../events';
 
-interface OnGetProps {
+export interface OnGetProps {
   includeSubProperties?: boolean;
 }
 

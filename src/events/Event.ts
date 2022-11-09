@@ -5,6 +5,7 @@ import { AnyFunction, PromiseMaybe } from '../extensions/global';
 const HandlerRemoved = Symbol('handlerRemoved');
 const EventType = Symbol('eventType');
 const EventProps = Symbol('eventProps');
+const PrevEventArgs = Symbol('prevEventArgs');
 
 export type Unsubscribe = () => void;
 
@@ -22,6 +23,7 @@ export interface EventDelegateProps {
 }
 
 export interface CommonEventCreateProps {
+  raisePreviousEventsOnNewSubscribers?: boolean;
 }
 
 export interface SingleResultEventCreateProps extends CommonEventCreateProps {
@@ -34,9 +36,14 @@ export interface ArrayResultEventCreateProps extends CommonEventCreateProps {
 
 export type EventCreateProps = SingleResultEventCreateProps | ArrayResultEventCreateProps;
 
+interface CommonEventDelegate {
+  [EventProps]: EventCreateProps;
+  [PrevEventArgs]: Set<unknown[]>;
+}
+
 /* eslint-disable max-len */
-export type ArrayResultEventDelegate<FuncType extends AnyFunction = AnyFunction> = ((delegate: FuncType, props?: EventDelegateProps) => Unsubscribe) & { [EventType]: 'array';[EventProps]: EventCreateProps; };
-export type SingleResultEventDelegate<FuncType extends AnyFunction = AnyFunction> = ((delegate: FuncType, props?: EventDelegateProps) => Unsubscribe) & { [EventType]: 'single';[EventProps]: EventCreateProps; };
+export type ArrayResultEventDelegate<FuncType extends AnyFunction = AnyFunction> = ((delegate: FuncType, props?: EventDelegateProps) => Unsubscribe) & { [EventType]: 'array'; } & CommonEventDelegate;
+export type SingleResultEventDelegate<FuncType extends AnyFunction = AnyFunction> = ((delegate: FuncType, props?: EventDelegateProps) => Unsubscribe) & { [EventType]: 'single'; } & CommonEventDelegate;
 export type EventDelegate<FuncType extends AnyFunction = AnyFunction> = ArrayResultEventDelegate<FuncType> | SingleResultEventDelegate<FuncType>;
 
 type MakeArrayResultEventDelegate<FuncType extends AnyFunction = AnyFunction> = FuncType extends ArrayResultEventDelegate<infer A> ? ArrayResultEventDelegate<A> : ArrayResultEventDelegate<FuncType>;
@@ -111,6 +118,10 @@ function processHandlersWithPassthrough(handlers: Handler[], args: unknown[], ha
   return processHandlers(handlers.slice());
 }
 
+function applyPrevEventsToHandler<FuncType extends AnyFunction>(event: EventDelegate<FuncType>, handler: Handler<FuncType>): void {
+  event[PrevEventArgs].forEach(args => handler.handler(...args));
+}
+
 function create<FuncType extends AnyFunction>(): MakeArrayResultEventDelegate<FuncType>;
 // dummy overload for intellisense only
 // eslint-disable-next-line max-len
@@ -123,10 +134,12 @@ function create<FuncType extends AnyFunction>(props: EventCreateProps = {}): Eve
     if (!eventData.has(event as EventDelegate)) throw new ObjectDisposedError('Unable to subscribe to an event after it has been disposed.');
     const handler = { handler: delegate, ...eventProps };
     handlers.add(handler);
+    if (props.raisePreviousEventsOnNewSubscribers === true) applyPrevEventsToHandler(event, handler);
     return () => { handlers.delete(handler); };
   }) as EventDelegate<FuncType>;
   event[EventType] = props?.mode === 'passthrough' ? 'single' : 'array';
   event[EventProps] = props;
+  if (props.raisePreviousEventsOnNewSubscribers === true) event[PrevEventArgs] = new Set<unknown[]>();
   eventData.set(event as EventDelegate, { handlers, isEnabled: true });
   return event;
 }
@@ -137,12 +150,13 @@ function raise<EventType extends EventDelegate>(event: EventType, ...args: GetAr
   const { handlers, isEnabled } = data;
   if (!isEnabled) return [] as unknown as GetReturnValueFromEvent<EventType>;
   const handlersInOrder = Array.from(handlers.values()).orderBy(({ orderIndex }) => orderIndex ?? 0);
-  const processingMode = event[EventProps].mode ?? 'concurrent';
+  const { mode: processingMode = 'concurrent' } = event[EventProps];
   const processingMethod = (() => {
     if (processingMode === 'passthrough') return processHandlersWithPassthrough;
     if (processingMode === 'in-turn') return processHandlersInTurn;
     return processHandlersConcurrently;
   })();
+  if (event[PrevEventArgs]) event[PrevEventArgs].add(args);
   return processingMethod(handlersInOrder, args, handler => handlers.has(handler)) as GetReturnValueFromEvent<EventType>;
 }
 

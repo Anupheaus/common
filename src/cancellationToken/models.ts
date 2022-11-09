@@ -1,1 +1,1 @@
-export type CancellationCallback = (() => void) | ((reason: string) => void);
+export type CancellationCallback = (reason?: string) => void;

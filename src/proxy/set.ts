@@ -9,11 +9,11 @@ interface Props extends Omit<CommonProps, 'api'> {
   raiseOnDefault: Required<TraverseProps>['onEmptyProperty'];
 }
 
-interface OnSetProps {
+export interface OnSetProps {
   includeSubProperties?: boolean;
 }
 
-interface OnAfterSetProps {
+export interface OnAfterSetProps {
   includeSubProperties?: boolean;
 }
 
@@ -111,3 +111,9 @@ export function createSet({ proxyCache, target, raiseOnDefault }: Props) {
     onAfterSet,
   };
 }
+
+// export type CreateSetApi = ReturnType<typeof internalCreateSet>;
+
+// export function createSet(props: Props): CreateSetApi {
+//   return internalCreateSet(props);
+// }

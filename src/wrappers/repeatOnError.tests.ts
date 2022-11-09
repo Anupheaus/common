@@ -45,7 +45,7 @@ describe('wrappers', () => {
             throw new Error('Error raised!');
           }, { maxAttempts: 3 });
         } catch (e) {
-          error = e;
+          error = e as Error;
         }
         expect(callCount).to.eq(3);
         expect(error).to.have.property('message', 'Error raised!');
@@ -62,7 +62,7 @@ describe('wrappers', () => {
             throw new Error('Error raised!');
           }, { maxAttempts: 3, onFailure: () => 'boo' });
         } catch (e) {
-          error = e;
+          error = e as Error;
         }
         expect(callCount).to.eq(3);
         expect(error).to.be.undefined;
@@ -114,7 +114,7 @@ describe('wrappers', () => {
             throw new Error('Error raised!');
           }, { maxAttempts: 3 });
         } catch (e) {
-          error = e;
+          error = e as Error;
         }
         expect(callCount).to.eq(3);
         expect(error).to.have.property('message', 'Error raised!');
@@ -132,7 +132,7 @@ describe('wrappers', () => {
             throw new Error('Error raised!');
           }, { maxAttempts: 3, onFailure: () => Promise.resolve('boo') });
         } catch (e) {
-          error = e;
+          error = e as Error;
         }
         expect(callCount).to.eq(3);
         expect(error).to.be.undefined;

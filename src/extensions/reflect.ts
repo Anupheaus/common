@@ -1,4 +1,3 @@
-import { createCustomEqual } from 'fast-equals';
 import { InternalError } from '../errors';
 import { is } from './is';
 import './array';
@@ -10,25 +9,31 @@ export enum PropertyAccess {
   CanWrite,
 }
 
-const fastEquals = (customComparer?: (source: unknown, target: unknown) => boolean | void, isDeepComparison?: boolean) => {
-  customComparer = typeof (customComparer) === 'function' ? customComparer : undefined;
-  return createCustomEqual(comparitor => (objA, objB) => {
-    if (customComparer) {
-      const result = customComparer(objA, objB);
-      if (result === true || result === false) { return result; }
-    }
-    if (typeof (objA) === 'function' && typeof (objB) === 'function' && objA.toString() === objB.toString()) { return true; }
-    if (!isDeepComparison && typeof (objA) === 'object' && typeof (objB) === 'object') {
-      if (!(objA instanceof Date)) { return objA === objB; }
-    }
-    const finalResult = comparitor(objA, objB);
-    return isDeepComparison ? finalResult : finalResult === true;
-  });
-};
+// const fastEquals = (customComparer?: (source: unknown, target: unknown) => boolean | void, isDeepComparison?: boolean) => {
+//   customComparer = typeof (customComparer) === 'function' ? customComparer : undefined;
+//   return createCustomEqual(v=>({
+//     ...v,
+//     areObjectsEqual: (a: any, b: any, isEqual, meta: any) => {
 
-function performComparison(source: unknown, target: unknown, customComparer?: (source: unknown, target: unknown) => boolean | void, isDeepComparison = false): boolean {
-  return fastEquals(customComparer, isDeepComparison)(source, target);
-}
+//       return v.areObjectsEqual(a, b, isEqual, meta);
+//     },
+//   }))/*((objA: any, objB: any): any => {
+//     if (customComparer) {
+//       const result = customComparer(objA, objB);
+//       if (result === true || result === false) { return result; }
+//     }
+//     if (typeof (objA) === 'function' && typeof (objB) === 'function' && objA.toString() === objB.toString()) { return true; }
+//     if (!isDeepComparison && typeof (objA) === 'object' && typeof (objB) === 'object') {
+//       if (!(objA instanceof Date)) { return objA === objB; }
+//     }
+//     const finalResult = comparitor(objA, objB);
+//     return isDeepComparison ? finalResult : finalResult === true;
+//   });*/
+// };
+
+// function performComparison(source: unknown, target: unknown, customComparer?: (source: unknown, target: unknown) => boolean | void, isDeepComparison = false): boolean {
+//   return fastEquals(customComparer, isDeepComparison)(source, target);
+// }
 
 declare global {
 
@@ -96,16 +101,15 @@ declare global {
 
     function parameterNames(func: Function): string[];
 
+    /** @deprecated Please use is.deepEqual */
     function areDeepEqual(source: unknown, target: unknown): boolean;
-    function areDeepEqual(source: unknown, target: unknown, customComparer: (objA: unknown, objB: unknown) => boolean | void): boolean;
+
+    /** @deprecated Please use is.shallowEqual */
     function areShallowEqual(source: unknown, target: unknown): boolean;
-    function areShallowEqual(source: unknown, target: unknown, customComparer: (objA: unknown, objB: unknown) => boolean | void): boolean;
 
     function wrapMethod<T extends Function, R>(target: object, method: T, delegate: (originalFunc: T, args: unknown[]) => R): R;
 
     function hashesOf(target: unknown): number[];
-
-    function typeOf<T = object>(value: T): TypeOf<T>;
 
     function walk(target: object, onProperty: (property: Reflect.WalkerProperty) => void | false): void;
 
@@ -151,9 +155,8 @@ Object.addMethods(Reflect, [
   },
 
   function className(target: unknown): string {
-    const type = Reflect.typeOf(target);
-    if (type.isInstance) return (target as object).constructor.name;
-    if (type.isPrototype) return (target as Function).name;
+    if (is.instance(target)) return target.constructor.name;
+    if (is.prototype(target)) return target.name;
     throw new Error('The type of the target provided was neither an instance or a class definition.');
   },
 
@@ -184,7 +187,7 @@ Object.addMethods(Reflect, [
   },
 
   function getAllDefinitions(target: object): PropertyDescriptorMap {
-    const descriptors: PropertyDescriptorMap = {};
+    const descriptors: AnyObject = {};
     Reflect.getAllPrototypesOf(target)
       .mapMany(prototype => Object.getOwnPropertyNames(prototype)
         .map(key => ({ key, descriptor: Reflect.getOwnPropertyDescriptor(prototype, key) as PropertyDescriptor }))
@@ -193,12 +196,11 @@ Object.addMethods(Reflect, [
         if (descriptors[item.key]) { return; }
         descriptors[item.key] = item.descriptor;
       });
-    return descriptors;
+    return descriptors as PropertyDescriptorMap;
   },
 
-  function bindAllMethodsOn(target: AnyObject): void {
-    const type = Reflect.typeOf(target);
-    const prototype = type.isInstance ? target.constructor.prototype : type.isPrototype ? target.prototype : undefined;
+  function bindAllMethodsOn(target: unknown): void {
+    const prototype = is.instance(target) ? target.constructor.prototype : is.prototype(target) ? target.prototype : undefined;
     if (!prototype) throw new Error('Unable to retrieve prototype from target provided.');
     const definitions = Reflect.getAllDefinitions(target);
     Object.entries(definitions)
@@ -255,13 +257,12 @@ Object.addMethods(Reflect, [
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let prototype: any = undefined;
     const prototypes = new Array<unknown>();
-    const type = Reflect.typeOf(target);
-    if (type.isPrototype) { prototype = (target as Function).prototype; }
-    if (type.isInstance) { prototype = Reflect.getPrototypeOf(target); }
-    if (type.isObject) { prototype = target; }
+    if (is.prototype(target)) prototype = target.prototype;
+    else if (is.instance(target)) prototype = Reflect.getPrototypeOf(target);
+    else if (is.object(target)) prototype = target;
     if (prototype == null) return [];
     prototypes.push(prototype);
-    while ((prototype = Reflect.getPrototypeOf(prototype)) !== Object.prototype) { prototypes.push(prototype); }
+    while ((prototype = Reflect.getPrototypeOf(prototype)) !== Object.prototype) prototypes.push(prototype);
     return prototypes.cast<Object>();
   },
 
@@ -332,56 +333,12 @@ Object.addMethods(Reflect, [
       .distinct();
   },
 
-  function areDeepEqual(source: unknown, target: unknown, customComparer?: (objA: unknown, objB: unknown) => boolean | void): boolean {
-    return performComparison(source, target, customComparer, true);
+  function areDeepEqual(source: unknown, target: unknown): boolean {
+    return is.deepEqual(source, target);
   },
 
-  function areShallowEqual(source: unknown, target: unknown, customComparer?: (source: unknown, target: unknown) => boolean | void): boolean {
-    return performComparison(source, target, customComparer, false);
-  },
-
-  function typeOf<T extends object = object>(value: T): Reflect.TypeOf<T> {
-    let type: string = typeof (value);
-    const isArray = value instanceof Array;
-    const isNull = value === null;
-    const isUndefined = value === undefined;
-    const isNullOrUndefined = isNull || isUndefined;
-    const isDate = value instanceof Date;
-    let isObject = type === 'object' && !isArray && !isNull && !isDate;
-    let isFunction = type === 'function';
-    let isPrototype = false;
-    let isInstance = false;
-    if (isObject && typeof (value.constructor) === 'function') {
-      isPrototype = Object.getOwnPropertyNames(value).includes('constructor');
-      isInstance = (!isPrototype && value.constructor.name !== 'Object');
-      isObject = !(isPrototype || isInstance);
-    } else if (isFunction && value.toString().indexOf('class') >= 0) {
-      isPrototype = true;
-      isFunction = false;
-    }
-    const isBoolean = type === 'boolean';
-    const isNumber = type === 'number';
-    const isString = type === 'string';
-
-    const isPrimitive = isBoolean || isNumber || isString;
-    type = isArray ? 'array' : isNull ? 'null' : type;
-    return {
-      type,
-      isArray,
-      isNull,
-      isUndefined,
-      isNullOrUndefined,
-      isDate,
-      isObject,
-      isPrototype,
-      isInstance,
-      isBoolean,
-      isNumber,
-      isString,
-      isFunction,
-      isPrimitive,
-      value,
-    };
+  function areShallowEqual(source: unknown, target: unknown): boolean {
+    return is.shallowEqual(source, target);
   },
 
   function walk(target: object | Function, onProperty: (property: Reflect.WalkerProperty) => void | false): void {

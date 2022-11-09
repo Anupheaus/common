@@ -593,7 +593,7 @@ export class ArrayConstructorExtensions {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public empty(): Readonly<any[]> {
+  public empty<T = any>(): ReadonlyArray<T> {
     return emptyArray;
   }
 

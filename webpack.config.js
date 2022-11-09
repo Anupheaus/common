@@ -15,6 +15,27 @@ module.exports = {
     library: 'anux-common',
   },
   module: {
+    // rules: [{
+    //   test: /\.ts$/,
+    //   exclude: /(node_modules|bower_components)/,
+    //   use: {
+    //     loader: 'swc-loader',
+    //     options: {
+    //       // This makes swc-loader invoke swc synchronously.
+    //       sync: true,
+    //       jsc: {
+    //         parser: {
+    //           syntax: 'typescript',
+    //           decorators: true,
+    //         },
+    //         transform: {
+    //           legacyDecorator: true,
+    //           decoratorMetadata: true,
+    //         },
+    //       },
+    //     },
+    //   },
+    // }]
     rules: [{
       test: /\.tsx?$/,
       loader: 'ts-loader',
@@ -79,7 +100,7 @@ module.exports = {
     source: false,
     timings: true,
     usedExports: false,
-    version: false,
-    warnings: false,
+    version: true,
+    warnings: true,
   },
 };

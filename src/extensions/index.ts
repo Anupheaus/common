@@ -1,7 +1,6 @@
-// import 'datejs';
 import './object';
 import './array';
-import './date_old';
+import './date';
 import './function';
 import './math';
 import './promise';
@@ -12,6 +11,5 @@ import './set';
 
 export * from './is';
 export * from './global';
-export * from './date';
 export * from './to';
 export * from './promise';

@@ -1,6 +1,6 @@
 /* eslint-disable max-classes-per-file */
 import './object';
-import dateFormat from 'dateformat';
+import { DateTime } from 'luxon';
 
 type AddUnits = 'days' | 'hours' | 'minutes' | 'seconds';
 
@@ -56,7 +56,8 @@ class DateExtensions {
   public format(): string;
   public format(format: string): string;
   public format(this: Date, format?: string): string {
-    return dateFormat(this, format ?? 'isoDateTime');
+    const dateTime = DateTime.fromJSDate(this);
+    return format != null ? dateTime.toFormat(format) : dateTime.toISO();
   }
 
 }
@@ -69,6 +70,16 @@ class DateConstructorExtensions {
     if (epochOrDate instanceof Date) return Date.timeTaken(epochOrDate.getTime());
     if (typeof (epochOrDate) === 'number') return Date.now() - epochOrDate;
     throw new Error('The epoch time or date you provided to timeTaken was invalid.');
+  }
+
+  public format(epoch: number): string;
+  public format(epoch: number, format: string): string;
+  public format(date: Date): string;
+  public format(date: Date, format: string): string;
+  public format(epochOrDate: number | Date, format = 'isoDateTime'): string {
+    if (epochOrDate instanceof Date) return epochOrDate.format(format);
+    if (typeof (epochOrDate) === 'number') return (new Date(epochOrDate)).format(format);
+    throw new Error('The epoch time or date you provided to format was invalid.');
   }
 
 }
