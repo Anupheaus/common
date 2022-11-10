@@ -10,6 +10,7 @@
     "build": "webpack --mode production",
     "build:dev": "anux build dev",
     "test": "mocha --config ./tests/mocha.js",
+    "test-ci": "mocha --config ./tests/mocha.js",
     "test:watch": "mocha --config ./tests/mocha.js --watch",
     "findDeclarationErrors": "tsc --declaration --declarationDir ./dist --emitDeclarationOnly"
   },

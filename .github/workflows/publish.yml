@@ -5,44 +5,53 @@ on:
     branches: [master]
 
 jobs:
-  build:
+  Build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Install and test
+      - name: Download Code
+        uses: actions/checkout@v2
+      - name: Setup Environment
         uses: actions/setup-node@v1
         with:
           node-version: 14.x
-      - run: npm ci
-      - run: npm test
+      - name: Configure NPM
+        run: npm config set //npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}
+      - name: Install Dependencies
+        run: npm ci
+      - name: Run Tests
+        run: npm run test-ci
+      - name: Build
+        run: npm run build --if-present
       - name: Perform Version Bump
         uses: "phips28/gh-action-bump-version@master"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: npm run build --if-present
-      - run: npm pack
+      - name: Pack
+        run: npm pack
       - name: Upload
         uses: actions/upload-artifact@v2
         with:
           name: package
           path: "*.tgz"
 
-  publish:
-    needs: [build]
+  Publish:
+    needs: [Build]
     runs-on: ubuntu-latest
     if: github.repository_owner == 'anupheaus'
     steps:
-      - name: Download
+      - name: Download Package
         uses: actions/download-artifact@v2
         with:
           name: package
-      - name: Publish
+      - name: Setup Environment
         uses: actions/setup-node@v1
         with:
           node-version: 14.x
           registry-url: https://npm.pkg.github.com/
           scope: "@anupheaus"
-      - run: echo "registry=https://npm.pkg.github.com/@anupheaus" >> .npmrc
-      - run: npm publish $(ls *.tgz)
+      - name: Configure NPM
+        run: echo "registry=https://npm.pkg.github.com/@anupheaus" >> .npmrc
+      - name: Publish
+        run: npm publish $(ls *.tgz)
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
