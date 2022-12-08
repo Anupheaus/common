@@ -27,6 +27,11 @@ export class Records<T extends Record = Record> {
   public get isEmpty(): boolean {
     return this.#records.length === 0;
   }
+
+  public ids(): string[] {
+    return this.#records.ids();
+  }
+
   public add(records: T[]): void;
   public add(record: T): void;
   public add(recordOrRecords: T | T[]): void {
