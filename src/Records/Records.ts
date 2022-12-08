@@ -1,4 +1,4 @@
-import { is, Record } from '../extensions';
+import { is, Record, UpsertableRecord } from '../extensions';
 
 export type RecordsModifiedReason = 'add' | 'remove' | 'update' | 'clear';
 
@@ -98,10 +98,14 @@ export class Records<T extends Record = Record> {
     return this.onModified(records => callback(records), { acceptableReasons: ['update'] });
   }
 
-  public upsert(records: T[]): void;
-  public upsert(record: T): void;
-  public upsert(recordOrRecords: T | T[]): void {
-    const records = is.array(recordOrRecords) ? recordOrRecords : [recordOrRecords];
+  public upsert(records: UpsertableRecord<T>[]): void;
+  public upsert(record: UpsertableRecord<T>): void;
+  public upsert(recordOrRecords: UpsertableRecord<T> | UpsertableRecord<T>[]): void {
+    const records = (is.array(recordOrRecords) ? recordOrRecords : [recordOrRecords]) as T[];
+    records.forEach(record => {
+      if (is.not.empty(record.id)) return;
+      record.id = Math.uniqueId();
+    });
     const allIds = this.#records.ids();
     const existingRecords = [] as T[];
     const newRecords = [] as T[];
