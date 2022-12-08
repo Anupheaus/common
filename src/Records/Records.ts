@@ -9,8 +9,11 @@ export interface OnModifiedOptions<T extends Record = Record> {
 }
 
 export class Records<T extends Record = Record> {
-  constructor(records: T[]) {
-    this.#records = records;
+  constructor();
+  constructor(records: T[]);
+  constructor(records: Map<string, T>);
+  constructor(records?: T[] | Map<string, T>) {
+    this.#records = (is.array(records) ? records : records instanceof Map ? Array.from(records.values()) : undefined) ?? [];
     this.#onModifiedCallbacks = new Set();
   }
 
@@ -48,6 +51,10 @@ export class Records<T extends Record = Record> {
 
   public toArray(): T[] {
     return this.#records.slice();
+  }
+
+  public toMap(): Map<string, T> {
+    return new Map(this.#records.map(record => [record.id, record]));
   }
 
   public remove(ids: string[]): void;
