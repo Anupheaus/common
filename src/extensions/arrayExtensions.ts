@@ -1,7 +1,7 @@
 /* eslint-disable max-classes-per-file */
 import './object';
 import { MapDelegate, SimpleMapDelegate, IArrayOrderByConfig, IArrayDiff, IMergeWithOptions, MergeWithUpdateOperations, GroupingDelegate } from '../models';
-import { ArgumentInvalidError, InternalError } from '../errors';
+import { ArgumentInvalidError } from '../errors';
 import { SortDirections } from '../models/sort';
 import { DeepPartial, Record, TypeOf, Upsertable, Updatable } from './global';
 import './reflect';
@@ -252,12 +252,12 @@ export class ArrayExtensions<T> {
 
   public insert(item: T): T[];
   public insert(item: T, index: number): T[];
-  public insert(this: T[], item: T, index?: number): T[] {
-    const foundIndex = isRecord(item) ? this.indexOfId(item.id) : this.indexOf(item);
-    if (foundIndex !== -1) { throw new InternalError('The item being inserted already exists in this array.'); }
+  public insert(items: T[], index: number): T[];
+  public insert(this: T[], itemOrItems: T | T[], index?: number): T[] {
+    const items = itemOrItems instanceof Array ? itemOrItems : [itemOrItems];
     const result = this.slice();
     index = index == null ? this.length - 1 : index;
-    result.splice(index, 0, item);
+    result.splice(index, 0, ...items);
     return result;
   }
 
