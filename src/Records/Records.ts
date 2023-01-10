@@ -167,6 +167,15 @@ export class Records<T extends Record = Record> {
     return () => this.#onModifiedCallbacks.delete(callbackWrapper);
   }
 
+  @bind
+  public reorder(ids: string[]): void {
+    const maxLength = this.#records.length;
+    this.#records = this.#records.orderBy(({ id }) => {
+      const index = ids.indexOf(id);
+      return index === -1 ? maxLength : index;
+    });
+  }
+
   #update(delegate: (record: T, index: number) => T, reason: RecordsModifiedReason): void {
     const updatedRecords: T[] = [];
     this.#records = this.#records.map((record, index) => {
