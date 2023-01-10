@@ -1,7 +1,7 @@
 import { bind } from '../decorators';
 import { is, Record, UpsertableRecord } from '../extensions';
 
-export type RecordsModifiedReason = 'add' | 'remove' | 'update' | 'clear';
+export type RecordsModifiedReason = 'add' | 'remove' | 'update' | 'clear' | 'reorder';
 
 export interface OnModifiedOptions<T extends Record = Record> {
   acceptableReasons?: RecordsModifiedReason[];
@@ -174,6 +174,7 @@ export class Records<T extends Record = Record> {
       const index = ids.indexOf(id);
       return index === -1 ? maxLength : index;
     });
+    this.#invokeCallbacks(this.#records, 'reorder');
   }
 
   #update(delegate: (record: T, index: number) => T, reason: RecordsModifiedReason): void {
