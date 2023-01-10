@@ -1,3 +1,4 @@
+import { bind } from '../decorators';
 import { is, Record, UpsertableRecord } from '../extensions';
 
 export type RecordsModifiedReason = 'add' | 'remove' | 'update' | 'clear';
@@ -28,12 +29,14 @@ export class Records<T extends Record = Record> {
     return this.#records.length === 0;
   }
 
+  @bind
   public ids(): string[] {
     return this.#records.ids();
   }
 
   public add(records: T[]): void;
   public add(record: T): void;
+  @bind
   public add(recordOrRecords: T | T[]): void {
     const records = is.array(recordOrRecords) ? recordOrRecords : [recordOrRecords];
     const newRecords: T[] = [];
@@ -46,18 +49,22 @@ export class Records<T extends Record = Record> {
     this.#invokeCallbacks(newRecords, 'add');
   }
 
+  @bind
   public onAdded(callback: (records: T[]) => void): () => void {
     return this.onModified(records => callback(records), { acceptableReasons: ['add'] });
   }
 
+  @bind
   public get(id: string): T | undefined {
     return this.#records.find(record => record.id === id);
   }
 
+  @bind
   public toArray(): T[] {
     return this.#records.slice();
   }
 
+  @bind
   public toMap(): Map<string, T> {
     return new Map(this.#records.map(record => [record.id, record]));
   }
@@ -66,6 +73,7 @@ export class Records<T extends Record = Record> {
   public remove(id: string): void;
   public remove(records: T[]): void;
   public remove(record: T): void;
+  @bind
   public remove(arg: string | string[] | T | T[]): void {
     const ids = is.string(arg) ? [arg] : is.array(arg) ? arg.map(value => is.string(value) ? value : value.id) : [arg.id];
     const recordsToRemove = this.#records.filter(record => ids.includes(record.id));
@@ -74,16 +82,19 @@ export class Records<T extends Record = Record> {
     this.#invokeCallbacks(recordsToRemove, 'remove');
   }
 
+  @bind
   public onRemoved(callback: (records: T[]) => void): () => void {
     return this.onModified(records => callback(records), { acceptableReasons: ['remove'] });
   }
 
+  @bind
   public clear(): void {
     const oldRecords = this.#records.slice();
     this.#records = [];
     this.#invokeCallbacks(oldRecords, 'clear');
   }
 
+  @bind
   public onCleared(callback: (records: T[]) => void): () => void {
     return this.onModified(records => callback(records), { acceptableReasons: ['clear'] });
   }
@@ -92,6 +103,7 @@ export class Records<T extends Record = Record> {
   public update(record: T): void;
   public update(ids: string[], predicate: (record: T) => T): void;
   public update(id: string, predicate: (record: T) => T): void;
+  @bind
   public update(...args: unknown[]): void {
     const idOrRecordOrRecords = args[0] as string | string[] | T | T[] | undefined;
     if (idOrRecordOrRecords == null) throw new Error('Unable to update record. No record or id provided.');
@@ -106,12 +118,14 @@ export class Records<T extends Record = Record> {
     this.#update(record => ids.includes(record.id) ? predicate(record) : record, 'update');
   }
 
+  @bind
   public onUpdated(callback: (records: T[]) => void): () => void {
     return this.onModified(records => callback(records), { acceptableReasons: ['update'] });
   }
 
   public upsert(records: UpsertableRecord<T>[]): void;
   public upsert(record: UpsertableRecord<T>): void;
+  @bind
   public upsert(recordOrRecords: UpsertableRecord<T> | UpsertableRecord<T>[]): void {
     const records = (is.array(recordOrRecords) ? recordOrRecords : [recordOrRecords]) as T[];
     records.forEach(record => {
@@ -126,18 +140,22 @@ export class Records<T extends Record = Record> {
     if (newRecords.length > 0) this.add(newRecords);
   }
 
+  @bind
   public filter(predicate: (record: T, index: number) => boolean): T[] {
     return this.#records.filter(predicate);
   }
 
+  @bind
   public find(predicate: (record: T, index: number) => boolean): T | undefined {
     return this.#records.find(predicate);
   }
 
+  @bind
   public map<R>(predicate: (record: T, index: number) => R): R[] {
     return this.#records.map(predicate);
   }
 
+  @bind
   public onModified(callback: (records: T[], reason: RecordsModifiedReason) => void, { acceptableIds, acceptableReasons, filterOn }: OnModifiedOptions<T> = {}): () => void {
     const callbackWrapper = (records: T[], reason: RecordsModifiedReason) => {
       if (is.array(acceptableReasons) && !acceptableReasons.includes(reason)) return;
