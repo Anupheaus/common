@@ -1,4 +1,4 @@
-import { AnyObject } from '../extensions';
+import type { AnyObject } from '../extensions';
 
 interface InternalProps {
   error?: unknown;

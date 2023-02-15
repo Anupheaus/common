@@ -1,4 +1,5 @@
-import { AnyObject, is } from '../extensions';
+import type { AnyObject } from '../extensions';
+import { is } from '../extensions/is';
 import { BaseError } from './BaseError';
 
 interface Props {

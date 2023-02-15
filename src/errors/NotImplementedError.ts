@@ -1,4 +1,4 @@
-import { AnyObject } from '../extensions';
+import type { AnyObject } from '../extensions';
 import { BaseError } from './BaseError';
 
 export class NotImplementedError extends BaseError {

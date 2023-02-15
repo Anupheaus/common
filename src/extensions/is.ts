@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable max-classes-per-file */
-import { NotPromise, AnyObject, AnyFunction } from './global';
+import type { NotPromise, AnyObject, AnyFunction } from './global';
 import { isEqual } from './is.equal';
 
 function parseArguments<R, T = unknown>(value: T, result: boolean, type?: string, defaultValue?: () => T | R, isIncorrectType?: () => T | R,
