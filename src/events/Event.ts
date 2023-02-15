@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { ObjectDisposedError } from '../errors';
-import { AnyFunction, PromiseMaybe } from '../extensions/global';
+import { ObjectDisposedError } from '../errors/ObjectDisposedError';
+import type { AnyFunction, PromiseMaybe } from '../extensions/global';
 
 const HandlerRemoved = Symbol('handlerRemoved');
 const EventType = Symbol('eventType');
