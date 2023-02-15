@@ -1,6 +1,6 @@
 {
   "name": "@anupheaus/common",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "main": "./dist/index.js",
   "repository": "https://github.com/Anupheaus/common.git",
   "author": "Anupheaus",
