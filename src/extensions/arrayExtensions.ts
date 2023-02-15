@@ -1,9 +1,9 @@
 /* eslint-disable max-classes-per-file */
 import './object';
 import { MapDelegate, SimpleMapDelegate, IArrayOrderByConfig, IArrayDiff, IMergeWithOptions, MergeWithUpdateOperations, GroupingDelegate } from '../models';
-import { ArgumentInvalidError } from '../errors';
+import { ArgumentInvalidError } from '../errors/ArgumentInvalidError';
 import { SortDirections } from '../models/sort';
-import { DeepPartial, Record, TypeOf, Upsertable, Updatable } from './global';
+import type { DeepPartial, Record, TypeOf, Upsertable, Updatable } from './global';
 import './reflect';
 
 type FilterDelegate<T> = (item: T, index: number) => boolean;

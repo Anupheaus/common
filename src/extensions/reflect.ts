@@ -1,4 +1,4 @@
-import { InternalError } from '../errors';
+import { InternalError } from '../errors/InternalError';
 import { is } from './is';
 import './array';
 import './object';

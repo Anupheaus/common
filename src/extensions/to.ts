@@ -1,4 +1,4 @@
-import { NotImplementedError } from '../errors';
+import { NotImplementedError } from '../errors/NotImplementedError';
 import { MapOf } from './global';
 import { is } from './is';
 import numeral from 'numeral';

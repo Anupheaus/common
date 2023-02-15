@@ -1,5 +1,5 @@
 import './array';
-import { InternalError } from '../errors';
+import { InternalError } from '../errors/InternalError';
 
 const callStackRegExp = new RegExp(/^\s{4}at\s(\S+)\s\((.*?):(\d+):(\d+)\)$/, 'gmi');
 
@@ -72,7 +72,7 @@ Object.addMethods(Function.prototype, [
           file,
           line,
           column,
-        }
+        };
       })
       .removeNull();
   }
