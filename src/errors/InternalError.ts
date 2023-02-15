@@ -1,6 +1,6 @@
 import type { AnyObject } from '../extensions';
 import { is } from '../extensions/is';
-import { BaseError } from './BaseError';
+import { Error } from './BaseError';
 
 interface Props {
   message: string;
@@ -8,7 +8,7 @@ interface Props {
   error?: Error;
 }
 
-export class InternalError extends BaseError {
+export class InternalError extends Error {
   public constructor(message: string);
   public constructor(props: Props);
   public constructor(message: string, props: Omit<Props, 'message'>);

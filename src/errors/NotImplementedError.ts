@@ -1,7 +1,7 @@
 import type { AnyObject } from '../extensions';
-import { BaseError } from './BaseError';
+import { Error } from './BaseError';
 
-export class NotImplementedError extends BaseError {
+export class NotImplementedError extends Error {
   public constructor(message: string, meta?: AnyObject) {
     super({
       statusCode: 404,

@@ -11,12 +11,12 @@ interface InternalProps {
 
 interface Props extends Partial<InternalProps> { }
 
-export class BaseError extends Error {
+export class Error extends global.Error {
   constructor(props: Props) {
     super('');
     Object.setPrototypeOf(this, new.target.prototype);
     const { error } = props;
-    if (error != null && error instanceof Error) {
+    if (error != null && error instanceof global.Error) {
       props.message = error.message;
       props.title = error.name;
       this.stack = error.stack;
@@ -30,7 +30,7 @@ export class BaseError extends Error {
     };
     Reflect.defineProperty(this, 'message', { get: () => this.#props.message, configurable: true, enumerable: true });
     this.#hasBeenHandled = false;
-    if (error instanceof BaseError) return error;
+    if (error instanceof Error) return error;
   }
 
   #props: InternalProps;

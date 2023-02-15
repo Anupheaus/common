@@ -1,5 +1,5 @@
 import type { AnyObject } from '../extensions';
-import { BaseError } from './BaseError';
+import { Error } from './BaseError';
 
 export interface ApiErrorProps {
   title?: string;
@@ -10,7 +10,7 @@ export interface ApiErrorProps {
   statusCode?: number;
 }
 
-export class ApiError extends BaseError {
+export class ApiError extends Error {
   constructor({ message, title, url, method, body, statusCode }: ApiErrorProps = {}) {
     super({ message: message ?? 'An API error has occurred.', title: title ?? 'API Error', isAsync: true, meta: { url, method, body, statusCode } });
   }
