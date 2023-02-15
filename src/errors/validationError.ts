@@ -1,12 +1,12 @@
-import { BaseError } from './base';
+import { BaseError } from './BaseError';
 
 export class ValidationError extends BaseError {
   public constructor(message: string, path: string) {
     super({
       message,
-      info: {
+      meta: {
         path,
       },
-    }, ValidationError);
+    });
   }
 }

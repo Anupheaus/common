@@ -1,7 +1,7 @@
-import { BaseError } from './base';
+import { BaseError } from './BaseError';
 
 export class InternalError extends BaseError {
-  public constructor(message: string)
+  public constructor(message: string);
   public constructor(message: string, info: object);
   public constructor(message: string, internalError: Error);
   public constructor(message: string, info: object, internalError: Error);
