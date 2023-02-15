@@ -234,13 +234,13 @@ Object.addMethods(Reflect, [
     } else if (Reflect.checkPropertyAccess(newTarget, newPropertyName, PropertyAccess.CanWrite)) {
       newTarget[newPropertyName] = value;
     } else {
-      throw new InternalError('Unable to set property value because the property does not permit write access.', { target: newTarget, property: newPropertyName });
+      throw new InternalError('Unable to set property value because the property does not permit write access.', { meta: { target: newTarget, property: newPropertyName } });
     }
   },
 
   function checkPropertyAccess(target: AnyObject, propertyName: string, access: PropertyAccess): boolean {
     const [newTarget, newPropertyName] = navigateToProperty(target, propertyName);
-    if (newTarget === null) { throw new InternalError('Access was requested on a property that does not exist.', { target, propertyName, access }); }
+    if (newTarget === null) { throw new InternalError('Access was requested on a property that does not exist.', { meta: { target, propertyName, access } }); }
     const definition = Reflect.getDefinition(newTarget, newPropertyName);
     if (definition === null) { return false; }
     switch (access) {
