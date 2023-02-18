@@ -2,6 +2,8 @@
 import { hash } from './utils';
 import './math';
 
+type HashOptions = Parameters<typeof hash>[1];
+
 interface IObfuscateOptions {
   percentage?: number;
   minimum?: number;
@@ -17,10 +19,9 @@ export class StringExtensions {
     return new Function(...mapped.map(item => item[0]), `return \`${this}\`;`)(...mapped.map(item => item[1]));
   }
 
-  public hash(): string;
-  public hash(length: number): string;
-  public hash(this: string, length = 16): string {
-    return hash(this, length);
+  public hash(options?: HashOptions): string;
+  public hash(this: string, options?: HashOptions): string {
+    return hash(this, options);
   }
 
   public condenseWhitespace(): string;

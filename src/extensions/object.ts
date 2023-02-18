@@ -1,10 +1,10 @@
-/* eslint-disable max-classes-per-file */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { hash as utilsHash } from './utils';
 import { Record, Disposable, AnyObject } from './global';
+import { hash as utilsHash } from './utils';
 import { is } from './is';
 import { v4 as uuid } from 'uuid';
 import type { } from './array';
+
+type HashOptions = Parameters<typeof utilsHash>[1];
 
 // tslint:disable-next-line:no-namespace
 declare global {
@@ -39,8 +39,7 @@ declare global {
     // extend<T>(target: T, ...extensions: T[]): T;
     clone<T>(target: T): T;
     // diff(target: object, comparison: object): object;
-    hash(target: object): string;
-    hash(target: object, performShallowHash: boolean): string;
+    hash(target: object, options?: HashOptions): string;
     remove<T, P>(value: T, removeProps: (propsToRemove: T) => P): P;
     // remove2<T, K extends Partial<T>>(value: T, removeProps: K): Pick<T, Diff<keyof T, keyof K>>;
     values<T = unknown>(target: object): T[];
@@ -226,24 +225,24 @@ Object.addMethods(Object, [
   //   return compareValue(target, comparison);
   // },
 
-  function hash(this: Object, target: object): string {
-    if (is.null(target)) { return ''; }
-    const hashableValues: string[] = [];
-    if (target && typeof (target) === 'object' && typeof (target.constructor) === 'function') {
-      const isPrototype = is.prototype(target);
-      if (isPrototype) {
-        target = target.constructor;
-      } else {
-        if (target.constructor.name === 'Object') {
-          hashableValues.push(JSON.stringify(target));
-        } else {
-          hashableValues.push(`InstanceOf_${target.constructor.name}`);
-        }
-      }
-    }
-    Reflect.getAllPrototypesOf(target)
-      .forEach(value => hashableValues.push(typeof (value.constructor) === 'function' ? value.constructor.toString() : value.toString()));
-    return utilsHash(hashableValues.join('|'));
+  function hash(this: Object, target: object, options?: HashOptions): string {
+    return utilsHash(target, options);
+    // const hashableValues: string[] = [];
+    // if (target && typeof (target) === 'object' && typeof (target.constructor) === 'function') {
+    //   const isPrototype = is.prototype(target);
+    //   if (isPrototype) {
+    //     target = target.constructor;
+    //   } else {
+    //     if (target.constructor.name === 'Object') {
+    //       hashableValues.push(JSON.stringify(target));
+    //     } else {
+    //       hashableValues.push(`InstanceOf_${target.constructor.name}`);
+    //     }
+    //   }
+    // }
+    // Reflect.getAllPrototypesOf(target)
+    //   .forEach(value => hashableValues.push(typeof (value.constructor) === 'function' ? value.constructor.toString() : value.toString()));
+    // return utilsHash(hashableValues.join('|'));
   },
 
   function remove<T, P>(this: Object, target: T, delegate: (target: T) => P): P {
