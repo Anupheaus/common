@@ -1,18 +1,20 @@
-import { BaseLogger, ILogObj, ISettingsParam } from 'tslog';
+import { ILogObj, ISettingsParam, Logger as TSLogger } from 'tslog';
 import { Error as CommonError } from '../errors';
 import { AnyObject, is } from '../extensions';
 
 const defaultMinLevel = 5;
 
-export class Logger<T extends ILogObj = ILogObj> extends BaseLogger<T> {
-  constructor(name: string, settings?: Omit<ISettingsParam<T>, 'name'>, logObj?: T) {
-    super({
+export class Logger {
+  constructor(name: string, settings?: Omit<ISettingsParam<ILogObj>, 'name'>);
+  constructor(name: string, settings?: Omit<ISettingsParam<ILogObj>, 'name'>, log?: TSLogger<ILogObj>) {
+    this.#log = log ? log : new TSLogger({
       ...settings,
       name,
-      minLevel: defaultMinLevel,
-    }, logObj, 5);
-    this.settings.minLevel = this.#getMinLevelFor(name);
+      minLevel: this.#getMinLevelFor(name),
+    });
   }
+
+  #log: TSLogger<ILogObj>;
 
   #getMinLevelFor(name: string): number {
     name = name.replaceAll('-', '_').replaceAll(' ', '_');
@@ -38,23 +40,23 @@ export class Logger<T extends ILogObj = ILogObj> extends BaseLogger<T> {
   }
 
   public silly(message: string, meta?: AnyObject): void {
-    this.log(0, 'silly', message, meta);
+    this.#log.silly(message, meta);
   }
 
   public trace(message: string, meta?: AnyObject): void {
-    this.log(1, 'trace', message, meta);
+    this.#log.trace(message, meta);
   }
 
   public debug(message: string, meta?: AnyObject): void {
-    this.log(2, 'debug', message, meta);
+    this.#log.debug(message, meta);
   }
 
   public info(message: string, meta?: AnyObject): void {
-    this.log(3, 'info', message, meta);
+    this.#log.info(message, meta);
   }
 
   public warn(message: string, meta?: AnyObject): void {
-    this.log(4, 'warn', message, meta);
+    this.#log.warn(message, meta);
   }
 
   public error(message: string, meta?: AnyObject): void;
@@ -73,7 +75,7 @@ export class Logger<T extends ILogObj = ILogObj> extends BaseLogger<T> {
     } else {
       message = messageOrError;
     }
-    this.log(5, 'error', message, meta);
+    this.#log.error(message, meta);
   }
 
   public fatal(message: string, meta?: AnyObject): void;
@@ -92,6 +94,10 @@ export class Logger<T extends ILogObj = ILogObj> extends BaseLogger<T> {
     } else {
       message = messageOrError;
     }
-    this.log(6, 'fatal', message, meta);
+    this.#log.fatal(message, meta);
+  }
+
+  public createSubLogger(name: string, settings?: Omit<ISettingsParam<ILogObj>, 'name'>): Logger {
+    return new (Logger as any)(name, settings, this.#log.getSubLogger({ ...settings, name }));
   }
 }
