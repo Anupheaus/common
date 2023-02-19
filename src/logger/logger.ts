@@ -1,12 +1,14 @@
 import { BaseLogger, ILogObj, ISettingsParam } from 'tslog';
 import { is } from '../extensions';
 
+const defaultMinLevel = 5;
+
 export class Logger<T extends ILogObj = ILogObj> extends BaseLogger<T> {
   constructor(name: string, settings?: Omit<ISettingsParam<T>, 'name'>, logObj?: T) {
     super({
       ...settings,
       name,
-      minLevel: 5
+      minLevel: defaultMinLevel,
     }, logObj, 5);
     this.settings.minLevel = this.#getMinLevelFor(name);
   }
@@ -24,12 +26,13 @@ export class Logger<T extends ILogObj = ILogObj> extends BaseLogger<T> {
       if (localStorage) {
         const level = parseLevel(localStorage.getItem(`logging_${name}`));
         if (level) return level;
+        localStorage.setItem(`logging_${name}`, defaultMinLevel.toString());
       }
     }
     if (process && process.env) {
       const level = parseLevel(process.env[`LOGGING_${name.toUpperCase()}`]);
       if (level) return level;
     }
-    return 5;
+    return defaultMinLevel;
   }
 }

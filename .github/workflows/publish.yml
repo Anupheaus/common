@@ -13,7 +13,7 @@ jobs:
       - name: Setup Environment
         uses: actions/setup-node@v1
         with:
-          node-version: 14.x
+          node-version: 16.x
       - name: Configure NPM
         run: npm config set //npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}
       - name: Install Dependencies
@@ -46,7 +46,7 @@ jobs:
       - name: Setup Environment
         uses: actions/setup-node@v1
         with:
-          node-version: 14.x
+          node-version: 16.x
           registry-url: https://npm.pkg.github.com/
           scope: "@anupheaus"
       - name: Configure NPM
