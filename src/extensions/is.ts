@@ -144,6 +144,14 @@ export class Is {
     return isEqual(value, other, true);
   }
 
+  public browser(): boolean {
+    return (new Function('try {return this===window;}catch(e){ return false;}'))();
+  }
+
+  public node(): boolean {
+    return (new Function('try {return this===global;}catch(e){return false;}'))();
+  }
+
 }
 
 export class IsNot {

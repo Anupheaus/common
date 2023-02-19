@@ -22,10 +22,11 @@
     "chalk": "^5.0.1",
     "dotenv": "^16.0.1",
     "fast-equals": "^4.0.3",
-    "luxon": "^2.4.0",
+    "luxon": "^2.5.2",
     "numeral": "^2.0.6",
-    "uuid": "^8.3.2",
-    "object-hash": "^3.0.0"
+    "object-hash": "^3.0.0",
+    "tslog": "^4.7.4",
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
     "@types/dotenv": "^8.2.0",
