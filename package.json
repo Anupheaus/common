@@ -25,7 +25,6 @@
     "luxon": "^2.5.2",
     "numeral": "^2.0.6",
     "object-hash": "^3.0.0",
-    "tslog": "^4.7.4",
     "uuid": "^8.3.2"
   },
   "devDependencies": {

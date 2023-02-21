@@ -8,7 +8,7 @@ describe.only('logger', () => {
   });
 
   it('can create a sub-logger and record messages', async () => {
-    const logger = new Logger('test');
+    const logger = new Logger('Test');
     const subLogger = logger.createSubLogger('sub');
     subLogger.info('hey');
   });
