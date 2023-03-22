@@ -10,7 +10,7 @@ class SetExtensions<T> {
   public map<V>(this: Set<T>, iterator: (value: T, index: number, set: Set<T>) => V): Set<V> {
     const newSet = new Set<V>();
     let index = 0;
-    this.forEach((value, ignore, set) => {
+    this.forEach((value, _ignore, set) => {
       newSet.add(iterator(value, index, set));
       index++;
     });
@@ -21,7 +21,7 @@ class SetExtensions<T> {
   public filter(this: Set<T>, iterator: (value: T, index: number, set: Set<T>) => boolean): Set<T> {
     const newSet = new Set<T>();
     let index = 0;
-    this.forEach((value, ignore, set) => {
+    this.forEach((value, _ignore, set) => {
       if (iterator(value, index, set)) newSet.add(value);
       index++;
     });

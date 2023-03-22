@@ -26,6 +26,11 @@ const levelSettings: LevelSettings[] = [
 interface LoggerSettings {
   minLevel?: number;
   includeTimestamp?: boolean;
+  persistentMeta?: AnyObject | undefined;
+}
+
+interface InternalLoggerSettings extends Required<Omit<LoggerSettings, 'persistentMeta'>> {
+  persistentMeta: AnyObject | undefined;
 }
 
 export class Logger {
@@ -88,27 +93,33 @@ export class Logger {
     return parentNames.reverse();
   }
 
-  protected get settings(): Required<LoggerSettings> {
+  protected get settings(): InternalLoggerSettings {
     const parentSettings = this.parent?.settings;
+    const persistentMeta = { ...parentSettings?.persistentMeta, ...this.#settings?.persistentMeta };
     return {
       includeTimestamp: parentSettings?.includeTimestamp ?? is.node(),
       ...this.#settings,
       minLevel: this.getMinLevel(),
+      persistentMeta: Object.keys(persistentMeta).length === 0 ? undefined : persistentMeta
     };
   }
 
-  protected report(level: number, message: string, meta?: AnyObject, ignoreLevel = false): void {
+  protected async report(level: number, message: string, meta?: AnyObject, ignoreLevel = false): Promise<void> {
     if (!ignoreLevel && level < this.settings.minLevel) return;
     const timestamp = DateTime.local();
     const lvlSettings = levelSettings[level];
     const parentNames = this.allNames;
+    if (this.settings.persistentMeta) meta = { ...this.settings.persistentMeta, ...meta };
     if (is.node()) {
+      // const { writeToFile } = require('./nodeUtils');
       const parts: string[] = ['\x1b[0m'];
       if (this.settings.includeTimestamp) parts.push(`\x1b[37m\x1b[2m[${timestamp.toFormat('dd/MM/yyyy HH:mm:ss:SSS')}]`);
       parts.push(`${lvlSettings.levelColors.node}[${lvlSettings.name.toUpperCase().padEnd(5)}]`);
       parts.push(`\x1b[37m[${parentNames.join(' > ')}]`);
       parts.push(`\x1b[1m\x1b[33m${message}`);
-      console[lvlSettings.consoleMethod](`\x1b[0m${parts.join('\x1b[0m ')}\x1b[0m${meta == null ? '' : '\n'}`, ...[meta].removeNull());
+      const fullMessage = `\x1b[0m${parts.join('\x1b[0m ')}\x1b[0m${meta == null ? '' : '\n'}`;
+      console[lvlSettings.consoleMethod](fullMessage, ...[meta].removeNull());
+      // writeToFile(fullMessage, meta);
     } else {
       const parts: string[] = [];
       const css: string[] = [];
@@ -150,14 +161,14 @@ export class Logger {
   protected getMinLevel(): number {
     if (this.parent?.settings.minLevel != null) return this.parent.settings.minLevel;
     if (this.#settings?.minLevel != null) return this.#settings.minLevel;
-    let name = this.allNames.join('_').replaceAll('-', '_').replaceAll(' ', '_');
+    let name = this.allNames.join('_').replace(/-/g, '_').replace(/\s/g, '_');
     const parseLevel = (value: string | null | undefined): number | undefined => {
       if (value == null) return undefined;
       const level = parseInt(value);
       if (!isNaN(level)) return Math.between(level, 0, 6);
     };
     if (is.browser()) {
-      name = `Logging.${name.replaceAll('_', '.')}`;
+      name = `Logging.${name.replace(/_/g, '.')}`;
       const localStorage = window.localStorage;
       if (localStorage) {
         const level = parseLevel(localStorage.getItem(name));

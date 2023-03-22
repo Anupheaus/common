@@ -13,7 +13,7 @@ export function throttle(propsOrTimeout: number | Props): MethodDecorator {
     ignoreArguments = false,
   }: Props = typeof (propsOrTimeout) === 'number' ? { timeout: propsOrTimeout } : propsOrTimeout;
   const defaultKey = Math.uniqueId();
-  return (target: object, propertyKey: PropertyKey, descriptor: PropertyDescriptor): PropertyDescriptor => {
+  return (_target: object, propertyKey: PropertyKey, descriptor: PropertyDescriptor): PropertyDescriptor => {
     if (!propertyKey) throw new Error('@throttle decorator can only be applied to methods not a class');
     if (!descriptor) throw new Error('@throttle decorator can only be applied to methods not a variable');
     if (!descriptor.value) { return descriptor; }

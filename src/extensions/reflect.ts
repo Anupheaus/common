@@ -70,6 +70,7 @@ declare global {
       propertyIndex: number;
       get(): T;
       set(value: T): void;
+      rename(newName: string): void;
     }
 
     function isOrDerivesFrom(source: unknown, derivesFrom: unknown): boolean;
@@ -361,6 +362,11 @@ Object.addMethods(Reflect, [
             set: (value: unknown) => {
               if (Reflect.has(descriptor, 'set') || descriptor.writable) Reflect.set(innerTarget as object, name, value);
             },
+            rename: (newName: string) => {
+              Reflect.deleteProperty(innerTarget as object, name);
+              Reflect.defineProperty(innerTarget as object, newName, descriptor);
+              name = newName;
+            }
           };
           const result = onProperty(property);
           if (result === false) return;

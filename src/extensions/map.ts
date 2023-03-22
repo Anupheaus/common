@@ -43,16 +43,16 @@ class MapExtensions<K, V> {
       if (this.has(key)) {
         const thisItem = this.get(key)!;
         if (is.deepEqual(thisItem, item)) return;
-        newItem = options.mapMatchedTo?.(thisItem, item, key) as V | undefined;
+        newItem = options.mapMatchedTo?.(thisItem, item, key) as unknown as V | undefined;
         if (newItem == null) return;
       } else {
-        newItem = options.mapUnmatchedRightTo?.(item, key) as V | undefined;
+        newItem = options.mapUnmatchedRightTo?.(item, key) as unknown as V | undefined;
       }
       if (newItem != null) this.set(key, newItem);
     });
     this.forEach((value, key) => {
       if (ignoredKeys.includes(key)) return;
-      const newItem = options.mapUnmatchedLeftTo?.(value, key) as V | undefined;
+      const newItem = options.mapUnmatchedLeftTo?.(value, key) as unknown as V | undefined;
       if (newItem != null) this.set(key, newItem);
     });
     return this;

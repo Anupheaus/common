@@ -13,18 +13,18 @@ const proxyCache = new WeakMap<object, ProxyContext>();
 function createProxy(context: ProxyContext, internalApi: InternalApi): object {
   const internalCache = new Map<PropertyKey, object>();
   const proxy = new Proxy({}, {
-    get: (target, providedPropertyKey) => {
+    get: (_target, providedPropertyKey) => {
       const propertyKey = convertToCorrectPropertyType(providedPropertyKey);
       if (internalCache.has(propertyKey)) return internalCache.get(propertyKey);
       const result = createProxy({ path: [...context.path, propertyKey] }, internalApi);
       internalCache.set(propertyKey, result);
       return result;
     },
-    has: (target, providedPropertyKey) => {
+    has: (_target, providedPropertyKey) => {
       const propertyKey = convertToCorrectPropertyType(providedPropertyKey);
       return internalApi.get([...context.path, propertyKey]).isSet;
     },
-    getOwnPropertyDescriptor: (target, providedPropertyKey) => {
+    getOwnPropertyDescriptor: (_target, providedPropertyKey) => {
       const propertyKey = convertToCorrectPropertyType(providedPropertyKey);
       const { value, isSet } = internalApi.get(context.path);
       if (!isSet || value == null || typeof (value) !== 'object') return undefined;

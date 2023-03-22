@@ -3,7 +3,7 @@ import './object';
 import { MapDelegate, SimpleMapDelegate, IArrayOrderByConfig, IArrayDiff, IMergeWithOptions, MergeWithUpdateOperations, GroupingDelegate } from '../models';
 import { ArgumentInvalidError } from '../errors/ArgumentInvalidError';
 import { SortDirections } from '../models/sort';
-import type { DeepPartial, Record, TypeOf, Upsertable, Updatable } from './global';
+import type { DeepPartial, Record, TypeOf, Upsertable, UpdatableRecord } from './global';
 import './reflect';
 
 type FilterDelegate<T> = (item: T, index: number) => boolean;
@@ -52,7 +52,7 @@ function performUpsert<T>(target: T[], foundIndex: number, found: UpdateDelegate
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const emptyArray: Readonly<any[]> = [];
+const emptyArray: any[] = [];
 
 export class ArrayExtensions<T> {
 
@@ -188,7 +188,7 @@ export class ArrayExtensions<T> {
   public upsert(item: Upsertable<T>, index: number): T[];
   public upsert(this: T[], item: Upsertable<T>, index?: number): T[] {
     const foundIndex = isRecord(item) ? this.indexOfId(item.id) : this.indexOf(item as T);
-    return performUpsert(this, foundIndex, () => item as T, () => item as T, index);
+    return performUpsert(this, foundIndex, () => item as DeepPartial<T>, () => item as T, index);
   }
 
   public upsertMany(this: T[], items: Upsertable<T>[], newIndex?: number): T[] {
@@ -214,7 +214,7 @@ export class ArrayExtensions<T> {
   public replace(this: T[], item: T, index?: number): T[] {
     const foundIndex = isRecord(item) ? this.indexOfId(item.id) : typeof (index) === 'number' ? Math.max(index, -1) : -1;
     if (foundIndex === -1) { return this; }
-    return performUpsert(this, foundIndex, () => item, undefined, index);
+    return performUpsert(this, foundIndex, () => item as DeepPartial<T>, undefined, index);
   }
 
   public replaceMany(items: T[]): T[];
@@ -226,9 +226,9 @@ export class ArrayExtensions<T> {
     return self;
   }
 
-  public update(item: Updatable<T & Record>): T[];
+  public update(item: UpdatableRecord<T & Record>): T[];
   public update(filter: FilterDelegate<T>, update: UpdateDelegate<T>): T[];
-  public update(this: T[], filterOrItem: FilterDelegate<T> | Updatable<T & Record>, update?: UpdateDelegate<T>): T[] {
+  public update(this: T[], filterOrItem: FilterDelegate<T> | UpdatableRecord<T & Record>, update?: UpdateDelegate<T>): T[] {
     if (typeof (filterOrItem) === 'function') {
       const filter = filterOrItem as FilterDelegate<T>;
       let hasUpdated = false;
@@ -237,7 +237,7 @@ export class ArrayExtensions<T> {
         if (filter(this[index], index)) {
           hasUpdated = true;
           array = array ?? this.slice();
-          array = performUpsert(array, index, update ?? (item => item), undefined, index);
+          array = performUpsert(array, index, (update ?? (item => item)) as UpdateDelegate<T>, undefined, index);
         }
       }
       if (!hasUpdated) { return this; }
@@ -621,7 +621,7 @@ export class ArrayConstructorExtensions {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public empty<T = any>(): ReadonlyArray<T> {
+  public empty<T = any>(): Array<T> {
     return emptyArray;
   }
 

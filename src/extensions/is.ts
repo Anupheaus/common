@@ -2,6 +2,7 @@
 /* eslint-disable max-classes-per-file */
 import type { NotPromise, AnyObject, AnyFunction } from './global';
 import { isEqual } from './is.equal';
+import { ListItem } from './ListItem';
 
 function parseArguments<R, T = unknown>(value: T, result: boolean, type?: string, defaultValue?: () => T | R, isIncorrectType?: () => T | R,
   isCorrectType?: (value: T) => T | R): T | R | boolean {
@@ -150,6 +151,11 @@ export class Is {
 
   public node(): boolean {
     return (new Function('try {return this===global;}catch(e){return false;}'))();
+  }
+
+  public listItem(item: unknown): item is ListItem {
+    if (!is.object(item)) { return false; }
+    return is.not.empty(item['id']) && Reflect.has(item, 'text');
   }
 
 }

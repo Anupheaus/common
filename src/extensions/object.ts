@@ -283,7 +283,7 @@ Object.addMethods(Object, [
 
   function stringify(target: object, replacer?: (key: string, value: unknown) => unknown, space?: string | number): string {
     const existingObjects = new Map<object, string>();
-    const providedReplacer = replacer ?? ((key, value) => value);
+    const providedReplacer = replacer ?? ((_innerKey, value) => value);
     return JSON.stringify(target, (key, value: unknown) => {
       value = providedReplacer(key, value);
       if (is.function(value)) return value.toString();

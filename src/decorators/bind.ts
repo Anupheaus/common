@@ -11,7 +11,7 @@ function defineGetterOn(target: object, key: PropertyKey, func: Function): void 
   });
 }
 
-export function bind(target: object, key: PropertyKey, descriptor: PropertyDescriptor): PropertyDescriptor {
+export function bind(_target: object, key: PropertyKey, descriptor: PropertyDescriptor): PropertyDescriptor {
   if (!key) throw new Error('@bind decorator can only be applied to methods not a class');
   if (!descriptor) throw new Error('@bind decorator can only be applied to methods not a variable');
   if (!descriptor.value) { return descriptor; }

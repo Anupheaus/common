@@ -23,6 +23,27 @@ export interface Record {
 
 export type ConstructorOf<T = {}> = new (...args: any[]) => T;
 
+// helpers
+type IfAny<T, Y, N> = 0 extends (1 & T) ? Y : N;
+type IsUnknown<T> = unknown extends T ? IfAny<T, never, true> : never;
+/* eslint-disable @typescript-eslint/indent */
+type UnknownReplacer<T, K> = K extends [infer WithThis, ...infer WithRest]
+  ? T extends [infer ReplaceThis, ...infer ReplaceRest]
+  ? IsUnknown<ReplaceThis> extends never
+  ? [ReplaceThis, ...UnknownReplacer<ReplaceRest, K>]
+  : [WithThis, ...UnknownReplacer<ReplaceRest, WithRest>]
+  : []
+  : T;
+/* eslint-enable @typescript-eslint/indent */
+
+
+/**
+  * @summary GenericConstructorParameters takes two type arguments:
+  * - T is a constructor
+  * - K is a tuple of types (one type for each generic in the constructor)
+  */
+export type GenericConstructorParameters<T extends abstract new (...args: any) => any, K> = UnknownReplacer<ConstructorParameters<T>, K>;
+
 // tslint:disable-next-line:callable-types
 export type TypeOf<T> = { new(...args: any[]): T; } | ((...args: any[]) => T) | Function; // Function & { prototype: T };
 
@@ -34,8 +55,9 @@ export type Minus<T, U> = { [P in Diff<keyof T, keyof U>]: T[P] };
 
 type UpsertableObject<T extends Record, TKey extends keyof T = keyof T> = (Pick<T, TKey> | Partial<T>);
 // type IfElsePrimitiveType<T, U> = T extends PrimitiveType ? T : U;
-export type Updatable<T extends Record, TKey extends keyof T = keyof T> = UpsertableObject<T & Record, TKey>;
-export type UpsertableRecord<T extends Record> = T | (Omit<T, keyof Record> & Partial<Record>);
+export type UpdatableRecord<T extends Record, TKey extends keyof T = keyof T> = UpsertableObject<T & Record, TKey>;
+export type NewRecord<T extends Record> = Omit<T, 'id'> & { id?: string; };
+export type UpsertableRecord<T extends Record> = UpdatableRecord<T> | NewRecord<T>; // T | (Omit<T, keyof Record> & Partial<Record>);
 export type Upsertable<T> = T | (T extends Record ? UpsertableRecord<T> : T);
 export type EnsureId<T> = T extends Record ? T : never;
 export type PrimitiveType = string | number | boolean;
@@ -63,5 +85,6 @@ export interface Disposable {
 export type MakePromise<T> = T extends Promise<infer P> ? Promise<P> : Promise<T>;
 export type NotPromise<T> = T extends Promise<infer P> ? P : T;
 
-export type SoundType = string | number | object | boolean | Function;
-export type IsSoundType<T> = T extends SoundType ? true : false;
+export type BaseType = string | number | object | boolean | Function;
+export type IsBaseType<T> = T extends BaseType ? true : false;
+

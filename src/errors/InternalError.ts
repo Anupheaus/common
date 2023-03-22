@@ -5,7 +5,7 @@ import { Error } from './BaseError';
 interface Props {
   message: string;
   meta?: AnyObject;
-  error?: Error;
+  error?: unknown;
 }
 
 export class InternalError extends Error {
