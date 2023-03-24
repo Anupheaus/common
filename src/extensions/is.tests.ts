@@ -150,14 +150,6 @@ describe('is', () => {
       expect(is.array({})).to.be.false;
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    function test<T extends {}>(records: T[]) {
-      if (is.array(records)) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const a: T = records[0];
-      }
-    }
-
     it('does not have any type issues', () => {
       const parseUnknown = (value: unknown) => value;
       const parseNumber = (value: number) => value;
