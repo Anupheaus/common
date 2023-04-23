@@ -1,6 +1,6 @@
 import { Logger } from './logger';
 
-describe.only('logger', () => {
+describe('logger', () => {
 
   it('can create a logger and record messages', async () => {
     const logger = new Logger('test');

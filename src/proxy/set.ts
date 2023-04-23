@@ -52,7 +52,7 @@ export function createSet({ proxyCache, target, raiseOnDefault }: Props) {
     if (path.length === 0) {
       const { newValue, isDefaultPrevented } = callOnSetCallbacks(value, target, path);
       if (isDefaultPrevented) return;
-      target = newValue as object;
+      Object.assign(target, newValue);
       return;
     }
     const fullPath = path.slice();

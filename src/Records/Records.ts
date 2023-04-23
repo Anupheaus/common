@@ -89,6 +89,7 @@ export class Records<T extends Record = Record> {
 
   @bind
   public clear(): void {
+    if (this.#records.length === 0) return;
     const oldRecords = this.#records.slice();
     this.#records = [];
     this.#invokeCallbacks(oldRecords, 'clear');
@@ -185,6 +186,7 @@ export class Records<T extends Record = Record> {
       updatedRecords.push(newRecord);
       return newRecord;
     });
+    if (updatedRecords.length === 0) return;
     this.#invokeCallbacks(updatedRecords, reason);
   }
 

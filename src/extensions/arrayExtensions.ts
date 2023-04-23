@@ -569,6 +569,14 @@ export class ArrayExtensions<T> {
     });
   }
 
+  public findMap<R>(predicate: (item: T, index: number) => R | undefined): R | undefined;
+  public findMap<R>(this: T[], predicate: (item: T, index: number) => R | undefined): R | undefined {
+    for (let i = 0; i < this.length; i++) {
+      const result = predicate(this[i], i);
+      if (result !== undefined) { return result; }
+    }
+  }
+
   public take(count: number): T[];
   public take(this: T[], count: number): T[] {
     if (this.length === 0 || this.length <= count) { return this; }

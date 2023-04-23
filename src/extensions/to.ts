@@ -45,16 +45,18 @@ class To {
     return defaultValue ?? new Date();
   }
 
-  public number(value: unknown, defaultValue?: number): number {
+  public number(value: unknown): number | undefined;
+  public number(value: unknown, defaultValue: number): number;
+  public number(value: unknown, defaultValue?: number): number | undefined {
     if (typeof (value) === 'number') { return value; }
     if (typeof (value) === 'string') {
       const intValue = parseInt(value, 0);
-      if (isNaN(intValue)) { return defaultValue ?? 0; }
+      if (isNaN(intValue)) { return defaultValue; }
       const floatValue = parseFloat(value);
       if (intValue === floatValue) { return intValue; }
       return floatValue;
     }
-    return defaultValue ?? 0;
+    return defaultValue;
   }
 
   public function<T extends Function>(value: T): T;

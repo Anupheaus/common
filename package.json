@@ -19,13 +19,13 @@
   ],
   "typings": "dist/index",
   "dependencies": {
-    "chalk": "^5.0.1",
-    "dotenv": "^16.0.1",
+    "chalk": "^5.2.0",
+    "dotenv": "^16.0.3",
     "fast-equals": "^4.0.3",
-    "luxon": "^2.5.2",
+    "luxon": "^3.3.0",
     "numeral": "^2.0.6",
     "object-hash": "^3.0.0",
-    "uuid": "^8.3.2"
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
     "@types/node": "^18.0.3",
