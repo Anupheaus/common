@@ -100,7 +100,7 @@ export class Logger {
         }).catch(error => {
           this.report(LogLevels[level], `${message} failed (${Date.now() - startTime}ms).`, { error });
           throw error;
-        }) as T;
+        }) as unknown as T;
       } else {
         this.report(LogLevels[level], `${message} completed (${Date.now() - startTime}ms).`);
         return result;
