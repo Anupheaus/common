@@ -41,7 +41,7 @@ export function repeatOnError<T>(delegate: () => T, config: IConfig<T>): T {
     try {
       let result = delegate();
       if (is.promise(result)) { return result.catch(handleError) as unknown as T; }
-      let successResult: T | void;
+      let successResult: T | void | undefined;
       try { successResult = onSuccess(result, attempt); } catch (e) { /* ignore */ }
       if (successResult !== undefined) { result = successResult as T; }
       return result;

@@ -71,6 +71,11 @@ class MapExtensions<K, V> {
     return value;
   }
 
+  public map<R>(func: (key: K, value: V) => R): R[];
+  public map<R>(this: Map<K, V>, func: (key: K, value: V, index: number) => R): R[] {
+    return Array.from(this.entries()).map(([key, value], index) => func(key, value, index));
+  }
+
 }
 
 class MapConstructorExtensions {

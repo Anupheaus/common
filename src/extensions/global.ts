@@ -83,7 +83,8 @@ export interface Disposable {
 }
 
 export type MakePromise<T> = T extends Promise<infer P> ? Promise<P> : Promise<T>;
-export type NotPromise<T> = T extends Promise<infer P> ? P : T;
+export type UnPromise<T> = T extends Promise<infer P> ? P : T;
+export type NotPromise<T> = UnPromise<T>;
 
 export type BaseType = string | number | object | boolean | Function;
 export type IsBaseType<T> = T extends BaseType ? true : false;

@@ -26,7 +26,7 @@ export { DataFilterOperators };
 export interface StrictDataFilter<T extends {} = {}, K extends keyof T = keyof T> {
   field: K;
   operator: DataFilterOperator;
-  value: T[K];
+  value: T[K] | null;
 }
 
 export type DataFilter<T extends {} = {}> = { [K in keyof T]?: T[K] | { operator: DataFilterOperator; value: T[K]; }; } | StrictDataFilter<T>;

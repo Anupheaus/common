@@ -17,7 +17,7 @@ function convertToStrict<T extends {}>(filters: DataFilters<T> | DataFilters<T>[
   if (filters == null) return [];
   if ('condition' in filters || 'filters' in filters) return [{ condition: filters.condition ?? 'AND', filters: convertToStrict(filters.filters) }];
   if ('field' in filters && 'operator' in filters && 'value' in filters) return [filters];
-  if (filters instanceof Array) return filters.map(convertToStrict).flatten();
+  if (filters instanceof Array) return filters.map(filter => convertToStrict(filter)).flatten();
   return convertToStrictFilterArray(filters as Exclude<DataFilter<T>, StrictDataFilter<T>>);
 }
 

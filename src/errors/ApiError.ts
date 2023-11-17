@@ -8,10 +8,11 @@ export interface ApiErrorProps {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'OPTIONS' | 'HEAD' | 'DELETE';
   body?: AnyObject;
   statusCode?: number;
+  meta?: AnyObject;
 }
 
 export class ApiError extends Error {
-  constructor({ message, title, url, method, body, statusCode }: ApiErrorProps = {}) {
-    super({ message: message ?? 'An API error has occurred.', title: title ?? 'API Error', isAsync: true, meta: { url, method, body, statusCode } });
+  constructor({ message, title, url, method, body, statusCode, meta }: ApiErrorProps = {}) {
+    super({ message: message ?? 'An API error has occurred.', title: title ?? 'API Error', isAsync: true, meta: { url, method, body, statusCode, ...meta } });
   }
 }

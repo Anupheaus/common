@@ -29,6 +29,16 @@ interface LoggerSettings {
   persistentMeta?: AnyObject | undefined;
 }
 
+const LogLevels = {
+  'silly': 0,
+  'trace': 1,
+  'debug': 2,
+  'info': 3,
+  'warn': 4,
+  'error': 5,
+  'fatal': 6,
+} as const;
+
 interface InternalLoggerSettings extends Required<Omit<LoggerSettings, 'persistentMeta'>> {
   persistentMeta: AnyObject | undefined;
 }
@@ -76,6 +86,29 @@ export class Logger {
   public fatal(error: Error, meta?: AnyObject): void;
   public fatal(messageOrError: string | Error, meta?: AnyObject): void {
     this.report(6, ...this.parseError(messageOrError, meta));
+  }
+
+  public wrap<T>(level: keyof typeof LogLevels, message: string, delegate: () => T): T {
+    this.report(LogLevels[level], `${message} started...`);
+    const startTime = Date.now();
+    try {
+      const result = delegate();
+      if (result instanceof Promise) {
+        return result.then(innerResult => {
+          this.report(LogLevels[level], `${message} completed (${Date.now() - startTime}ms).`);
+          return innerResult;
+        }).catch(error => {
+          this.report(LogLevels[level], `${message} failed (${Date.now() - startTime}ms).`, { error });
+          throw error;
+        }) as T;
+      } else {
+        this.report(LogLevels[level], `${message} completed (${Date.now() - startTime}ms).`);
+        return result;
+      }
+    } catch (error) {
+      this.report(LogLevels[level], `${message} failed (${Date.now() - startTime}ms).`, { error });
+      throw error;
+    }
   }
 
   public createSubLogger(name: string, settings?: LoggerSettings): Logger {

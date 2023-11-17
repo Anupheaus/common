@@ -157,6 +157,11 @@ export class Records<T extends Record = Record> {
   }
 
   @bind
+  public clone(): Records<T> {
+    return new Records(this.#records.slice());
+  }
+
+  @bind
   public onModified(callback: (records: T[], reason: RecordsModifiedReason) => void, { acceptableIds, acceptableReasons, filterOn }: OnModifiedOptions<T> = {}): () => void {
     const callbackWrapper = (records: T[], reason: RecordsModifiedReason) => {
       if (is.array(acceptableReasons) && !acceptableReasons.includes(reason)) return;
