@@ -57,7 +57,7 @@ class DateExtensions {
   public format(format: string): string;
   public format(this: Date, format?: string): string {
     const dateTime = DateTime.fromJSDate(this);
-    return format != null ? dateTime.toFormat(format) : dateTime.toISO();
+    return format != null ? dateTime.toFormat(format) : (dateTime.toISO() ?? dateTime.toString());
   }
 
 }
