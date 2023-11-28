@@ -162,7 +162,7 @@ describe('is', () => {
       if (is.array(unknownValue)) unknownValue.filter(parseUnknown);
       if (is.array(unknownValue)) unknownValue.filter(parseNumber);
       if (is.array(anyArray)) anyArray.filter(parseUnknown);
-      if (is.array(anyArray)) anyArray.filter(parseNumber);
+      if (is.array(anyArray)) anyArray.filter(parseNumber as any);
       if (is.array<number>(anyArray)) anyArray.filter(parseNumber);
       if (is.array(numberArray)) numberArray.filter(parseNumber);
       if (is.array<number>(mixedArray)) mixedArray.filter(parseNumber);
