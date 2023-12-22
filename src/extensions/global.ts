@@ -89,3 +89,11 @@ export type NotPromise<T> = UnPromise<T>;
 export type BaseType = string | number | object | boolean | Function;
 export type IsBaseType<T> = T extends BaseType ? true : false;
 
+export type MixinBaseType = new (...args: any[]) => any;
+type GetProps<TBase> = TBase extends new (props: infer P) => any ? P : never;
+type GetInstance<TBase> = TBase extends new (...args: any[]) => infer I ? I : never;
+type EmptyConstructor<A, B> = new () => GetInstance<A> & GetInstance<B>;
+type NonEmptyConstructor<A, B> = new (props: GetProps<A> & GetProps<B>) => GetInstance<A> & GetInstance<B>;
+// eslint-disable-next-line @typescript-eslint/no-shadow
+export type MergeMixinConstructor<MixinType, MixinBaseType> = MixinType extends new () => any
+  ? MixinBaseType extends new () => any ? EmptyConstructor<MixinType, MixinBaseType> : NonEmptyConstructor<MixinType, MixinBaseType> : NonEmptyConstructor<MixinType, MixinBaseType>;
