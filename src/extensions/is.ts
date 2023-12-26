@@ -123,7 +123,8 @@ export class Is {
     return typeof (value) === 'number' && !isNaN(value);
   }
 
-  public numeric(value: string): boolean {
+  public numeric(value: string | undefined): boolean {
+    if (value == null || is.empty(value)) return false;
     return /^-?\d+\.?\d*$/.test(value);
   }
 
