@@ -123,6 +123,10 @@ export class Is {
     return typeof (value) === 'number' && !isNaN(value);
   }
 
+  public numeric(value: string): boolean {
+    return /^-?\d+\.?\d*$/.test(value);
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public enum(value: any, enumDefinition: object): boolean {
     const keys = Reflect.ownKeys(enumDefinition);
