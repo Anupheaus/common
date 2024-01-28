@@ -1,24 +1,23 @@
-export type DataSortDirection = 'ASC' | 'DESC';
+import { AnyObject } from '../../extensions';
 
-export type DataSort<T extends {} = {}> = {
-  field: keyof T;
-  direction: DataSortDirection;
-};
+export type DataSortDirection = 'asc' | 'desc';
 
-export type DataSorts<T extends {} = {}> = DataSort<T>[];
+export type DataSort<T extends AnyObject = AnyObject> = Record<keyof T, DataSortDirection>;
+
+export type DataSorts<T extends AnyObject = AnyObject> = DataSort<T>[];
 
 export const DataSortDirections = {
   toCSSClass(direction: DataSortDirection): string {
     switch (direction) {
-      case 'ASC': return 'is-sorted-asc';
-      case 'DESC': return 'is-sorted-desc';
+      case 'asc': return 'is-sorted-asc';
+      case 'desc': return 'is-sorted-desc';
       default: return '';
     }
   },
 
   moveToNextState(direction: DataSortDirection): DataSortDirection | undefined {
-    if (direction === 'ASC') return 'DESC';
-    if (direction === 'DESC') return undefined;
-    return 'ASC';
+    if (direction === 'asc') return 'desc';
+    if (direction === 'desc') return undefined;
+    return 'asc';
   },
 };
