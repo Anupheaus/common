@@ -35,7 +35,7 @@ export class StringExtensions {
     if (this.length === 1) { return this.toUpperCase(); }
     return this.split(/\s+/g)
       .filter(word => typeof (word) === 'string' && word.length > 0)
-      .map(word => `${word.substring(0, 1).toUpperCase()}${word.slice(1).toLowerCase()}`)
+      .map(word => `${word.slice(0, 1).toUpperCase()}${word.slice(1)}`)
       .join(' ');
   }
 
