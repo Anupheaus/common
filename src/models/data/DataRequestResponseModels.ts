@@ -26,7 +26,7 @@ export namespace DataRequest {
 }
 
 export interface DataResponse<T> {
-  records: T[];
+  data: T[];
   total: number;
   limit?: number;
   offset?: number;
