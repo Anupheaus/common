@@ -1,3 +1,4 @@
+import { pluralize, singularize } from 'inflection';
 import { NotImplementedError } from '../errors/NotImplementedError';
 import { MapOf } from './global';
 import { is } from './is';
@@ -102,6 +103,11 @@ class To {
 
   public switchMap<T extends string | number, R>(value: T, map: Partial<Record<T, R>> & { '*': R; }): R {
     return map[value] ?? map['*'];
+  }
+
+  public plural(value: string, count: number): string {
+    if (count === 1) return singularize(value);
+    return pluralize(value);
   }
 
 }

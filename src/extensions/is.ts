@@ -13,6 +13,8 @@ function parseArguments<R, T = unknown>(value: T, result: boolean, type?: string
   return isIncorrectType();
 }
 
+const isoDateRegex = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?(([+-]\d\d:\d\d)|Z)?$/i;
+
 export class Is {
 
   public get not() { return isNot; } // eslint-disable-line @typescript-eslint/no-use-before-define
@@ -156,6 +158,16 @@ export class Is {
 
   public node(): boolean {
     return (new Function('try {return this===global;}catch(e){return false;}'))();
+  }
+
+  /**
+   * Test to see if this value is a valid ISO date string.
+   * @param value The value to be tested.
+   * @returns {boolean} Returns true if the value is a valid ISO date string.
+   */
+  public isISODateString(value: unknown): value is string {
+    if (!is.string(value)) return false;
+    return isoDateRegex.test(value);
   }
 
   public listItem(item: unknown): item is ListItem {

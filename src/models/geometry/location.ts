@@ -1,4 +1,4 @@
-export interface ILocation {
+export interface Location {
   top: number;
   left: number;
 }

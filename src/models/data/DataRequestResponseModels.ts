@@ -1,10 +1,10 @@
 import { is } from '../../extensions/is';
-import type { AnyObject, Record } from '../../extensions';
+import type { AnyObject } from '../../extensions';
 import { DataFilterOperator, type DataFilters } from './DataFiltersModels';
 import type { DataPagination } from './DataPaginationModels';
 import type { DataSorts } from './DataSortsModels';
 
-export interface DataRequest<T extends Record = Record> {
+export interface DataRequest<T extends AnyObject = AnyObject> {
   filters?: DataFilters<T>;
   sorts?: DataSorts<T>;
   pagination?: DataPagination;
@@ -25,7 +25,7 @@ export namespace DataRequest {
   }
 }
 
-export interface DataResponse<T extends Record = Record> {
+export interface DataResponse<T> {
   records: T[];
   total: number;
   limit?: number;

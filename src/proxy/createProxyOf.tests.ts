@@ -118,7 +118,7 @@ describe('createProxyOf', () => {
     expect(original.notSetObject?.subArray?.[3].myProp).to.equal('foo');
   });
 
-  it.only('can set the root object', () => {
+  it('can set the root object', () => {
     const { original, proxy, set } = setupTest();
     set(proxy, { something: 'else' });
     expect(original).to.eql({ something: 'else', setToUndefined: undefined });

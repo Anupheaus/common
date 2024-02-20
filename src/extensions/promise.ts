@@ -3,6 +3,8 @@
 import './object';
 import { AnyObject } from './global';
 import { bind } from '../decorators';
+import { is } from './is';
+import { InternalError } from '../errors';
 
 // eslint-disable-next-line no-shadow
 export enum PromiseState {
@@ -55,6 +57,18 @@ class PromiseConstructorExtensions {
 
   public createDeferred<T = void>(): DeferredPromise<T> {
     return new DeferredPromise<T>();
+  }
+
+  public async whenAllSettled<T>(promises: Promise<T>[]): Promise<[T[], Error[]]> {
+    const results = await Promise.allSettled(promises);
+    const success = results.filter(result => result.status === 'fulfilled').map(result => (result as PromiseFulfilledResult<T>).value);
+    const failed = results.filter(result => result.status === 'rejected').map(result => {
+      const reason = (result as PromiseRejectedResult).reason;
+      if (is.string(reason)) return new Error(reason);
+      if (reason instanceof Error) return reason;
+      return new InternalError('Unknown error');
+    });
+    return [success, failed];
   }
 
 }

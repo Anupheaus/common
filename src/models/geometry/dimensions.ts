@@ -1,4 +1,4 @@
-import { ILocation } from './location';
-import { ISize } from './size';
+import { Location } from './location';
+import { Size } from './size';
 
-export interface IDimensions extends ILocation, ISize { }
+export interface Dimensions extends Location, Size { }

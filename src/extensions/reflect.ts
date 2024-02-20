@@ -3,6 +3,7 @@ import { is } from './is';
 import './array';
 import './object';
 import { AnyObject } from './global';
+import { DateTime } from 'luxon';
 
 export enum PropertyAccess {
   CanRead,
@@ -344,6 +345,8 @@ Object.addMethods(Reflect, [
 
   function walk(target: object | Function, onProperty: (property: Reflect.WalkerProperty) => void | false): void {
     const walkFunc = (innerTarget: unknown, parent: Reflect.WalkerProperty | undefined, arrayIndex?: number) => {
+      if (innerTarget instanceof DateTime) return;
+      if (innerTarget instanceof Date) return;
       Object.entries(Reflect.getAllDefinitions(innerTarget))
         .forEach(([name, descriptor], index) => {
           const property: Reflect.WalkerProperty = {

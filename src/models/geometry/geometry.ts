@@ -1,4 +1,4 @@
-import { ISize } from './size';
-import { ICoordinates } from './coordinates';
+import { Size } from './size';
+import { Coordinates } from './coordinates';
 
-export interface IGeometry extends ICoordinates, ISize { }
+export interface Geometry extends Coordinates, Size { }

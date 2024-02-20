@@ -43,15 +43,25 @@ interface InternalLoggerSettings extends Required<Omit<LoggerSettings, 'persiste
   persistentMeta: AnyObject | undefined;
 }
 
+export interface OnLogDetails {
+  timestamp: DateTime;
+  level: number;
+  names: string[];
+  message: string;
+  meta?: AnyObject;
+}
+
 export class Logger {
   constructor(name: string, settings?: LoggerSettings) {
     this.#name = name;
     this.#settings = settings;
     this.#hasStatedLevelInNode = false;
+    this.#callbacks = new Set();
   }
 
   protected parent: Logger | undefined;
 
+  #callbacks: Set<(details: OnLogDetails) => void>;
   #name: string;
   #settings?: LoggerSettings;
   #hasStatedLevelInNode: boolean;
@@ -111,6 +121,11 @@ export class Logger {
     }
   }
 
+  public onLog(delegate: (details: OnLogDetails) => void): () => void {
+    this.#callbacks.add(delegate);
+    return () => { this.#callbacks.delete(delegate); };
+  }
+
   public createSubLogger(name: string, settings?: LoggerSettings): Logger {
     const subLogger = new Logger(name, settings);
     subLogger.parent = this;
@@ -165,6 +180,7 @@ export class Logger {
       allCss.pop();
       console.log(`${parts.join('%c ')}\n`, ...allCss, ...[meta].removeNull());
     }
+    this.#invokeCallbacks({ timestamp, names: parentNames, level, message, meta });
   }
 
   protected parseErrorStack(stack: string | undefined): string[] {
@@ -219,5 +235,16 @@ export class Logger {
       if (level != null) return level;
     }
     return defaultMinLevel;
+  }
+
+  #invokeCallbacks(details: OnLogDetails): void {
+    this.#callbacks.forEach(callback => {
+      try {
+        callback(details);
+      } catch (error) {
+        this.#callbacks.delete(callback);
+        this.report(5, 'Error in onLog callback, callback has been removed.', { error });
+      }
+    });
   }
 }

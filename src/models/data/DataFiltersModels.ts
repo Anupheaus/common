@@ -1,4 +1,6 @@
-import { AnyObject, PrimitiveType } from '../../extensions';
+import { DateTime } from 'luxon';
+import type { AnyObject, PrimitiveType } from '../../extensions';
+import { is } from '../../extensions/is';
 import { ListItem, ListItems } from '../../extensions/ListItem';
 
 export type DataFilterValueTypes = 'string' | 'number' | 'boolean' | 'date' | 'currency';
@@ -32,8 +34,9 @@ export namespace DataFilterOperator {
 
 /* eslint-disable @typescript-eslint/indent */
 type WhereClauseWrapper<ValueType> =
-  ValueType extends PrimitiveType ? Partial<Record<typeof DataFilterOperator.singleValueKeys[number], ValueType> & Record<typeof DataFilterOperator.multiValueKeys[number], ValueType[]>>
-  : ValueType extends AnyObject ? DataFilters<ValueType> : never;
+  NonNullable<ValueType> extends PrimitiveType ? Partial<Record<typeof DataFilterOperator.singleValueKeys[number], ValueType> & Record<typeof DataFilterOperator.multiValueKeys[number], ValueType[]>>
+  : NonNullable<ValueType> extends DateTime<any> ? Partial<Record<typeof DataFilterOperator.singleValueKeys[number], ValueType>>
+  : NonNullable<ValueType> extends AnyObject ? DataFilters<NonNullable<ValueType>> : never;
 /* eslint-enable @typescript-eslint/indent */
 
 type DataObjectTypeFilters<ObjectType extends AnyObject = AnyObject> = {
@@ -43,3 +46,56 @@ type DataObjectTypeFilters<ObjectType extends AnyObject = AnyObject> = {
 type DataOrFilters<ObjectType extends AnyObject = AnyObject> = { $or: DataFilters<ObjectType>[]; };
 
 export type DataFilters<ObjectType extends AnyObject = AnyObject> = DataObjectTypeFilters<ObjectType> | DataOrFilters<ObjectType>;
+
+export namespace DataFilters {
+
+  export interface ParseLeafData {
+    path: string[];
+    value: unknown;
+    operator: DataFilterOperator;
+  }
+
+  export interface ParseForkData<L, F> {
+    operator: 'or';
+    items: (L | F)[][];
+  }
+
+  interface ParseConfig<L, F> {
+    leaf(data: ParseLeafData): L;
+    fork(data: ParseForkData<L, F>): F;
+  }
+
+  function parseValue<L, F>(path: string[], value: unknown, config: ParseConfig<L, F>, stack: (L | F)[]): void {
+    if (value === undefined) return;
+    if (value === null || is.primitive(value) || value instanceof Date || value instanceof DateTime) {
+      stack.push(config.leaf({ path, operator: '$eq', value }));
+      return;
+    }
+    if (value instanceof Array) {
+      stack.push(config.leaf({ path, operator: '$in', value }));
+      return;
+    }
+    Object.entries(value).forEach(([key, subValue]) => {
+      if (DataFilterOperator.allKeys.includes(key as DataFilterOperator)) {
+        stack.push(config.leaf({ path, operator: key as DataFilterOperator, value: subValue }));
+      } else if (key === '$or') {
+        const subStack: (L | F)[][] = [];
+        subValue.forEach((subValueItem: unknown) => {
+          const subStackItems: (L | F)[] = [];
+          parseValue(path, subValueItem, config, subStackItems);
+          subStack.push(subStackItems);
+        });
+        stack.push(config.fork({ operator: 'or', items: subStack }));
+      } else {
+        parseValue([...path, key], subValue, config, stack);
+      }
+    });
+  }
+
+  export function parse<L, F>(filters: DataFilters, config: ParseConfig<L, F>): (L | F)[] {
+    const stack: (L | F)[] = [];
+    parseValue([], filters, config, stack);
+    return stack;
+  }
+
+}
