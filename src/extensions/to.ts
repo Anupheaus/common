@@ -3,6 +3,9 @@ import { NotImplementedError } from '../errors/NotImplementedError';
 import { MapOf } from './global';
 import { is } from './is';
 import numeral from 'numeral';
+import { ProxyApi, ProxyOf, ProxyOfApi, createProxyOf } from '../proxy';
+import { getProxyApiFrom } from '../proxy/getProxyApiFrom';
+import { InternalError } from '../errors';
 
 export type BooleanOrFunc = boolean | (() => boolean);
 
@@ -76,6 +79,16 @@ class To {
   public object<T extends Object>(value: unknown, defaultValue?: T): T {
     if (typeof (value) === 'object' && value != null) { return value as T; }
     return defaultValue || {} as T;
+  }
+
+  public proxy<T extends Object>(target: T): ProxyOfApi<T> {
+    return createProxyOf(target);
+  }
+
+  public proxyApi<T>(target: ProxyOf<T>): ProxyApi<T> {
+    const api = getProxyApiFrom(target);
+    if (api == null) throw new InternalError('Unable to get proxy api from target');
+    return api;
   }
 
   public array<T>(value: T[]): T[] {

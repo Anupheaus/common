@@ -13,3 +13,4 @@ export * from './proxy';
 export * from './subscriptions';
 export * from './Records';
 export * from './logger';
+export * from './Collection';

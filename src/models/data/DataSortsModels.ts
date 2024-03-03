@@ -2,7 +2,7 @@ import { AnyObject } from '../../extensions';
 
 export type DataSortDirection = 'asc' | 'desc';
 
-export type DataSort<T extends AnyObject = AnyObject> = Record<keyof T, DataSortDirection>;
+export type DataSort<T extends AnyObject = AnyObject> = [keyof T, DataSortDirection][];
 
 export type DataSorts<T extends AnyObject = AnyObject> = DataSort<T>[];
 

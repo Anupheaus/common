@@ -99,6 +99,30 @@ export class StringExtensions {
 
 }
 
+function editDistance(s1: string, s2: string): number {
+  s1 = s1.toLowerCase();
+  s2 = s2.toLowerCase();
+
+  const costs = [];
+  for (let i = 0; i <= s1.length; i++) {
+    let lastValue = i;
+    for (let j = 0; j <= s2.length; j++) {
+      if (i == 0) {
+        costs[j] = j;
+      } else {
+        if (j > 0) {
+          let newValue = costs[j - 1];
+          if (s1.charAt(i - 1) != s2.charAt(j - 1)) newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+          costs[j - 1] = lastValue;
+          lastValue = newValue;
+        }
+      }
+    }
+    if (i > 0) costs[s2.length] = lastValue;
+  }
+  return costs[s2.length];
+}
+
 export class StringConstructorExtensions {
 
   public pluralize(strings: TemplateStringsArray, ...keys: (string | string[] | ((value: number) => string))[]): (value: number) => string {
@@ -129,6 +153,15 @@ export class StringConstructorExtensions {
       });
       return result.join('').replace(/\$\$/g, value.toString());
     };
+  }
+
+  public percentageMatch(value1: string | undefined, value2: string | undefined): number {
+    if (value1 == null || value2 == null) { return 0; }
+    const longer = value1.length > value2.length ? value1 : value2;
+    const shorter = value1.length <= value2.length ? value1 : value2;
+    const longerLength = longer.length;
+    if (longerLength == 0) return 1.0;
+    return (longerLength - editDistance(longer, shorter)) / longerLength;
   }
 
 }

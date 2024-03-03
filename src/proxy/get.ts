@@ -1,5 +1,5 @@
 import { CommonProps } from './privateModels';
-import { OnGetCallback, OnGetEvent, ProxyOf } from './publicModels';
+import { OnGetCallback, OnGetEvent } from './publicModels';
 import { pathFromArgs, pathsMatch } from './proxyUtils';
 import { Unsubscribe } from '../events';
 
@@ -9,7 +9,7 @@ export interface OnGetProps {
 
 interface Props extends CommonProps { }
 
-export function createGet({ proxyCache, api }: Props) {
+export function createGet<T extends object>({ proxyCache, api }: Props) {
   const callbacks = new Set<OnGetCallback>();
 
   function callOnGetCallbacks(value: unknown, path: PropertyKey[]): unknown {
@@ -35,10 +35,11 @@ export function createGet({ proxyCache, api }: Props) {
   }
 
 
-  function get<R>(proxy: ProxyOf<R>): R | undefined;
+  function get(): T;
+  function get<R>(proxy: R): R | undefined;
   function get<R>(path: PropertyKey[]): R | undefined;
   function get(...args: unknown[]) {
-    const path = pathFromArgs(args, proxyCache);
+    const path = args.length === 0 ? [] : pathFromArgs(args, proxyCache);
     return callOnGetCallbacks(api.get(path).value, path);
   }
 

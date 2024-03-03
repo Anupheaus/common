@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable max-classes-per-file */
+import { ProxyOf } from '../proxy';
+import { isProxySymbol } from '../proxy/privateModels';
 import type { NotPromise, AnyObject, AnyFunction } from './global';
 import { isEqual } from './is.equal';
 import { ListItem } from './ListItem';
@@ -158,6 +160,14 @@ export class Is {
 
   public node(): boolean {
     return (new Function('try {return this===global;}catch(e){return false;}'))();
+  }
+
+  /**
+   * Determines if the value is a proxy.
+   */
+  public proxy<T>(value: T | unknown): value is ProxyOf<T> {
+    if (value == null) return false;
+    return (value as any)[isProxySymbol] === true;
   }
 
   /**

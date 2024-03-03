@@ -1,4 +1,5 @@
 /* eslint-disable max-classes-per-file */
+import { createProxyOf } from '../proxy';
 import { is } from './is';
 
 describe('is', () => {
@@ -237,6 +238,20 @@ describe('is', () => {
       };
       expect(is.shallowEqual(a, b)).to.be.true;
       expect(is.shallowEqual(a, c)).to.be.false;
+    });
+
+  });
+
+  describe('proxy', () => {
+
+    it('can detect a proxy', () => {
+      const myObject = { a: { b: { c: 1 } } };
+      const { proxy: myProxy } = createProxyOf(myObject);
+      expect(is.proxy(myProxy)).to.be.true;
+      expect(is.proxy(myObject)).to.be.false;
+      expect(is.proxy(myProxy.a)).to.be.true;
+      expect(is.proxy(myProxy.a.b)).to.be.true;
+      expect(is.proxy(myProxy.a.b.c)).to.be.true;
     });
 
   });

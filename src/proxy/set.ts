@@ -17,7 +17,7 @@ export interface OnAfterSetProps {
   includeSubProperties?: boolean;
 }
 
-export function createSet({ proxyCache, target, raiseOnDefault }: Props) {
+export function createSet<T extends object>({ proxyCache, target, raiseOnDefault }: Props) {
   const onSetCallbacks = new Set<OnSetCallback>();
   const onAfterSetCallbacks = new Set<OnAfterSetCallback>();
 
@@ -43,34 +43,38 @@ export function createSet({ proxyCache, target, raiseOnDefault }: Props) {
     onAfterSetCallbacks.forEach(callback => callback(event));
   }
 
+  function set(newValue: T): void;
   function set<R>(proxy: R, newValue: R): void;
   function set<R>(path: PropertyKey[], newValue: R): void;
   function set(...args: unknown[]): void {
+    if (args.length === 1) args.unshift([]);
     if (args.length !== 2) throw new SyntaxError('This set function requires 2 arguments.');
     const path = pathFromArgs(args, proxyCache);
     const value = args[1];
     if (path.length === 0) {
       const { newValue, isDefaultPrevented } = callOnSetCallbacks(value, target, path);
       if (isDefaultPrevented) return;
+      const oldValue = Object.clone(target);
       Object.assign(target, newValue);
-      return;
+      callOnAfterSetCallbacks(newValue, oldValue, []);
+    } else {
+      const fullPath = path.slice();
+      const propertyKey = path.pop();
+      if (propertyKey == null) return;
+      const onEmptyProperty: TraverseProps['onEmptyProperty'] = (traversedPath, remainingPath) => {
+        const result = raiseOnDefault(traversedPath, remainingPath);
+        if (result.isSet) return result;
+        if (remainingPath.length > 0 && typeof (remainingPath[0]) === 'number') return { value: [], isSet: true };
+        return { value: {}, isSet: true };
+      };
+      const setTarget = traverseObject(target, path, { onEmptyProperty, set }).value as object;
+      if (setTarget == null || typeof (setTarget) !== 'object') return;
+      const oldValue = Reflect.get(setTarget, propertyKey);
+      const { newValue, isDefaultPrevented } = callOnSetCallbacks(value, oldValue, fullPath);
+      if (isDefaultPrevented) return;
+      Reflect.set(setTarget, propertyKey, newValue);
+      callOnAfterSetCallbacks(newValue, oldValue, fullPath);
     }
-    const fullPath = path.slice();
-    const propertyKey = path.pop();
-    if (propertyKey == null) return;
-    const onEmptyProperty: TraverseProps['onEmptyProperty'] = (traversedPath, remainingPath) => {
-      const result = raiseOnDefault(traversedPath, remainingPath);
-      if (result.isSet) return result;
-      if (remainingPath.length > 0 && typeof (remainingPath[0]) === 'number') return { value: [], isSet: true };
-      return { value: {}, isSet: true };
-    };
-    const setTarget = traverseObject(target, path, { onEmptyProperty, set }).value as object;
-    if (setTarget == null || typeof (setTarget) !== 'object') return;
-    const oldValue = Reflect.get(setTarget, propertyKey);
-    const { newValue, isDefaultPrevented } = callOnSetCallbacks(value, oldValue, fullPath);
-    if (isDefaultPrevented) return;
-    Reflect.set(setTarget, propertyKey, newValue);
-    callOnAfterSetCallbacks(newValue, oldValue, fullPath);
   }
 
   function onSet<R>(proxy: R, callback: OnSetCallback<R>, props?: OnSetProps): Unsubscribe;

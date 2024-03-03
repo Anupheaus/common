@@ -6,6 +6,8 @@ import type { } from './array';
 
 type HashOptions = Parameters<typeof utilsHash>[1];
 
+const stringifyUniqueObjectId = Symbol('stringifyUniqueObjectId');
+
 // tslint:disable-next-line:no-namespace
 declare global {
 
@@ -289,9 +291,9 @@ Object.addMethods(Object, [
       if (is.function(value)) return value.toString();
       if (!is.object(value) && !is.plainObject(value)) return value;
       if (is.function(value.toJSON)) return value.toJSON();
-      if (existingObjects.has(value)) return { __replaceWithStringifyUniqueObjectId: existingObjects.get(value) };
+      if (existingObjects.has(value)) return { [stringifyUniqueObjectId]: existingObjects.get(value) };
       const id = uuid();
-      value['__stringifyUniqueObjectId'] = id;
+      (value as any)[stringifyUniqueObjectId] = id;
       existingObjects.set(value, id);
       return value;
     }, space);

@@ -11,7 +11,7 @@ export interface DataRequest<T extends AnyObject = AnyObject> {
 }
 
 export namespace DataRequest {
-  export function isEmpty(request: DataRequest): boolean {
+  export function isEmpty<T extends AnyObject>(request: DataRequest<T>): boolean {
     if (request == null) return true;
     if (request.pagination != null && (request.pagination.limit > 0 || (request.pagination?.offset ?? 0) > 0)) return false;
     if (request.sorts instanceof Array && request.sorts.length > 0) return false;
@@ -25,7 +25,7 @@ export namespace DataRequest {
   }
 }
 
-export interface DataResponse<T> {
+export interface DataResponse<T = AnyObject> {
   data: T[];
   total: number;
   limit?: number;

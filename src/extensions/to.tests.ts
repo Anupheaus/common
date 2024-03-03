@@ -17,4 +17,21 @@ describe('to', () => {
 
   });
 
+  describe('proxy', () => {
+
+    it('can create a proxy', () => {
+      const result = to.proxy({ something: 'hey', setToUndefined: undefined });
+      expect(result).not.to.be.undefined;
+      expect(result).to.have.property('proxy').and.is.an('object');
+      expect(result).to.have.property('get').and.is.a('function');
+      expect(result).to.have.property('set').and.is.a('function');
+      expect(result).to.have.property('onAfterSet').and.is.a('function');
+      expect(result).to.have.property('onDefault').and.is.a('function');
+      expect(result).to.have.property('onGet').and.is.a('function');
+      expect(result).to.have.property('onSet').and.is.a('function');
+      expect(result).to.have.property('traverse').and.is.a('function');
+    });
+
+  });
+
 });
