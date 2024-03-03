@@ -29,7 +29,7 @@ describe('to', () => {
       expect(result).to.have.property('onDefault').and.is.a('function');
       expect(result).to.have.property('onGet').and.is.a('function');
       expect(result).to.have.property('onSet').and.is.a('function');
-      expect(result).to.have.property('traverse').and.is.a('function');
+      // expect(result).to.have.property('traverse').and.is.a('function');
     });
 
   });

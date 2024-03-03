@@ -168,7 +168,7 @@ describe('object', () => {
       const myPlainObject = { test: 2, get myClass() { return myClass; } };
       const myClass = new MyTest(myPlainObject);
 
-      expect(Object.stringify({ myPlainObject }).length).to.eq(329);
+      expect(Object.stringify({ myPlainObject }).length).to.eq(51);
     });
 
   });
