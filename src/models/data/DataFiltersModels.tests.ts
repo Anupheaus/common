@@ -75,4 +75,16 @@ describe('DataFiltersModels', () => {
     }]);
   });
 
+  it('can correctly handle arrays', () => {
+    const parsedValue = DataFilters.parse({ something: { there: ['one', 'two'] } }, {
+      leaf: data => data,
+      fork: data => data,
+    });
+    expect(parsedValue).to.deep.equal([{
+      path: ['something', 'there'],
+      operator: '$in',
+      value: ['one', 'two'],
+    }]);
+  });
+
 });

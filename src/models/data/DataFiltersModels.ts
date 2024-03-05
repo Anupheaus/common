@@ -67,12 +67,12 @@ export namespace DataFilters {
 
   function parseValue<L, F>(path: string[], value: unknown, config: ParseConfig<L, F>, stack: (L | F)[]): void {
     if (value === undefined) return;
-    if (value === null || is.primitive(value) || value instanceof Date || value instanceof DateTime) {
-      stack.push(config.leaf({ path, operator: '$eq', value }));
-      return;
-    }
     if (value instanceof Array) {
       stack.push(config.leaf({ path, operator: '$in', value }));
+      return;
+    }
+    if (value === null || is.primitive(value) || value instanceof Date || value instanceof DateTime) {
+      stack.push(config.leaf({ path, operator: '$eq', value }));
       return;
     }
     Object.entries(value).forEach(([key, subValue]) => {
