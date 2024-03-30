@@ -2,7 +2,7 @@
 /* eslint-disable max-classes-per-file */
 import { ProxyOf } from '../proxy';
 import { isProxySymbol } from '../proxy/privateModels';
-import type { NotPromise, AnyObject, AnyFunction } from './global';
+import type { NotPromise, AnyObject, AnyFunction, ErrorLike } from './global';
 import { isEqual } from './is.equal';
 import { ListItem } from './ListItem';
 
@@ -117,10 +117,10 @@ export class Is {
     return typeof (value) !== 'string' || value.length === 0;
   }
 
-  public error(value: AnyObject): value is Error {
-    if (!is.object(value)) { return false; }
+  public errorLike(value: unknown): value is ErrorLike {
     if (value instanceof Error) { return true; }
-    return is.not.empty(value['stack']) && is.not.empty(value['message']);
+    if (!is.plainObject(value)) { return false; }
+    return is.not.empty(value['@error']);
   }
 
   public number(value: unknown): value is number {

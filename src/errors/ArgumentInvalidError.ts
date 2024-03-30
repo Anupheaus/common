@@ -5,3 +5,5 @@ export class ArgumentInvalidError extends Error {
     super({ message: `The argument '${argumentName}' was invalid.`, meta: { value } });
   }
 }
+
+Error.register(ArgumentInvalidError);

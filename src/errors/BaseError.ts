@@ -1,4 +1,6 @@
-import type { AnyObject } from '../extensions';
+import type { AnyObject, ConstructorOf } from '../extensions';
+
+const errorTypes = new Map<string, ConstructorOf<Error>>();
 
 interface InternalProps {
   error?: unknown;
@@ -14,12 +16,29 @@ interface Props extends Partial<InternalProps> { }
 export class Error extends global.Error {
   constructor(props: Props) {
     super('');
+    this.#props = {
+      message: 'Unexpected Error',
+      title: 'Unexpected Error',
+      isAsync: false,
+    };
+    this.#hasBeenHandled = false;
     Object.setPrototypeOf(this, new.target.prototype);
+    const anyProps = props as AnyObject;
+    if (typeof (anyProps['@error']) === 'string') {
+      const errorType = errorTypes.get(anyProps['@error']);
+      if (errorType && errorType !== new.target) return new errorType(props);
+    }
     const { error } = props;
-    if (error != null && error instanceof global.Error) {
-      props.message = error.message;
-      props.title = error.name;
-      this.stack = error.stack;
+    if (error != null) {
+      if (typeof ((error as AnyObject)['@error']) === 'string') {
+        const errorType = errorTypes.get((error as AnyObject)['@error']);
+        if (errorType) return new errorType(props);
+      }
+      if (error instanceof global.Error) {
+        props.message = error.message;
+        props.title = error.name;
+        this.stack = error.stack;
+      }
     }
     this.name = new.target.name;
     this.#props = {
@@ -36,6 +55,10 @@ export class Error extends global.Error {
   #props: InternalProps;
   #hasBeenHandled: boolean;
 
+  public static register<T extends ConstructorOf<Error>>(errorType: T): void {
+    errorTypes.set(errorType.name, errorType);
+  }
+
   public get title() { return this.#props.title; }
   public get hasBeenHandled() { return this.#hasBeenHandled; }
   public get meta() { return this.#props.meta; }
@@ -47,6 +70,7 @@ export class Error extends global.Error {
 
   public toJSON() {
     return {
+      '@error': this.name,
       name: this.name,
       title: this.#props.title,
       message: this.#props.message,

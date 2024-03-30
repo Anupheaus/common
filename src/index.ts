@@ -1,4 +1,5 @@
 import './extensions';
+import './errors';
 
 export * from './decorators';
 export * from './extensions';

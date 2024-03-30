@@ -21,22 +21,28 @@ const { ids: filterOperatorIds, pairs: DataFilterOperatorPairs } = ListItems.as<
   { id: '$endsWith', text: 'ends with', acceptableTypes: ['string'] },
   { id: '$in', text: 'is one of', acceptableTypes: ['string', 'number', 'boolean', 'date', 'currency'] },
   { id: '$ni', text: 'is not one of', acceptableTypes: ['string', 'number', 'boolean', 'date', 'currency'] },
+  { id: '$exists', text: 'exists', acceptableTypes: ['string', 'number', 'boolean', 'date', 'currency'] }
 ] as const);
 
 export const DataFilterOperators = DataFilterOperatorPairs;
 export type DataFilterOperator = typeof filterOperatorIds;
 
 export namespace DataFilterOperator {
+  export const booleanKeys = ['$exists'] as const;
   export const singleValueKeys = ['$gt', '$lt', '$gte', '$lte', '$eq', '$ne', '$like', '$beginsWith', '$endsWith'] as const;
   export const multiValueKeys = ['$in', '$ni'] as const;
-  export const allKeys = [...singleValueKeys, ...multiValueKeys] as const;
+  export const allKeys = [...singleValueKeys, ...multiValueKeys, ...booleanKeys] as const;
 }
+
+type SingleValueKeys<ValueType> = Partial<Record<typeof DataFilterOperator.singleValueKeys[number], ValueType>>;
+type MultiValueKeys<ValueType> = Partial<Record<typeof DataFilterOperator.multiValueKeys[number], ValueType[]>>;
+type BooleanValueKeys = Partial<Record<typeof DataFilterOperator.booleanKeys[number], boolean>>;
 
 /* eslint-disable @typescript-eslint/indent */
 type WhereClauseWrapper<ValueType> =
-  NonNullable<ValueType> extends PrimitiveType ? Partial<Record<typeof DataFilterOperator.singleValueKeys[number], ValueType> & Record<typeof DataFilterOperator.multiValueKeys[number], ValueType[]>>
-  : NonNullable<ValueType> extends DateTime<any> ? Partial<Record<typeof DataFilterOperator.singleValueKeys[number], ValueType>>
-  : NonNullable<ValueType> extends AnyObject ? DataFilters<NonNullable<ValueType>> : never;
+  NonNullable<ValueType> extends PrimitiveType ? SingleValueKeys<ValueType> & MultiValueKeys<ValueType> & BooleanValueKeys
+  : NonNullable<ValueType> extends DateTime<any> ? SingleValueKeys<ValueType> & BooleanValueKeys
+  : NonNullable<ValueType> extends AnyObject ? DataFilters<NonNullable<ValueType>> & BooleanValueKeys : never;
 /* eslint-enable @typescript-eslint/indent */
 
 type DataObjectTypeFilters<ObjectType extends AnyObject = AnyObject> = {

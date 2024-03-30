@@ -5,7 +5,7 @@ import { is } from './is';
 import numeral from 'numeral';
 import { ProxyApi, ProxyOf, ProxyOfApi, createProxyOf } from '../proxy';
 import { getProxyApiFrom } from '../proxy/getProxyApiFrom';
-import { InternalError } from '../errors';
+import { Error, InternalError } from '../errors';
 
 export type BooleanOrFunc = boolean | (() => boolean);
 
@@ -121,6 +121,12 @@ class To {
   public plural(value: string, count: number): string {
     if (count === 1) return singularize(value);
     return pluralize(value);
+  }
+
+  public error(value: unknown): Error | undefined {
+    if (value instanceof Error) return value;
+    if (value instanceof globalThis.Error || is.errorLike(value)) return new Error(value);
+    return undefined;
   }
 
 }

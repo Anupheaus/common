@@ -16,3 +16,5 @@ export class ApiError extends Error {
     super({ message: message ?? 'An API error has occurred.', title: title ?? 'API Error', isAsync: true, meta: { url, method, body, statusCode, ...meta } });
   }
 }
+
+Error.register(ApiError);

@@ -10,3 +10,5 @@ export class ValidationError extends Error {
     });
   }
 }
+
+Error.register(ValidationError);

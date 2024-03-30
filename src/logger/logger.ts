@@ -26,7 +26,8 @@ const levelSettings: LevelSettings[] = [
 interface LoggerSettings {
   minLevel?: number;
   includeTimestamp?: boolean;
-  persistentMeta?: AnyObject | undefined;
+  globalMeta?: AnyObject | undefined;
+  filename?: string;
 }
 
 const LogLevels = {
@@ -39,8 +40,9 @@ const LogLevels = {
   'fatal': 6,
 } as const;
 
-interface InternalLoggerSettings extends Required<Omit<LoggerSettings, 'persistentMeta'>> {
-  persistentMeta: AnyObject | undefined;
+interface InternalLoggerSettings extends Omit<Required<LoggerSettings>, 'globalMeta' | 'filename'> {
+  globalMeta: AnyObject | undefined;
+  filename: string | undefined;
 }
 
 export interface OnLogDetails {
@@ -143,35 +145,34 @@ export class Logger {
 
   protected get settings(): InternalLoggerSettings {
     const parentSettings = this.parent?.settings;
-    const persistentMeta = { ...parentSettings?.persistentMeta, ...this.#settings?.persistentMeta };
+    const globalMeta = { ...parentSettings?.globalMeta, ...this.#settings?.globalMeta };
     return {
       includeTimestamp: parentSettings?.includeTimestamp ?? is.node(),
       ...this.#settings,
       minLevel: this.getMinLevel(),
-      persistentMeta: Object.keys(persistentMeta).length === 0 ? undefined : persistentMeta
+      filename: this.getFileName(),
+      globalMeta: Object.keys(globalMeta).length === 0 ? undefined : globalMeta,
     };
   }
 
   protected async report(level: number, message: string, meta?: AnyObject, ignoreLevel = false): Promise<void> {
-    if (!ignoreLevel && level < this.settings.minLevel) return;
+    const settings = this.settings;
+    if (!ignoreLevel && level < settings.minLevel) return;
     const timestamp = DateTime.local();
     const lvlSettings = levelSettings[level];
     const parentNames = this.allNames;
-    if (this.settings.persistentMeta) meta = { ...this.settings.persistentMeta, ...meta };
-    if (is.node()) {
-      // const { writeToFile } = require('./nodeUtils');
-      const parts: string[] = ['\x1b[0m'];
-      if (this.settings.includeTimestamp) parts.push(`\x1b[37m\x1b[2m[${timestamp.toFormat('dd/MM/yyyy HH:mm:ss:SSS')}]`);
-      parts.push(`${lvlSettings.levelColors.node}[${lvlSettings.name.toUpperCase().padEnd(5)}]`);
-      parts.push(`\x1b[37m[${parentNames.join(' > ')}]`);
-      parts.push(`\x1b[1m\x1b[33m${message}`);
-      const fullMessage = `\x1b[0m${parts.join('\x1b[0m ')}\x1b[0m${meta == null ? '' : '\n'}`;
+    if (settings.globalMeta) meta = { ...settings.globalMeta, ...meta };
+    if (process.env.NODE_ENV) {
+      const fullMessage = `${this.#createNodeMessage(timestamp, lvlSettings, parentNames, message, true)}${meta == null ? '' : '\n'}`;
       console[lvlSettings.consoleMethod](fullMessage, ...[meta].removeNull());
-      // writeToFile(fullMessage, meta);
+      if (is.not.empty(settings.filename)) {
+        const { writeToFile } = require('./nodeUtils');
+        writeToFile(settings.filename, this.#createNodeMessage(timestamp, lvlSettings, parentNames, message, false), meta);
+      }
     } else {
       const parts: string[] = [];
       const css: string[] = [];
-      if (this.settings.includeTimestamp) { parts.push(`%c[${timestamp.toFormat('dd/MM/yyyy HH:mm:ss:SSS')}]`); css.push('color:#999;'); }
+      if (settings.includeTimestamp) { parts.push(`%c[${timestamp.toFormat('dd/MM/yyyy HH:mm:ss:SSS')}]`); css.push('color:#999;'); }
       parts.push(`%c[${lvlSettings.name.toUpperCase().padEnd(5)}]`);
       css.push(`color:${lvlSettings.levelColors.browserTextColor ?? '#fff'};background-color:${lvlSettings.levelColors.browserBackgroundColor ?? 'transparent'};`);
       parts.push(`%c[${parentNames.join(' > ')}]`); css.push('color:#fff;');
@@ -237,6 +238,23 @@ export class Logger {
     return defaultMinLevel;
   }
 
+  protected getFileName(): string | undefined {
+    if (!is.node()) return undefined;
+    if (this.#settings?.filename != null) return this.#settings.filename;
+    if (this.parent?.settings.filename != null) return this.parent.settings.filename;
+
+    let name = this.allNames.join('_').replace(/-/g, '_').replace(/\s/g, '_');
+    const parseFilename = (value: string | null | undefined): string | undefined => {
+      if (is.empty(value)) return undefined;
+      return value.replace(/\\/g, '/');
+    };
+    if (process && process.env) {
+      name = `LOGGING_${name.toUpperCase()}_FILENAME`;
+      const filename = parseFilename(process.env[name]);
+      if (is.not.empty(filename)) return filename;
+    }
+  }
+
   #invokeCallbacks(details: OnLogDetails): void {
     this.#callbacks.forEach(callback => {
       try {
@@ -246,5 +264,14 @@ export class Logger {
         this.report(5, 'Error in onLog callback, callback has been removed.', { error });
       }
     });
+  }
+
+  #createNodeMessage(timestamp: DateTime, lvlSettings: LevelSettings, parentNames: string[], message: string, withColours = true): string {
+    const parts: string[] = withColours ? ['\x1b[0m'] : [];
+    if (this.settings.includeTimestamp) parts.push(`${withColours ? '\x1b[37m\x1b[2m' : ''}[${timestamp.toFormat('dd/MM/yyyy HH:mm:ss:SSS')}]`);
+    parts.push(`${withColours ? lvlSettings.levelColors.node : ''}[${lvlSettings.name.toUpperCase().padEnd(5)}]`);
+    parts.push(`${withColours ? '\x1b[37m' : ''}[${parentNames.join(' > ')}]`);
+    parts.push(`${withColours ? '\x1b[1m\x1b[33m' : ''}${message}`);
+    return `${withColours ? '\x1b[0m' : ''}${parts.join(withColours ? '\x1b[0m ' : ' ')}${withColours ? '\x1b[0m' : ''}`;
   }
 }

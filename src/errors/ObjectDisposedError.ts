@@ -6,3 +6,5 @@ export class ObjectDisposedError extends Error {
     super({ message });
   }
 }
+
+Error.register(ObjectDisposedError);

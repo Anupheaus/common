@@ -14,24 +14,25 @@ export class Records<T extends Record = Record> {
   constructor(records: T[]);
   constructor(records: Map<string, T>);
   constructor(records?: T[] | Map<string, T>) {
-    this.#records = (is.array(records) ? records : records instanceof Map ? Array.from(records.values()) : undefined) ?? [];
+    const arrayOfRecords = (is.array(records) ? records : records instanceof Map ? Array.from(records.values()) : undefined) ?? [];
+    this.#records = new Map(arrayOfRecords.map(record => [record.id, record]));
     this.#onModifiedCallbacks = new Set();
   }
 
-  #records: T[];
+  #records: Map<string, T>;
   #onModifiedCallbacks: Set<(records: T[], reason: RecordsModifiedReason) => void>;
 
   public get length(): number {
-    return this.#records.length;
+    return this.#records.size;
   }
 
   public get isEmpty(): boolean {
-    return this.#records.length === 0;
+    return this.#records.size === 0;
   }
 
   @bind
   public ids(): string[] {
-    return this.#records.ids();
+    return Array.from(this.#records.keys());
   }
 
   public add(records: T[]): void;
@@ -42,10 +43,10 @@ export class Records<T extends Record = Record> {
     const newRecords: T[] = [];
     records.forEach(record => {
       if (!is.string(record.id)) throw new Error('Unable to add record. No valid id found on the record.');
-      newRecords.push(record);
+      if (!this.#records.has(record.id)) newRecords.push(record);
+      this.#records.set(record.id, record);
     });
     if (newRecords.length === 0) return;
-    this.#records.push(...newRecords);
     this.#invokeCallbacks(newRecords, 'add');
   }
 
@@ -56,17 +57,17 @@ export class Records<T extends Record = Record> {
 
   @bind
   public get(id: string): T | undefined {
-    return this.#records.find(record => record.id === id);
+    return this.#records.get(id);
   }
 
   @bind
   public toArray(): T[] {
-    return this.#records.slice();
+    return Array.from(this.#records.values());
   }
 
   @bind
   public toMap(): Map<string, T> {
-    return new Map(this.#records.map(record => [record.id, record]));
+    return new Map(this.#records);
   }
 
   public remove(ids: string[]): void;
@@ -76,9 +77,9 @@ export class Records<T extends Record = Record> {
   @bind
   public remove(arg: string | string[] | T | T[]): void {
     const ids = is.string(arg) ? [arg] : is.array(arg) ? arg.map(value => is.string(value) ? value : value.id) : [arg.id];
-    const recordsToRemove = this.#records.filter(record => ids.includes(record.id));
+    const recordsToRemove = this.toArray().filter(({ id }) => ids.includes(id));
     if (recordsToRemove.length === 0) return;
-    this.#records = this.#records.filter(record => !recordsToRemove.includes(record));
+    recordsToRemove.forEach(({ id }) => this.#records.delete(id));
     this.#invokeCallbacks(recordsToRemove, 'remove');
   }
 
@@ -89,9 +90,9 @@ export class Records<T extends Record = Record> {
 
   @bind
   public clear(): void {
-    if (this.#records.length === 0) return;
-    const oldRecords = this.#records.slice();
-    this.#records = [];
+    if (this.#records.size === 0) return;
+    const oldRecords = this.toArray();
+    this.#records.clear();
     this.#invokeCallbacks(oldRecords, 'clear');
   }
 
@@ -133,7 +134,7 @@ export class Records<T extends Record = Record> {
       if (is.not.empty(record.id)) return;
       record.id = Math.uniqueId();
     });
-    const allIds = this.#records.ids();
+    const allIds = this.ids();
     const existingRecords = [] as T[];
     const newRecords = [] as T[];
     records.forEach(record => allIds.includes(record.id) ? existingRecords.push(record) : newRecords.push(record));
@@ -143,22 +144,22 @@ export class Records<T extends Record = Record> {
 
   @bind
   public filter(predicate: (record: T, index: number) => boolean): T[] {
-    return this.#records.filter(predicate);
+    return this.toArray().filter(predicate);
   }
 
   @bind
   public find(predicate: (record: T, index: number) => boolean): T | undefined {
-    return this.#records.find(predicate);
+    return this.toArray().find(predicate);
   }
 
   @bind
   public map<R>(predicate: (record: T, index: number) => R): R[] {
-    return this.#records.map(predicate);
+    return this.toArray().map(predicate);
   }
 
   @bind
   public clone(): Records<T> {
-    return new Records(this.#records.slice());
+    return new Records(this.#records);
   }
 
   @bind
@@ -175,21 +176,23 @@ export class Records<T extends Record = Record> {
 
   @bind
   public reorder(ids: string[]): void {
-    const maxLength = this.#records.length;
-    this.#records = this.#records.orderBy(({ id }) => {
+    let records = this.toArray();
+    const maxLength = records.length;
+    records = records.orderBy(({ id }) => {
       const index = ids.indexOf(id);
       return index === -1 ? maxLength : index;
     });
-    this.#invokeCallbacks(this.#records, 'reorder');
+    this.#records = new Map(records.map(record => [record.id, record]));
+    this.#invokeCallbacks(records, 'reorder');
   }
 
   #update(delegate: (record: T, index: number) => T, reason: RecordsModifiedReason): void {
     const updatedRecords: T[] = [];
-    this.#records = this.#records.map((record, index) => {
+    this.toArray().forEach((record, index) => {
       const newRecord = delegate(record, index);
-      if (is.deepEqual(record, newRecord)) return record;
+      if (is.deepEqual(record, newRecord)) return;
       updatedRecords.push(newRecord);
-      return newRecord;
+      this.#records.set(newRecord.id, newRecord);
     });
     if (updatedRecords.length === 0) return;
     this.#invokeCallbacks(updatedRecords, reason);

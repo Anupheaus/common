@@ -10,3 +10,5 @@ export class NotImplementedError extends Error {
     });
   }
 }
+
+Error.register(NotImplementedError);

@@ -97,3 +97,9 @@ type NonEmptyConstructor<A, B> = new (props: GetProps<A> & GetProps<B>) => GetIn
 // eslint-disable-next-line @typescript-eslint/no-shadow
 export type MergeMixinConstructor<MixinType, MixinBaseType> = MixinType extends new () => any
   ? MixinBaseType extends new () => any ? EmptyConstructor<MixinType, MixinBaseType> : NonEmptyConstructor<MixinType, MixinBaseType> : NonEmptyConstructor<MixinType, MixinBaseType>;
+
+export interface ErrorLike {
+  message: string;
+  stack?: string;
+  name?: string;
+}

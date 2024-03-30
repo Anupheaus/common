@@ -1,13 +1,40 @@
 import { createCustomCircularEqual, sameValueZeroEqual, TypeEqualityComparator } from 'fast-equals';
+import { DateTime } from 'luxon';
 
 function compareFunctions(valA: unknown, valB: unknown): boolean | undefined {
-  if (typeof (valA) !== 'function' || typeof (valB) !== 'function') return;
+  if (typeof (valA) !== 'function' && typeof (valB) !== 'function') return;
+  if (typeof (valA) !== 'function' || typeof (valB) !== 'function') return false;
   return valA.toString() === valB.toString() && valA.name === valB.name;
 }
 
 function compareDates(valA: unknown, valB: unknown): boolean | undefined {
-  if (!(valA instanceof Date) || !(valB instanceof Date)) return;
-  return valA.getTime() === valB.getTime();
+  if (valA instanceof Date || valB instanceof Date) {
+    if (!(valA instanceof Date) || !(valB instanceof Date)) return false;
+    return valA.getTime() === valB.getTime();
+  }
+  if (DateTime.isDateTime(valA) || DateTime.isDateTime(valB)) {
+    if (!(DateTime.isDateTime(valA)) || !(DateTime.isDateTime(valB))) return false;
+    return valA.equals(valB);
+  }
+}
+
+function compareReactNodes(valA: unknown, valB: unknown, isShallow: boolean): boolean | undefined {
+  if ((typeof (valA) !== 'object' || valA == null) && (typeof (valB) !== 'object' || valB == null)) return;
+  if ((typeof (valA) !== 'object' || valA == null) || (typeof (valB) !== 'object' || valB == null)) return false;
+  const nodeA = valA as any;
+  const nodeB = valB as any;
+  if (nodeA.constructor.name === 'FiberNode' || nodeB.constructor.name === 'FiberNode') {
+    if (nodeA.constructor.name !== 'FiberNode' || nodeB.constructor.name !== 'FiberNode') return false;
+    if (nodeA.type?.name !== nodeB.type?.name) return false;
+    if (nodeA.key !== nodeB.key) return false;
+    return isEqual(nodeA.pendingProps, nodeB.pendingProps, isShallow);
+  }
+  if (nodeA.$$typeof != null || nodeB.$$typeof != null) {
+    if (nodeA.$$typeof !== nodeB.$$typeof) return false;
+    if (nodeA.key !== nodeB.key) return false;
+    if (nodeA.type?.name !== nodeB.type?.name) return false;
+    return isEqual(nodeA.props, nodeB.props, isShallow);
+  }
 }
 
 export function isEqual(value: unknown, other: unknown, isShallow: boolean): boolean {
@@ -16,9 +43,11 @@ export function isEqual(value: unknown, other: unknown, isShallow: boolean): boo
     const bKeys = Reflect.ownKeys(b);
     if (aKeys.length !== bKeys.length) return false;
     for (const key of aKeys) {
+      if (a[key] === b[key]) continue;
       if (!(
         compareFunctions(a[key], b[key])
         ?? compareDates(a[key], b[key])
+        ?? compareReactNodes(a[key], b[key], isShallow)
         ?? internalValidator(a[key], b[key], key, key, a, b, meta)
       )) return false;
     }
