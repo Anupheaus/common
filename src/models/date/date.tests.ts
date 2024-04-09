@@ -6,7 +6,7 @@ const createRange = (from: number, to: number): DateRange => ({
   to: DateTime.fromISO(`2021-01-01T${to.toString().padStart(2, '0')}:00:00.000Z`),
 });
 
-describe.only('date', () => {
+describe('date', () => {
 
   describe('DateRange', () => {
 
