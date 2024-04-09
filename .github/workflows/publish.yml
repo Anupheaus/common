@@ -18,9 +18,7 @@ jobs:
       - name: Setup PNPM
         uses: pnpm/action-setup@v3
         with:
-          version: 8.3.1
-      - name: Configure NPM
-        run: npm config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }} && npm config set @anupheaus:registry=https://registry.npmjs.org/
+          version: 8.3.1      
       - name: Install Dependencies
         run: pnpm i
       - name: Run Tests
