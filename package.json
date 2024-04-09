@@ -5,6 +5,9 @@
   "repository": "https://github.com/Anupheaus/common.git",
   "author": "Anupheaus",
   "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "private": false,
   "scripts": {
     "build": "webpack --mode production",
