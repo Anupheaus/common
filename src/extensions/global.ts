@@ -103,3 +103,5 @@ export interface ErrorLike {
   stack?: string;
   name?: string;
 }
+
+export type Selectable<T> = { isSelected: boolean; item: T; };

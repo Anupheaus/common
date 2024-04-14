@@ -42,14 +42,18 @@ export class Collection<T> {
   public get(): T[];
   public get(index: number): T | undefined;
   public get(index?: number): any {
-    const allItems = Array.from(this.#items);
+    const allItems = this.toArray();
     return index == null ? allItems : allItems[index];
   }
 
   public clear(): void {
-    const items = Array.from(this.#items);
+    const items = this.toArray();
     this.#items.clear();
     this.#raiseEvent(items, 'clear');
+  }
+
+  public toArray(): T[] {
+    return Array.from(this.#items);
   }
 
   public onModified(callback: (items: T[], reason: CollectionModifiedReason) => void): Unsubscribe {
