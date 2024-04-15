@@ -33,8 +33,14 @@ class To {
 
   public boolean(value: BooleanOrFunc): boolean;
   public boolean(value: BooleanOrFunc, defaultValue: boolean): boolean;
+  public boolean(value: unknown, defaultValue: boolean): boolean;
   public boolean(value: unknown, defaultValue?: boolean): boolean {
-    if (is.boolean(value)) { return value; }
+    if (is.boolean(value)) return value;
+    if (is.number(value)) return value !== 0;
+    if (is.string(value)) {
+      if (is.numeric(value)) return this.boolean(to.number(value, 0), defaultValue ?? false);
+      if (value.toLowerCase().trim() === 'true') return true;
+    }
     if (is.function(value)) { return defaultValue != null ? this.boolean(value(), defaultValue) : this.boolean(value()); }
     return defaultValue ?? false;
   }
