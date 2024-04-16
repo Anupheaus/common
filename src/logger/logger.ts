@@ -4,6 +4,7 @@ import { is } from '../extensions/is';
 import { Error as CommonError } from '../errors';
 import type { AnyObject } from '../extensions/global';
 import '../extensions/array';
+import { Unsubscribe } from '../events';
 
 const defaultMinLevel = 5;
 
@@ -30,7 +31,7 @@ interface LoggerSettings {
   filename?: string;
 }
 
-const LogLevels = {
+export const LogLevels = {
   'silly': 0,
   'trace': 1,
   'debug': 2,
@@ -53,6 +54,13 @@ export interface OnLogDetails {
   meta?: AnyObject;
 }
 
+export type LoggerListener = (details: OnLogDetails) => void;
+
+const registeredListeners = new Set<LoggerListener>();
+function sendToListeners(details: OnLogDetails): void {
+  registeredListeners.forEach(listener => listener(details));
+}
+
 export class Logger {
   constructor(name: string, settings?: LoggerSettings) {
     this.#name = name;
@@ -61,12 +69,18 @@ export class Logger {
     this.#callbacks = new Set();
   }
 
+  public static registerListener(delegate: (details: OnLogDetails) => void): Unsubscribe {
+    registeredListeners.add(delegate);
+    return () => { registeredListeners.delete(delegate); };
+  }
+
   protected parent: Logger | undefined;
 
   #callbacks: Set<(details: OnLogDetails) => void>;
   #name: string;
   #settings?: LoggerSettings;
   #hasStatedLevelInNode: boolean;
+
 
   public silly(message: string, meta?: AnyObject): void {
     this.report(0, message, meta);
@@ -165,6 +179,7 @@ export class Logger {
     if (process.env.NODE_ENV) {
       const fullMessage = `${this.#createNodeMessage(timestamp, lvlSettings, parentNames, message, true)}${meta == null ? '' : '\n'}`;
       console[lvlSettings.consoleMethod](fullMessage, ...[meta].removeNull());
+      sendToListeners({ timestamp, names: parentNames, level, message, meta });
       if (is.not.empty(settings.filename)) {
         const { writeToFile } = require('./nodeUtils');
         writeToFile(settings.filename, this.#createNodeMessage(timestamp, lvlSettings, parentNames, message, false), meta);
