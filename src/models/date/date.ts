@@ -126,4 +126,8 @@ export namespace DateRange {
       return findGaps([{ from: range.from.minus({ minutes: 1 }), to: range.from }, ...ranges, { from: range.to, to: range.to.plus({ minutes: 1 }) }]);
     }
   }
+
+  export function isWithin(range: DateRange, date: DateTime): boolean {
+    return range.from <= date && range.to >= date;
+  }
 }
