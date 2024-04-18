@@ -11,7 +11,7 @@ const defaultMinLevel = 5;
 
 interface LevelSettings {
   name: string;
-  consoleMethod: 'log' | 'warn' | 'error';
+  consoleMethod: 'log' | 'warn' | 'error' | 'info';
   levelColors: { node: string; browserTextColor?: string; browserBackgroundColor?: string; };
 }
 
@@ -19,7 +19,7 @@ const levelSettings: LevelSettings[] = [
   { name: 'silly', consoleMethod: 'log', levelColors: { node: '\x1b[2m\x1b[37m', browserTextColor: '#999' } },
   { name: 'trace', consoleMethod: 'log', levelColors: { node: '\x1b[2m\x1b[36m', browserTextColor: '#1c6679' } },
   { name: 'debug', consoleMethod: 'log', levelColors: { node: '\x1b[2m\x1b[32m', browserTextColor: '#216742' } },
-  { name: 'info', consoleMethod: 'log', levelColors: { node: '\x1b[2m\x1b[30m\x1b[42m', browserTextColor: '#000', browserBackgroundColor: '#227959' } },
+  { name: 'info', consoleMethod: 'info', levelColors: { node: '\x1b[2m\x1b[30m\x1b[42m', browserTextColor: '#000', browserBackgroundColor: '#227959' } },
   { name: 'warn', consoleMethod: 'warn', levelColors: { node: '\x1b[2m\x1b[30m\x1b[43m', browserTextColor: '#000', browserBackgroundColor: '#8e8e25' } },
   { name: 'error', consoleMethod: 'error', levelColors: { node: '\x1b[2m\x1b[41m\x1b[37m', browserTextColor: '#fff', browserBackgroundColor: '#823435' } },
   { name: 'fatal', consoleMethod: 'error', levelColors: { node: '\x1b[1m\x1b[41m\x1b[37m', browserTextColor: '#fff', browserBackgroundColor: '#823435' } },
