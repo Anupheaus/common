@@ -30,6 +30,7 @@ interface LoggerSettings {
   includeTimestamp?: boolean;
   globalMeta?: AnyObject | undefined;
   filename?: string;
+  useColors?: boolean;
 }
 
 export const LogLevels = {
@@ -163,6 +164,7 @@ export class Logger {
     const globalMeta = { ...parentSettings?.globalMeta, ...this.#settings?.globalMeta };
     return {
       includeTimestamp: parentSettings?.includeTimestamp ?? is.node(),
+      useColors: parentSettings?.useColors ?? this.getUseColors(),
       ...this.#settings,
       minLevel: this.getMinLevel(),
       filename: this.getFileName(),
@@ -178,7 +180,7 @@ export class Logger {
     const parentNames = this.allNames;
     if (settings.globalMeta) meta = { ...settings.globalMeta, ...meta };
     if (process.env.NODE_ENV) {
-      const useColors = this.getUseColors();
+      const useColors = this.settings.useColors;
       const fullMessage = `${this.#createNodeMessage(timestamp, lvlSettings, parentNames, message, useColors)}${meta == null ? '' : '\n'}`;
       console[lvlSettings.consoleMethod](fullMessage, ...[meta].removeNull());
       sendToListeners({ timestamp, names: parentNames, level, message, meta });
