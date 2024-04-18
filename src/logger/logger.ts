@@ -5,6 +5,7 @@ import { Error as CommonError } from '../errors';
 import type { AnyObject } from '../extensions/global';
 import '../extensions/array';
 import { Unsubscribe } from '../events';
+import { to } from '../extensions';
 
 const defaultMinLevel = 5;
 
@@ -177,7 +178,8 @@ export class Logger {
     const parentNames = this.allNames;
     if (settings.globalMeta) meta = { ...settings.globalMeta, ...meta };
     if (process.env.NODE_ENV) {
-      const fullMessage = `${this.#createNodeMessage(timestamp, lvlSettings, parentNames, message, true)}${meta == null ? '' : '\n'}`;
+      const useColors = this.getUseColors();
+      const fullMessage = `${this.#createNodeMessage(timestamp, lvlSettings, parentNames, message, useColors)}${meta == null ? '' : '\n'}`;
       console[lvlSettings.consoleMethod](fullMessage, ...[meta].removeNull());
       sendToListeners({ timestamp, names: parentNames, level, message, meta });
       if (is.not.empty(settings.filename)) {
@@ -251,6 +253,15 @@ export class Logger {
       if (level != null) return level;
     }
     return defaultMinLevel;
+  }
+
+  protected getUseColors(): boolean {
+    if (is.node() && process && process.env) {
+      let name = this.allNames.join('_').replace(/-/g, '_').replace(/\s/g, '_');
+      name = `LOGGING_${name.toUpperCase()}_USE_COLORS`;
+      return to.number(process.env[name], 1) !== 0;
+    }
+    return true;
   }
 
   protected getFileName(): string | undefined {
