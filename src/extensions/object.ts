@@ -117,7 +117,7 @@ function parseArray(existingValue: unknown[], newValue: unknown[], checkForOverr
   // Check to see if the items are overridable
   if (checkForOverridableItems && isOverridableItemArray(existingValue) && isOverridableItemArray(newValue)) {
     // eslint-disable-next-line @typescript-eslint/no-use-before-define    
-    existingValue = existingValue.syncWith(newValue, { updateMatched: (a, b) => parseValue(a, b, true) as Record });
+    existingValue = existingValue.syncWith(newValue, { updateMatched: (a, b) => parseValue(Object.clone(a), b, true) as Record });
     return existingValue;
   }
   const changedArray = existingValue.slice();

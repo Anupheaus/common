@@ -5,6 +5,7 @@ import { ArgumentInvalidError } from '../errors/ArgumentInvalidError';
 import { SortDirections } from '../models/sort';
 import type { DeepPartial, Record, TypeOf, Upsertable, UpdatableRecord } from './global';
 import './reflect';
+import { is } from './is';
 
 type FilterDelegate<T> = (item: T, index: number) => boolean;
 type UpdateDelegate<T> = MapDelegate<T, DeepPartial<T>>;
@@ -39,7 +40,7 @@ function performUpsert<T>(target: T[], foundIndex: number, found: UpdateDelegate
       if (originalItem === item && !isIndexChanged) { return target; }
     } else {
       item = Object.merge({}, originalItem, partialItem);
-      if (Reflect.areShallowEqual(item, originalItem) && !isIndexChanged) { return target; } // no change
+      if (is.shallowEqual(item, originalItem) && !isIndexChanged) { return target; } // no change
     }
     array.splice(foundIndex, 1);
   } else {
