@@ -120,9 +120,17 @@ export class Records<T extends Record = Record> {
     this.#update(record => ids.includes(record.id) ? predicate(record) : record, 'update');
   }
 
+  public onUpdated(id: string, callback: (record: T) => void): () => void;
+  public onUpdated(callback: (records: T[]) => void): () => void;
   @bind
-  public onUpdated(callback: (records: T[]) => void): () => void {
-    return this.onModified(records => callback(records), { acceptableReasons: ['update'] });
+  public onUpdated(...args: unknown[]): () => void {
+    const id = (args.length > 1 ? args[0] : undefined) as string;
+    const callback = (is.function(args[1]) ? args[1] : is.function(args[0]) ? args[0] : undefined) as ((records: T | T[]) => void) | undefined;
+    if (args.length > 1 && !is.string(id)) throw new Error('Unable to listen for updates. No valid id provided.');
+    if (callback == null) throw new Error('Unable to listen for updates. No valid callback provided.');
+    return this.onModified(records => {
+      if (args.length > 1) callback(records[0]); else callback(records);
+    }, { acceptableIds: [id], acceptableReasons: ['update'] });
   }
 
   public upsert(records: UpsertableRecord<T>[]): void;
@@ -158,6 +166,11 @@ export class Records<T extends Record = Record> {
   }
 
   @bind
+  public has(id: string): boolean {
+    return this.#records.has(id);
+  }
+
+  @bind
   public clone(): Records<T> {
     return new Records(this.#records);
   }
@@ -168,6 +181,7 @@ export class Records<T extends Record = Record> {
       if (is.array(acceptableReasons) && !acceptableReasons.includes(reason)) return;
       if (is.array(acceptableIds)) records = records.filter(({ id }) => acceptableIds.includes(id));
       if (is.function(filterOn)) records = records.filter(filterOn);
+      if (records.length === 0) return;
       callback(records, reason);
     };
     this.#onModifiedCallbacks.add(callbackWrapper);
