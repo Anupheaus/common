@@ -1,7 +1,7 @@
 /* eslint-disable max-classes-per-file */
 import './array';
 import './map';
-import { AnyObject, Record, Upsertable } from './global';
+import type { AnyObject, Record, Upsertable } from './global';
 
 class TestClass {
   public constructor(value: number) { this.value = value; }

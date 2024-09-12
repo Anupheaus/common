@@ -1,7 +1,7 @@
 /* eslint-disable max-classes-per-file */
 // tslint:disable:interface-name
 import './object';
-import { AnyObject } from './global';
+import type { AnyObject } from './global';
 import { bind } from '../decorators';
 import { is } from './is';
 import { InternalError } from '../errors';

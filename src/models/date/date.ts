@@ -1,6 +1,6 @@
-import { DateTime } from 'luxon';
-import { DefaultValidity } from 'luxon/src/_util';
-import { is } from '../../extensions';
+import type { DateTime } from 'luxon';
+import type { DefaultValidity } from 'luxon/src/_util';
+import { is } from '../../extensions/is';
 
 function notSame(range: DateRange): boolean {
   return range.from.valueOf() !== range.to.valueOf();

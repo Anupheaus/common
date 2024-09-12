@@ -1,4 +1,4 @@
-import { AnyObject } from '../../extensions';
+import type { AnyObject } from '../../extensions';
 
 export type DataSortDirection = 'asc' | 'desc';
 

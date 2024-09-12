@@ -1,4 +1,4 @@
-import { Record, Disposable, AnyObject } from './global';
+import type { Record, Disposable, AnyObject } from './global';
 import { hash as utilsHash } from './utils';
 import { is } from './is';
 import { v4 as uuid } from 'uuid';

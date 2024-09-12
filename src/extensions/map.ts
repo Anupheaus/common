@@ -1,6 +1,6 @@
 /* eslint-disable max-classes-per-file */
 import './object';
-import { MapOf } from './global';
+import type { MapOf } from './global';
 import { is } from './is';
 
 interface MergeOptions<K, T, R, V> {

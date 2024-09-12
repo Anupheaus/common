@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon';
 import { is } from '../is';
-import { AnyObject, ErrorLike } from '../global';
+import type { AnyObject, ErrorLike } from '../global';
 import { Error } from '../../errors';
 
 //#region DateTime

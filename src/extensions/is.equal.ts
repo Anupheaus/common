@@ -1,4 +1,5 @@
-import { createCustomCircularEqual, sameValueZeroEqual, TypeEqualityComparator } from 'fast-equals';
+import type { TypeEqualityComparator } from 'fast-equals';
+import { createCustomCircularEqual, sameValueZeroEqual } from 'fast-equals';
 import { DateTime } from 'luxon';
 
 function compareFunctions(valA: unknown, valB: unknown): boolean | undefined {

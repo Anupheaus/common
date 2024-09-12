@@ -1,9 +1,10 @@
 import { pluralize, singularize } from 'inflection';
 import { NotImplementedError } from '../../errors/NotImplementedError';
-import { MapOf } from '../global';
+import type { MapOf } from '../global';
 import { is } from '../is';
 import numeral from 'numeral';
-import { ProxyApi, ProxyOf, ProxyOfApi, createProxyOf } from '../../proxy';
+import type { ProxyApi, ProxyOf, ProxyOfApi } from '../../proxy';
+import { createProxyOf } from '../../proxy';
 import { getProxyApiFrom } from '../../proxy/getProxyApiFrom';
 import { Error, InternalError } from '../../errors';
 import { deserialise, serialise } from './serialisation';

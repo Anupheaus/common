@@ -1,6 +1,7 @@
 /* eslint-disable max-classes-per-file */
 import './object';
-import { MapDelegate, SimpleMapDelegate, IArrayOrderByConfig, IArrayDiff, IMergeWithOptions, MergeWithUpdateOperations, GroupingDelegate } from '../models';
+import type { MapDelegate, SimpleMapDelegate, IArrayOrderByConfig, IArrayDiff, IMergeWithOptions, GroupingDelegate } from '../models';
+import { MergeWithUpdateOperations } from '../models';
 import { ArgumentInvalidError } from '../errors/ArgumentInvalidError';
 import { SortDirections } from '../models/sort';
 import type { DeepPartial, Record, TypeOf, Upsertable, UpdatableRecord } from './global';

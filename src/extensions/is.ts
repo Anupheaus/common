@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable max-classes-per-file */
-import { ProxyOf } from '../proxy';
+import type { ProxyOf } from '../proxy';
 import { isProxySymbol } from '../proxy/privateModels';
 import type { NotPromise, AnyObject, AnyFunction, ErrorLike } from './global';
 import { isEqual } from './is.equal';
-import { ListItem } from './ListItem';
+import type { ListItem } from './ListItem';
 
 function parseArguments<R, T = unknown>(value: T, result: boolean, type?: string, defaultValue?: () => T | R, isIncorrectType?: () => T | R,
   isCorrectType?: (value: T) => T | R): T | R | boolean {

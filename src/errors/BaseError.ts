@@ -1,4 +1,5 @@
-import { is, type AnyObject, type ConstructorOf } from '../extensions';
+import { is } from '../extensions/is';
+import type { AnyObject, ConstructorOf } from '../extensions';
 
 const errorTypes = new Map<string, ConstructorOf<Error>>();
 

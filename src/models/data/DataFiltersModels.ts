@@ -1,7 +1,8 @@
 import { DateTime } from 'luxon';
 import type { AnyObject, PrimitiveType } from '../../extensions';
 import { is } from '../../extensions/is';
-import { ListItem, ListItems } from '../../extensions/ListItem';
+import type { ListItem } from '../../extensions/ListItem';
+import { ListItems } from '../../extensions/ListItem';
 
 export type DataFilterValueTypes = 'string' | 'number' | 'boolean' | 'date' | 'currency';
 
