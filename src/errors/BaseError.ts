@@ -1,4 +1,4 @@
-import type { AnyObject, ConstructorOf } from '../extensions';
+import { is, type AnyObject, type ConstructorOf } from '../extensions';
 
 const errorTypes = new Map<string, ConstructorOf<Error>>();
 
@@ -24,6 +24,7 @@ export class Error extends global.Error {
     this.#hasBeenHandled = false;
     Object.setPrototypeOf(this, new.target.prototype);
     const anyProps = props as AnyObject;
+    if (anyProps instanceof Error) return anyProps;
     if (typeof (anyProps['@error']) === 'string') {
       const errorType = errorTypes.get(anyProps['@error']);
       if (errorType && errorType !== new.target) return new errorType(props);
@@ -57,6 +58,10 @@ export class Error extends global.Error {
 
   public static register<T extends ConstructorOf<Error>>(errorType: T): void {
     errorTypes.set(errorType.name, errorType);
+  }
+
+  public static isErrorObject(value: unknown): value is ReturnType<InstanceType<typeof Error>['toJSON']> {
+    return is.plainObject(value) && Reflect.has(value, '@error');
   }
 
   public get title() { return this.#props.title; }

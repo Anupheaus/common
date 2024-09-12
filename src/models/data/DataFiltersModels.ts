@@ -45,8 +45,10 @@ type WhereClauseWrapper<ValueType> =
   : NonNullable<ValueType> extends AnyObject ? DataFilters<NonNullable<ValueType>> & BooleanValueKeys : never;
 /* eslint-enable @typescript-eslint/indent */
 
+type NonArrayOf<ValueType> = ValueType extends Array<infer T> ? T : ValueType;
+
 type DataObjectTypeFilters<ObjectType extends AnyObject = AnyObject> = {
-  [Key in keyof ObjectType]?: ObjectType[Key] | WhereClauseWrapper<ObjectType[Key]>;
+  [Key in keyof ObjectType]?: ObjectType[Key] | NonArrayOf<ObjectType[Key]> | WhereClauseWrapper<ObjectType[Key]>;
 };
 
 type DataOrFilters<ObjectType extends AnyObject = AnyObject> = { $or: DataFilters<ObjectType>[]; };

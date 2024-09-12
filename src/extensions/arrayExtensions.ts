@@ -620,6 +620,11 @@ export class ArrayExtensions<T> {
     return new Set(this);
   }
 
+  public hasAnyOf(items: T[]): boolean;
+  public hasAnyOf(this: T[], items: T[]): boolean {
+    return items.some(item => this.includes(item));
+  }
+
 }
 
 export class ArrayConstructorExtensions {

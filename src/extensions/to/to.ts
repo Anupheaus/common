@@ -1,11 +1,12 @@
 import { pluralize, singularize } from 'inflection';
-import { NotImplementedError } from '../errors/NotImplementedError';
-import { MapOf } from './global';
-import { is } from './is';
+import { NotImplementedError } from '../../errors/NotImplementedError';
+import { MapOf } from '../global';
+import { is } from '../is';
 import numeral from 'numeral';
-import { ProxyApi, ProxyOf, ProxyOfApi, createProxyOf } from '../proxy';
-import { getProxyApiFrom } from '../proxy/getProxyApiFrom';
-import { Error, InternalError } from '../errors';
+import { ProxyApi, ProxyOf, ProxyOfApi, createProxyOf } from '../../proxy';
+import { getProxyApiFrom } from '../../proxy/getProxyApiFrom';
+import { Error, InternalError } from '../../errors';
+import { deserialise, serialise } from './serialisation';
 
 export type BooleanOrFunc = boolean | (() => boolean);
 
@@ -133,6 +134,14 @@ class To {
     if (value instanceof Error) return value;
     if (value instanceof globalThis.Error || is.errorLike(value)) return new Error(value);
     return undefined;
+  }
+
+  public serialise(value: unknown, replacer?: (key: string, value: unknown) => unknown): string {
+    return serialise(value, replacer);
+  }
+
+  public deserialise<T = unknown>(value: unknown, reviver?: (key: string, value: unknown) => unknown): T {
+    return deserialise(value, reviver) as T;
   }
 
 }
