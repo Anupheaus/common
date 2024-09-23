@@ -1,4 +1,4 @@
-import { Unsubscribe } from '../events';
+import type { Unsubscribe } from '../events';
 import { is } from '../extensions';
 
 type CollectionModifiedReason = 'add' | 'remove' | 'clear';

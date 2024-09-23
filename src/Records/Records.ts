@@ -1,5 +1,6 @@
 import { bind } from '../decorators';
-import { is, Record, UpsertableRecord } from '../extensions';
+import type { Record, UpsertableRecord } from '../extensions';
+import { is } from '../extensions';
 
 export type RecordsModifiedReason = 'add' | 'remove' | 'update' | 'clear' | 'reorder';
 

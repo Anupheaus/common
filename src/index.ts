@@ -16,3 +16,4 @@ export * from './Records';
 export * from './logger';
 export * from './Collection';
 export * from './ArrayModifications';
+export * from './DoubleMap';
