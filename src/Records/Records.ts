@@ -36,6 +36,16 @@ export class Records<T extends Record = Record> {
     return Array.from(this.#records.keys());
   }
 
+  public indexOf(id: string): number;
+  public indexOf(record: T): number;
+  public indexOf(predicate: (record: T, index: number) => boolean): number;
+  @bind
+  public indexOf(arg: string | T | ((record: T, index: number) => boolean)): number {
+    if (is.string(arg)) return this.ids().indexOf(arg);
+    if (is.function(arg)) return this.toArray().findIndex(arg);
+    return this.toArray().indexOf(arg);
+  }
+
   public add(records: T[]): void;
   public add(record: T): void;
   @bind
