@@ -84,8 +84,17 @@ export class DoubleMap<K1, K2, V> {
     return this.#data.get(args[0] as K1)?.has(args[1] as K2) ?? false;
   }
 
-  public forEach(callback: (value: V, key1: K1, key2: K2) => void): void {
-    this.#data.forEach((map, key1) => map.forEach((value, key2) => callback(value, key1, key2)));
+  public forEach(callback: (value: V, key1: K1, key2: K2) => void): void;
+  public forEach(key1: K1, callback: (value: V, key2: K2) => void): void;
+  public forEach(...args: unknown[]): void {
+    if (args.length === 1) {
+      const callback = args[0] as (value: V, key1: K1, key2: K2) => void;
+      this.#data.forEach((map, key1) => map.forEach((value, key2) => callback(value, key1, key2)));
+    } else if (args.length === 2) {
+      const key1 = args[0] as K1;
+      const callback = args[1] as (value: V, key2: K2) => void;
+      this.#data.get(key1)?.forEach((value, key2) => callback(value, key2));
+    }
   }
 
   public toMap(): Map<K1, Map<K2, V>> {
