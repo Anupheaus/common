@@ -13,6 +13,7 @@ module.exports = {
     path: path.resolve(root, './dist'),
     libraryTarget: 'umd',
     library: 'anux-common',
+    clean: true,
   },
   module: {
     // rules: [{

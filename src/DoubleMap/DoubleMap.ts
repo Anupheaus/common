@@ -50,22 +50,24 @@ export class DoubleMap<K1, K2, V> {
   }
 
   public get(key1: K1, key2: K2): V | undefined;
-  public get(key1: K1, key2: K2, defaultValue: V): V;
+  public get(key1: K1, key2: K2, defaultValue: () => V): V;
   public get(...args: unknown[]) {
     const key1 = args[0] as K1;
     const key2 = args[1] as K2;
-    const defaultValue = args[2] as V;
+    const defaultValue = args[2] as () => V;
     const hasDefaultValue = args.length > 2;
     if (!this.#data.has(key1)) {
       if (!hasDefaultValue) return;
-      this.#data.set(key1, new Map([[key2, defaultValue]]));
-      return defaultValue;
+      const dv = defaultValue();
+      this.#data.set(key1, new Map([[key2, dv]]));
+      return dv;
     }
     const map = this.#data.get(key1)!;
     if (!map.has(key2)) {
       if (!hasDefaultValue) return;
-      map.set(key2, defaultValue);
-      return defaultValue;
+      const dv = defaultValue();
+      map.set(key2, dv);
+      return dv;
     }
     return map.get(key2);
   }
