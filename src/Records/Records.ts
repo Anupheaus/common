@@ -21,7 +21,7 @@ export class Records<T extends Record = Record> {
   }
 
   #records: Map<string, T>;
-  #onModifiedCallbacks: Set<(records: T[], reason: RecordsModifiedReason) => void>;
+  #onModifiedCallbacks: Set<(records: T[], reason: RecordsModifiedReason, allRecords: T[]) => void>;
 
   public get length(): number {
     return this.#records.size;
@@ -187,13 +187,13 @@ export class Records<T extends Record = Record> {
   }
 
   @bind
-  public onModified(callback: (records: T[], reason: RecordsModifiedReason) => void, { acceptableIds, acceptableReasons, filterOn }: OnModifiedOptions<T> = {}): () => void {
-    const callbackWrapper = (records: T[], reason: RecordsModifiedReason) => {
+  public onModified(callback: (records: T[], reason: RecordsModifiedReason, allRecords: T[]) => void, { acceptableIds, acceptableReasons, filterOn }: OnModifiedOptions<T> = {}): () => void {
+    const callbackWrapper = (records: T[], reason: RecordsModifiedReason, allRecords: T[]) => {
       if (is.array(acceptableReasons) && !acceptableReasons.includes(reason)) return;
       if (is.array(acceptableIds)) records = records.filter(({ id }) => acceptableIds.includes(id));
       if (is.function(filterOn)) records = records.filter(filterOn);
       if (records.length === 0) return;
-      callback(records, reason);
+      callback(records, reason, allRecords);
     };
     this.#onModifiedCallbacks.add(callbackWrapper);
     return () => this.#onModifiedCallbacks.delete(callbackWrapper);
@@ -224,7 +224,8 @@ export class Records<T extends Record = Record> {
   }
 
   #invokeCallbacks(records: T[], reason: RecordsModifiedReason): void {
-    this.#onModifiedCallbacks.forEach(callback => callback(records, reason));
+    const allRecords = this.toArray();
+    this.#onModifiedCallbacks.forEach(callback => callback(records, reason, allRecords));
   }
 
 }
