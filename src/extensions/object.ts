@@ -89,7 +89,7 @@ function isOverridableItemArray<T>(items: T[]): items is (T & Record)[] {
   return items.cast<T & Record>().every(item => item != null && typeof (item) === 'object' && item.id != null);
 }
 
-function parseObject<T extends object>(existingObject: T, newObject: T, checkForOverridableItems: boolean): T {
+function parseObject<T extends object>(existingObject: T, newObject: T, checkForOverridableItems: boolean, replacer: (value: unknown) => unknown): T {
   if (newObject === undefined) return existingObject;
   Reflect.ownKeys(newObject).forEach(key => {
     let { get: existingGet, value: existingValue } = Object.getOwnPropertyDescriptor(existingObject, key) ?? {};
@@ -100,7 +100,7 @@ function parseObject<T extends object>(existingObject: T, newObject: T, checkFor
     } : undefined;
     const set = newSet ? (...args: any[]) => newSet.call(existingObject, args) : undefined;
     const value = newValue !== undefined ? (typeof (newValue) === 'function' ? (...args: any[]) => newValue.apply(existingObject, args) :
-      parseValue(existingValue, newValue, checkForOverridableItems)) : undefined; // eslint-disable-line @typescript-eslint/no-use-before-define
+      parseValue(existingValue, newValue, checkForOverridableItems, replacer)) : undefined; // eslint-disable-line @typescript-eslint/no-use-before-define
     Object.defineProperty(existingObject, key, {
       ...otherProps,
       ...(get ? { get } : {}),
@@ -111,13 +111,13 @@ function parseObject<T extends object>(existingObject: T, newObject: T, checkFor
   return existingObject;
 }
 
-function parseArray(existingValue: unknown[], newValue: unknown[], checkForOverridableItems: boolean): unknown[] {
+function parseArray(existingValue: unknown[], newValue: unknown[], checkForOverridableItems: boolean, replacer: (value: unknown) => unknown): unknown[] {
   if (!(existingValue instanceof Array)) { existingValue = []; }
   if (existingValue.length === 0 && newValue.length === 0) { return existingValue; }
   // Check to see if the items are overridable
   if (checkForOverridableItems && isOverridableItemArray(existingValue) && isOverridableItemArray(newValue)) {
     // eslint-disable-next-line @typescript-eslint/no-use-before-define    
-    existingValue = existingValue.syncWith(newValue, { updateMatched: (a, b) => parseValue(Object.clone(a), b, true) as Record });
+    existingValue = existingValue.syncWith(newValue, { updateMatched: (a, b) => parseValue(Object.clone(a), b, true, replacer) as Record });
     return existingValue;
   }
   const changedArray = existingValue.slice();
@@ -128,7 +128,7 @@ function parseArray(existingValue: unknown[], newValue: unknown[], checkForOverr
   }
   newValue.forEach((item, index) => {
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    const result = parseValue(existingValue[index], item, checkForOverridableItems);
+    const result = parseValue(existingValue[index], item, checkForOverridableItems, replacer);
     if (result === existingValue[index]) { return; }
     hasChangedArray = true;
     changedArray[index] = result;
@@ -136,22 +136,20 @@ function parseArray(existingValue: unknown[], newValue: unknown[], checkForOverr
   return hasChangedArray ? changedArray : existingValue;
 }
 
-function parseValue(existingValue: unknown, newValue: unknown, checkForOverridableItems: boolean, replacer: (value: unknown) => unknown = v => v): unknown {
-  const parsedValue = (() => {
-    if (newValue === undefined || existingValue === newValue) { return existingValue; }
-    if (is.date(newValue)) {
-      return newValue;
-    } else if (is.plainObject(newValue)) {
-      if (existingValue == null) { existingValue = {}; }
-      return parseObject(existingValue as object, newValue, checkForOverridableItems);
-    } else if (is.array(newValue)) {
-      if (existingValue == null) { existingValue = []; }
-      return parseArray(existingValue as [], newValue, checkForOverridableItems);
-    } else {
-      return newValue;
-    }
-  })();
-  return replacer(parsedValue);
+function parseValue(existingValue: unknown, newValue: unknown, checkForOverridableItems: boolean, replacer: (value: unknown) => unknown): unknown {
+  newValue = replacer(newValue);
+  if (newValue === undefined || existingValue === newValue) { return existingValue; }
+  if (is.date(newValue)) {
+    return newValue;
+  } else if (is.plainObject(newValue)) {
+    if (existingValue == null) { existingValue = {}; }
+    return parseObject(existingValue as object, newValue, checkForOverridableItems, replacer);
+  } else if (is.array(newValue)) {
+    if (existingValue == null) { existingValue = []; }
+    return parseArray(existingValue as [], newValue, checkForOverridableItems, replacer);
+  } else {
+    return newValue;
+  }
 }
 
 Object.addMethods(Object, [
@@ -166,7 +164,7 @@ Object.addMethods(Object, [
   },
 
   function merge<T>(this: Object, target: T, ...extenders: unknown[]): T {
-    extenders.removeNull().forEach(extender => target = parseValue(target, extender, true) as T);
+    extenders.removeNull().forEach(extender => target = parseValue(target, extender, true, (v => v)) as T);
     return target;
   },
 
@@ -174,10 +172,10 @@ Object.addMethods(Object, [
     if (target == null) { return target; }
     if (target instanceof Array) {
       const newTarget = [] as T;
-      return parseValue(newTarget, target, true, replacer) as T;
+      return parseValue(newTarget, target, true, replacer ?? (v => v)) as T;
     } else {
       const newTarget = {} as T;
-      return parseValue(newTarget, target, true, replacer) as T;
+      return parseValue(newTarget, target, true, replacer ?? (v => v)) as T;
     }
   },
 
