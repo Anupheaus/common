@@ -4,8 +4,7 @@ import type { AnyObject, ErrorLike } from '../global';
 import { Error } from '../../errors';
 
 //#region DateTime
-const isoDateRegex = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?(([+-]\d\d:\d\d)|Z)?$/i;
-const isSerialisedDateTime = (value: unknown): value is string | Date => (is.string(value) && isoDateRegex.test(value)) || value instanceof Date;
+const isSerialisedDateTime = (value: unknown): value is string | Date => (is.string(value) && Date.isIsoString(value)) || value instanceof Date;
 const isDateTime = (value: unknown): value is DateTime | Date => DateTime.isDateTime(value) || value instanceof Date;
 const deserialiseDateTime = (value: string | Date) => value instanceof Date ? DateTime.fromJSDate(value) : DateTime.fromISO(value);
 const serialiseDateTime = (value: DateTime | Date): string => DateTime.isDateTime(value) ? value.toUTC().toISO() ?? '' : serialiseDateTime(DateTime.fromJSDate(value));

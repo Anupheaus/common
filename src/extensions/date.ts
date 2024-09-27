@@ -3,6 +3,7 @@ import './object';
 import { DateTime } from 'luxon';
 
 type AddUnits = 'days' | 'hours' | 'minutes' | 'seconds';
+const isoDateRegex = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?(([+-]\d\d:\d\d)|Z)?$/i;
 
 declare global {
   interface Date extends DateExtensions { }
@@ -80,6 +81,10 @@ class DateConstructorExtensions {
     if (epochOrDate instanceof Date) return epochOrDate.format(format);
     if (typeof (epochOrDate) === 'number') return (new Date(epochOrDate)).format(format);
     throw new Error('The epoch time or date you provided to format was invalid.');
+  }
+
+  public isIsoString(value: string): boolean {
+    return isoDateRegex.test(value);
   }
 
 }
