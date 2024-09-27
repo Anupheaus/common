@@ -39,7 +39,7 @@ declare global {
     // extend<T1, T2, T3>(target: T1, extension1: T2, extension2: T3): T1 & T2 & T3;
     // extend<T1, T2, T3, T4>(target: T1, extension1: T2, extension2: T3, extension3: T4): T1 & T2 & T3 & T4;
     // extend<T>(target: T, ...extensions: T[]): T;
-    clone<T>(target: T): T;
+    clone<T>(target: T, replacer?: (value: unknown) => unknown): T;
     // diff(target: object, comparison: object): object;
     hash(target: object, options?: HashOptions): string;
     remove<T, P>(value: T, removeProps: (propsToRemove: T) => P): P;
@@ -136,19 +136,22 @@ function parseArray(existingValue: unknown[], newValue: unknown[], checkForOverr
   return hasChangedArray ? changedArray : existingValue;
 }
 
-function parseValue(existingValue: unknown, newValue: unknown, checkForOverridableItems: boolean): unknown {
-  if (newValue === undefined || existingValue === newValue) { return existingValue; }
-  if (is.date(newValue)) {
-    return newValue;
-  } else if (is.plainObject(newValue)) {
-    if (existingValue == null) { existingValue = {}; }
-    return parseObject(existingValue as object, newValue, checkForOverridableItems);
-  } else if (is.array(newValue)) {
-    if (existingValue == null) { existingValue = []; }
-    return parseArray(existingValue as [], newValue, checkForOverridableItems);
-  } else {
-    return newValue;
-  }
+function parseValue(existingValue: unknown, newValue: unknown, checkForOverridableItems: boolean, replacer: (value: unknown) => unknown = v => v): unknown {
+  const parsedValue = (() => {
+    if (newValue === undefined || existingValue === newValue) { return existingValue; }
+    if (is.date(newValue)) {
+      return newValue;
+    } else if (is.plainObject(newValue)) {
+      if (existingValue == null) { existingValue = {}; }
+      return parseObject(existingValue as object, newValue, checkForOverridableItems);
+    } else if (is.array(newValue)) {
+      if (existingValue == null) { existingValue = []; }
+      return parseArray(existingValue as [], newValue, checkForOverridableItems);
+    } else {
+      return newValue;
+    }
+  })();
+  return replacer(parsedValue);
 }
 
 Object.addMethods(Object, [
@@ -167,12 +170,14 @@ Object.addMethods(Object, [
     return target;
   },
 
-  function clone<T>(this: Object, target: T): T {
+  function clone<T>(this: Object, target: T, replacer?: (value: unknown) => unknown): T {
     if (target == null) { return target; }
     if (target instanceof Array) {
-      return Object.merge([], target) as T;
+      const newTarget = [] as T;
+      return parseValue(newTarget, target, true, replacer) as T;
     } else {
-      return Object.merge({}, target) as T;
+      const newTarget = {} as T;
+      return parseValue(newTarget, target, true, replacer) as T;
     }
   },
 
