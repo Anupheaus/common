@@ -1,6 +1,7 @@
 import { Event } from '../events';
-import { PromiseMaybe, Record, is } from '../extensions';
-import { AddIsNewFlagToRecord, ArrayModificationsApplyToOptions } from './ArrayModificationsModels';
+import type { PromiseMaybe, Record } from '../extensions';
+import { is } from '../extensions';
+import type { AddIsNewFlagToRecord, ArrayModificationsApplyToOptions } from './ArrayModificationsModels';
 
 export interface SerialisedArrayModifications<RecordType extends Record = Record> {
   added: RecordType[];

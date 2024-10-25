@@ -1,4 +1,4 @@
-import { Record } from '../extensions';
+import type { Record } from '../extensions';
 
 export type AddIsNewFlagToRecord<T extends Record> = T & { isNew?: boolean; };
 

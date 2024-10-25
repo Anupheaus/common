@@ -375,6 +375,16 @@ export class ArrayExtensions<T> {
       .last() ?? 0;
   }
 
+  public mapWithoutNull<V>(delegate: MapDelegate<T, V>): NonNullable<V>[];
+  public mapWithoutNull<V>(this: T[], delegate: MapDelegate<T, V>): NonNullable<V>[] {
+    const results: NonNullable<V>[] = [];
+    this.forEach((item, index) => {
+      const value = delegate(item, index);
+      if (value != null) { results.push(value); }
+    });
+    return results;
+  }
+
   public average(): number;
   public average(delegate: CalculationDelegate<T>): number;
   public average(this: T[], delegate?: CalculationDelegate<T>): number {

@@ -4,7 +4,7 @@ import { is } from '../extensions/is';
 import { Error as CommonError } from '../errors';
 import type { AnyObject } from '../extensions/global';
 import '../extensions/array';
-import { Unsubscribe } from '../events';
+import type { Unsubscribe } from '../events';
 import { to } from '../extensions';
 
 const defaultMinLevel = 5;
@@ -182,7 +182,7 @@ export class Logger {
     if (process.env.NODE_ENV) {
       const useColors = this.settings.useColors;
       const fullMessage = `${this.#createNodeMessage(timestamp, lvlSettings, parentNames, message, useColors)}${meta == null ? '' : '\n'}`;
-      console[lvlSettings.consoleMethod](fullMessage, ...[meta].removeNull());
+      if (is.empty(settings.filename)) console[lvlSettings.consoleMethod](fullMessage, ...[meta].removeNull());
       sendToListeners({ timestamp, names: parentNames, level, message, meta });
       if (is.not.empty(settings.filename)) {
         const { writeToFile } = require('./nodeUtils');
