@@ -1,10 +1,10 @@
 /* eslint-disable max-classes-per-file */
 import './object';
-import type { MapDelegate, SimpleMapDelegate, IArrayOrderByConfig, IArrayDiff, IMergeWithOptions, GroupingDelegate } from '../models';
+import type { MapDelegate, SimpleMapDelegate, ArrayOrderByConfig, IArrayDiff, IMergeWithOptions, GroupingDelegate, DataSorts, DataSort } from '../models';
 import { MergeWithUpdateOperations } from '../models';
 import { ArgumentInvalidError } from '../errors/ArgumentInvalidError';
 import { SortDirections } from '../models/sort';
-import type { DeepPartial, Record, TypeOf, Upsertable, UpdatableRecord } from './global';
+import type { DeepPartial, Record, TypeOf, Upsertable, UpdatableRecord, NonNullableOrVoid, AnyObject } from './global';
 import './reflect';
 import { is } from './is';
 
@@ -284,21 +284,38 @@ export class ArrayExtensions<T> {
     return clone;
   }
 
+  public orderBy<V extends T & AnyObject>(sorts: DataSorts<V>): T[];
   public orderBy<R>(sorterDelegate: SimpleMapDelegate<T, R>): T[];
   public orderBy<R>(sorterDelegate: SimpleMapDelegate<T, R>, direction: SortDirections): T[];
-  public orderBy(config: IArrayOrderByConfig<T>[]): T[];
-  public orderBy<R>(this: T[], arg: SimpleMapDelegate<T, R> | (IArrayOrderByConfig<T>[]), sortDirection: SortDirections = SortDirections.Ascending): T[] {
-    let delegates = arg as IArrayOrderByConfig<T>[];
-    if (typeof (arg) === 'function') { delegates = [{ delegate: arg, direction: sortDirection }]; }
-    if (delegates instanceof Array) {
+  public orderBy(config: ArrayOrderByConfig<T>[]): T[];
+  public orderBy<R>(this: T[], arg: SimpleMapDelegate<T, R> | (ArrayOrderByConfig<T>[]) | DataSorts<any>, sortDirection: SortDirections = SortDirections.Ascending): T[] {
+    let items: ArrayOrderByConfig<T>[] | DataSort[] = [];
+    if (typeof (arg) === 'function') { items = [{ delegate: arg, direction: sortDirection }]; }
+    else if (typeof (arg) === 'string') { items = [[arg, 'asc']]; }
+    if (items instanceof Array) {
+      const strictItems: ArrayOrderByConfig<any>[] = items.mapWithoutNull(item => {
+        let delegate: SimpleMapDelegate<T, any> | undefined;
+        let direction: SortDirections | undefined;
+        if (typeof (item) === 'string') {
+          delegate = val => is.object(val) ? val[item] : val;
+          direction = sortDirection;
+        } else if (item instanceof Array) {
+          delegate = val => is.object(val) ? val[item[0]] : val;
+          direction = item[1] === 'desc' ? SortDirections.Descending : SortDirections.Ascending;
+        } else if (is.object(item) && Reflect.has(item, 'delegate')) {
+          delegate = item.delegate;
+          direction = item.direction;
+        }
+        if (delegate != null && direction != null) return { delegate, direction };
+      });
       return this
         .slice()
         .sort((a, b) => {
-          for (const item of delegates) {
-            const aVal: any = item.delegate(a); // eslint-disable-line @typescript-eslint/no-explicit-any
-            const bVal: any = item.delegate(b); // eslint-disable-line @typescript-eslint/no-explicit-any
+          for (const { delegate, direction } of strictItems) {
+            const aVal: any = delegate(a); // eslint-disable-line @typescript-eslint/no-explicit-any
+            const bVal: any = delegate(b); // eslint-disable-line @typescript-eslint/no-explicit-any
             const result = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
-            if (result !== 0) { return (item.direction === SortDirections.Descending ? -1 : 1) * result; }
+            if (result !== 0) { return (direction === SortDirections.Descending ? -1 : 1) * result; }
           }
           return 0;
         });
@@ -375,12 +392,12 @@ export class ArrayExtensions<T> {
       .last() ?? 0;
   }
 
-  public mapWithoutNull<V>(delegate: MapDelegate<T, V>): NonNullable<V>[];
-  public mapWithoutNull<V>(this: T[], delegate: MapDelegate<T, V>): NonNullable<V>[] {
-    const results: NonNullable<V>[] = [];
+  public mapWithoutNull<V>(delegate: MapDelegate<T, V>): NonNullableOrVoid<V>[];
+  public mapWithoutNull<V>(this: T[], delegate: MapDelegate<T, V>): NonNullableOrVoid<V>[] {
+    const results: NonNullableOrVoid<V>[] = [];
     this.forEach((item, index) => {
       const value = delegate(item, index);
-      if (value != null) { results.push(value); }
+      if (value != null) { results.push(value as any); }
     });
     return results;
   }

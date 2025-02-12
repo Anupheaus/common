@@ -1,7 +1,7 @@
-import { SortDirections } from '../sort';
-import { SimpleMapDelegate } from './mapDelegate';
+import type { SortDirections } from '../sort';
+import type { SimpleMapDelegate } from './mapDelegate';
 
-export interface IArrayOrderByConfig<T> {
+export interface ArrayOrderByConfig<T> {
   direction?: SortDirections;
   delegate: SimpleMapDelegate<T>;
 }

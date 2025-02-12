@@ -16,6 +16,8 @@ export interface AnyObject {
 }
 
 export type AnyFunction<ReturnType = any> = (...args: any[]) => ReturnType;
+export type AnyAsyncFunction<ReturnType = any> = (...args: any[]) => Promise<ReturnType>;
+
 
 export interface Record {
   id: string;
@@ -66,6 +68,7 @@ export type PrimitiveOrRecordType = PrimitiveType | Record;
 export type IsPrimitiveType<T> = T extends PrimitiveType ? T : never;
 export type IsPrimitiveOrObjectType<T> = T extends PrimitiveOrObjectType ? T : never;
 export type IsPrimitiveOrRecordType<T> = T extends PrimitiveOrRecordType ? T : never;
+export type NonNullableOrVoid<T> = NonNullable<Exclude<T, void>>;
 
 export type PromiseMaybe<T = void> = T | Promise<T>;
 export type VoidPromise = Promise<void>;

@@ -2,7 +2,7 @@
 /* eslint-disable max-classes-per-file */
 import type { ProxyOf } from '../proxy';
 import { isProxySymbol } from '../proxy/privateModels';
-import type { NotPromise, AnyObject, AnyFunction, ErrorLike } from './global';
+import type { NotPromise, AnyObject, AnyFunction, ErrorLike, Record } from './global';
 import { isEqual } from './is.equal';
 import type { ListItem } from './ListItem';
 
@@ -88,6 +88,12 @@ export class Is {
       return proto === Object.prototype || proto === null;
     }
     return Object.prototype.toString.call(value) === '[object Object]';
+  }
+
+  public record<T extends Record>(value: T): value is T;
+  public record(value: unknown): value is Record;
+  public record(this: Is, value: unknown): value is Record {
+    return this.plainObject(value) && Reflect.has(value, 'id');
   }
 
   public date(value: unknown): value is Date;
