@@ -6,8 +6,12 @@ import type { AnyObject } from '../extensions/global';
 import '../extensions/array';
 import type { Unsubscribe } from '../events';
 import { to } from '../extensions';
+import type { LoggerEntry, LoggerListenerSettings } from './logger-listener';
+import { LoggerListener } from './logger-listener';
+import { LoggerServices } from './logger-services';
 
 const defaultMinLevel = 5;
+let asyncLocalStorage: { getStore(): Logger | undefined; run<T>(logger: Logger, delegate: () => T): T; } | undefined;
 
 interface LevelSettings {
   name: string;
@@ -43,24 +47,18 @@ export const LogLevels = {
   'fatal': 6,
 } as const;
 
+const logLevelNumberToString = Object.entries(LogLevels).reduce((acc, [key, value]) => ({ ...acc, [value]: key }), {} as Record<number, string>);
+
+const alwaysLog: number[] = (['error', 'fatal', 'warn'] as (keyof typeof LogLevels)[]).map(level => LogLevels[level]);
+
 interface InternalLoggerSettings extends Omit<Required<LoggerSettings>, 'globalMeta' | 'filename'> {
   globalMeta: AnyObject | undefined;
   filename: string | undefined;
 }
 
-export interface OnLogDetails {
-  timestamp: DateTime;
-  level: number;
-  names: string[];
-  message: string;
-  meta?: AnyObject;
-}
-
-export type LoggerListener = (details: OnLogDetails) => void;
-
 const registeredListeners = new Set<LoggerListener>();
-function sendToListeners(details: OnLogDetails): void {
-  registeredListeners.forEach(listener => listener(details));
+function sendToListeners(entry: LoggerEntry): void {
+  registeredListeners.forEach(listener => listener.addEntry(entry));
 }
 
 export class Logger {
@@ -71,14 +69,29 @@ export class Logger {
     this.#callbacks = new Set();
   }
 
-  public static registerListener(delegate: (details: OnLogDetails) => void): Unsubscribe {
-    registeredListeners.add(delegate);
-    return () => { registeredListeners.delete(delegate); };
+  public static registerListener(settings: LoggerListenerSettings): Unsubscribe {
+    const listener = new LoggerListener(settings);
+    registeredListeners.add(listener);
+    return () => { registeredListeners.delete(listener); };
+  }
+
+  public static get services(): typeof LoggerServices {
+    return LoggerServices;
+  }
+
+  public static getCurrent(): Logger | undefined {
+    if (is.browser()) throw new Error('This should not be used in the browser.');
+    if (asyncLocalStorage == null) return undefined;
+    return asyncLocalStorage.getStore();
+  }
+
+  public static getLevelAsString(level: number): string {
+    return logLevelNumberToString[level] ?? 'silly';
   }
 
   protected parent: Logger | undefined;
 
-  #callbacks: Set<(details: OnLogDetails) => void>;
+  #callbacks: Set<(details: LoggerEntry) => void>;
   #name: string;
   #settings?: LoggerSettings;
   #hasStatedLevelInNode: boolean;
@@ -139,7 +152,7 @@ export class Logger {
     }
   }
 
-  public onLog(delegate: (details: OnLogDetails) => void): () => void {
+  public onLog(delegate: (details: LoggerEntry) => void): () => void {
     this.#callbacks.add(delegate);
     return () => { this.#callbacks.delete(delegate); };
   }
@@ -148,6 +161,16 @@ export class Logger {
     const subLogger = new Logger(name, settings);
     subLogger.parent = this;
     return subLogger;
+  }
+
+  public async provide<T>(delegate: () => T): Promise<T> {
+    if (is.browser()) throw new Error('This should not be used in the browser.');
+
+    if (asyncLocalStorage == null) {
+      const { AsyncLocalStorage } = require('async_hooks');
+      asyncLocalStorage = new AsyncLocalStorage();
+    }
+    return (asyncLocalStorage as AnyObject).run(this, delegate);
   }
 
   protected get name() { return this.#name; }
@@ -172,19 +195,21 @@ export class Logger {
     };
   }
 
-  protected async report(level: number, message: string, meta?: AnyObject, ignoreLevel = false): Promise<void> {
+  protected report(level: number, message: string, meta?: AnyObject, ignoreLevel = false): void {
     const settings = this.settings;
-    if (!ignoreLevel && level < settings.minLevel) return;
+    const shouldLogToConsole = alwaysLog.includes(level);
+    if (!ignoreLevel && level < settings.minLevel && !shouldLogToConsole) return;
     const timestamp = DateTime.local();
     const lvlSettings = levelSettings[level];
     const parentNames = this.allNames;
     if (settings.globalMeta) meta = { ...settings.globalMeta, ...meta };
-    if (process.env.NODE_ENV) {
+    if (is.node()) {
       const useColors = this.settings.useColors;
       const fullMessage = `${this.#createNodeMessage(timestamp, lvlSettings, parentNames, message, useColors)}${meta == null ? '' : '\n'}`;
-      if (is.empty(settings.filename)) console[lvlSettings.consoleMethod](fullMessage, ...[meta].removeNull());
-      sendToListeners({ timestamp, names: parentNames, level, message, meta });
-      if (is.not.empty(settings.filename)) {
+      if (is.blank(settings.filename) || shouldLogToConsole) {
+        console[lvlSettings.consoleMethod](fullMessage, ...[this.#sanitiseMeta(meta)].removeNull());
+      }
+      if (is.not.blank(settings.filename)) {
         const { writeToFile } = require('./nodeUtils');
         writeToFile(settings.filename, this.#createNodeMessage(timestamp, lvlSettings, parentNames, message, false), meta);
       }
@@ -207,7 +232,7 @@ export class Logger {
     if (stack == null) return [];
     return stack.split('\n')
       .map(line => line.trim())
-      .filter(is.not.empty)
+      .filter(is.not.blank)
       .filter(line => line.startsWith('at '));
   }
 
@@ -273,17 +298,18 @@ export class Logger {
 
     let name = this.allNames.join('_').replace(/-/g, '_').replace(/\s/g, '_');
     const parseFilename = (value: string | null | undefined): string | undefined => {
-      if (is.empty(value)) return undefined;
+      if (is.blank(value)) return undefined;
       return value.replace(/\\/g, '/');
     };
     if (process && process.env) {
       name = `LOGGING_${name.toUpperCase()}_FILENAME`;
       const filename = parseFilename(process.env[name]);
-      if (is.not.empty(filename)) return filename;
+      if (is.not.blank(filename)) return filename;
     }
   }
 
-  #invokeCallbacks(details: OnLogDetails): void {
+  #invokeCallbacks(details: LoggerEntry): void {
+    sendToListeners(details);
     this.#callbacks.forEach(callback => {
       try {
         callback(details);
@@ -302,4 +328,30 @@ export class Logger {
     parts.push(`${withColours ? '\x1b[1m\x1b[33m' : ''}${message}`);
     return `${withColours ? '\x1b[0m' : ''}${parts.join(withColours ? '\x1b[0m ' : ' ')}${withColours ? '\x1b[0m' : ''}`;
   }
+
+  #sanitiseMeta(meta?: AnyObject | undefined) {
+    if (meta == null) return;
+    const util = require('util');
+    const parseMeta = (target: AnyObject | undefined): void => {
+      if (target == null) return;
+      Reflect.walk(target, ({ get, set }) => {
+        const value = get();
+        if (value instanceof CommonError) {
+          const errorJson = value.toJSON() as AnyObject;
+          delete errorJson['@error'];
+          delete errorJson.hasBeenHandled;
+          parseMeta(errorJson.meta);
+          set(errorJson);
+        }
+      });
+    };
+    parseMeta(meta);
+    return util.inspect(meta, { depth: null, colors: true });
+  }
+}
+
+export function useLogger(): Logger {
+  const logger = Logger.getCurrent();
+  if (logger == null) throw new Error('No logger found in context');
+  return logger;
 }

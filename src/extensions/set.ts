@@ -28,6 +28,16 @@ class SetExtensions<T> {
     return newSet;
   }
 
+  public addMany(values: T[]): void;
+  public addMany(this: Set<T>, values: T[]): void {
+    for (const value of values) this.add(value);
+  }
+
+  public deleteMany(values: T[]): void;
+  public deleteMany(this: Set<T>, values: T[]): void {
+    for (const value of values) this.delete(value);
+  }
+
   public toArray(): T[];
   public toArray(this: Set<T>): T[] {
     return Array.from(this);
@@ -35,4 +45,4 @@ class SetExtensions<T> {
 
 }
 
-Object.extendPrototype(Set, SetExtensions.prototype);
+Object.extendPrototype(Set.prototype, SetExtensions.prototype);

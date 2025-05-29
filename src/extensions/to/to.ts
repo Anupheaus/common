@@ -53,7 +53,7 @@ class To {
     if (!(defaultValue instanceof Date)) { defaultValue = undefined; }
     if (is.date(value)) { return value; }
     if (is.number(value)) { return new Date(value); }
-    if (is.not.empty(value)) { return new Date(Date.parse(value)); }
+    if (is.not.blank(value)) { return new Date(Date.parse(value)); }
     return defaultValue ?? new Date();
   }
 

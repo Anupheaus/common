@@ -7,6 +7,7 @@ import { SortDirections } from '../models/sort';
 import type { DeepPartial, Record, TypeOf, Upsertable, UpdatableRecord, NonNullableOrVoid, AnyObject } from './global';
 import './reflect';
 import { is } from './is';
+import { InternalError } from '../errors';
 
 type FilterDelegate<T> = (item: T, index: number) => boolean;
 type UpdateDelegate<T> = MapDelegate<T, DeepPartial<T>>;
@@ -136,6 +137,17 @@ export class ArrayExtensions<T> {
   public clone(): T[];
   public clone(this: T[]): T[] {
     return this.slice();
+  }
+
+  public filterByIds<R extends T & Record>(values: R[]): R[];
+  public filterByIds<R extends T & Record>(ids: string[]): R[];
+  public filterByIds<R extends T & Record>(this: R[], valuesOrIds: R[] | string[]): R[] {
+    return valuesOrIds.map(v => this.findById(typeof (v) === 'string' ? v : v.id)).removeNull();
+  }
+
+  public filterBy<K extends keyof T>(field: K, value: T[K]): T[];
+  public filterBy<K extends keyof T>(this: T[], field: K, value: T[K]): T[] {
+    return this.filter(item => item[field] === value);
   }
 
   public remove(item: T): T[];
@@ -284,7 +296,7 @@ export class ArrayExtensions<T> {
     return clone;
   }
 
-  public orderBy<V extends T & AnyObject>(sorts: DataSorts<V>): T[];
+  public orderBy(sorts: DataSorts<T extends AnyObject ? T : never>): T[];
   public orderBy<R>(sorterDelegate: SimpleMapDelegate<T, R>): T[];
   public orderBy<R>(sorterDelegate: SimpleMapDelegate<T, R>, direction: SortDirections): T[];
   public orderBy(config: ArrayOrderByConfig<T>[]): T[];
@@ -488,7 +500,7 @@ export class ArrayExtensions<T> {
   public ids(): string[];
   public ids(this: T[]): string[] {
     const results: string[] = [];
-    for (const item of this) { if (isRecord(item)) { results.push(item.id); } }
+    for (const item of this) { if (isRecord(item) && typeof (item.id) === 'string' && item.id.length > 0) { results.push(item.id); } }
     return results;
   }
 
@@ -606,6 +618,71 @@ export class ArrayExtensions<T> {
     }
   }
 
+  public async forEachPromise(callback: (item: T, index: number) => Promise<void>): Promise<void>;
+  public async forEachPromise(this: T[], callback: (item: T, index: number) => Promise<void>): Promise<void> {
+    const [, errors] = await Promise.whenAllSettled(this.map((item, index) => callback(item, index)));
+    if (errors.length > 0) throw new InternalError('The following errors occurred while looping through the array', { meta: { errors } });
+  }
+
+  public async mapPromise<R>(callback: (item: T, index: number) => Promise<R>): Promise<R[]>;
+  public async mapPromise<R>(this: T[], callback: (item: T, index: number) => Promise<R>): Promise<R[]> {
+    const [results, errors] = await Promise.whenAllSettled(this.map((item, index) => callback(item, index)));
+    if (errors.length > 0) throw new InternalError('The following errors occurred while mapping through the array', { meta: { errors } });
+    return results;
+  }
+
+  public findBy<K extends keyof T>(field: K, value: T[K]): T | undefined;
+  public findBy<K extends keyof T>(this: T[], field: K, value: T[K]): T | undefined {
+    return this.find(item => item[field] === value);
+  }
+
+  public toggle(item: T): T[];
+  public toggle(this: T[], item: T): T[] {
+    if (this.includes(item)) return this.remove(item);
+    return this.concat(item);
+  }
+
+  public generateNextName<P extends T & ({ name: string; } | { text: string; })>(this: P[], name: string): string;
+  public generateNextName(matcher: (item: T, index: number) => number, generator: (index: number) => string): string;
+  public generateNextName(this: T[], matcherOrName: string | ((item: T, index: number) => number), generator?: (index: number) => string): string {
+    const matcher = (is.function(matcherOrName) ? matcherOrName : item => {
+      if (typeof (item) !== 'object' || item == null) return 0;
+      try {
+        const value = 'name' in item ? item.name : ('text' in item ? item.text : '');
+        if (typeof (value) !== 'string') return 0;
+        const numberValue = value.match(new RegExp(`${matcherOrName} (\\d+)`))?.[1];
+        if (numberValue == null) return 0;
+        const number = parseInt(numberValue, 10);
+        if (isNaN(number)) return 0;
+        return number;
+      } catch (error) {
+        return 0;
+      }
+    }) as (item: T, index: number) => number;
+    if (generator == null) generator = index => `${matcherOrName} ${index}`;
+    const max = this.reduce((a, b, index) => Math.max(a, matcher(b, index)), 0);
+    return generator(max + 1);
+  }
+
+  public random(): T | undefined;
+  public random(this: T[]): T | undefined {
+    if (this.length === 0) return;
+    const randomIndex = Math.floor(Math.random() * this.length);
+    return this[randomIndex];
+  }
+
+  public randomMany(count: number): T[];
+  public randomMany(this: T[], count: number): T[] {
+    if (this.length === 0 || count === 0) return [];
+    if (count >= this.length) return this;
+    const results: T[] = [];
+    do {
+      const randomItem = this.random();
+      if (randomItem && !results.includes(randomItem)) { results.push(randomItem); }
+    } while (results.length < count);
+    return results;
+  }
+
   public take(count: number): T[];
   public take(this: T[], count: number): T[] {
     if (this.length === 0 || this.length <= count) { return this; }
@@ -650,7 +727,16 @@ export class ArrayExtensions<T> {
 
   public hasAnyOf(items: T[]): boolean;
   public hasAnyOf(this: T[], items: T[]): boolean {
-    return items.some(item => this.includes(item));
+    let ids: string[] | undefined = undefined;
+    if (this.length === 0 || items.length === 0) return false;
+    return items.some(item => {
+      if (is.record(item)) {
+        if (ids == null) ids = this.ids();
+        return ids.includes(item.id);
+      } else {
+        return this.includes(item);
+      }
+    });
   }
 
 }

@@ -150,7 +150,7 @@ export class Records<T extends Record = Record> {
   public upsert(recordOrRecords: UpsertableRecord<T> | UpsertableRecord<T>[]): void {
     const records = (is.array(recordOrRecords) ? recordOrRecords : [recordOrRecords]) as T[];
     records.forEach(record => {
-      if (is.not.empty(record.id)) return;
+      if (is.not.blank(record.id)) return;
       record.id = Math.uniqueId();
     });
     const allIds = this.ids();

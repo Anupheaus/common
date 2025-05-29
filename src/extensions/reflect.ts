@@ -359,7 +359,7 @@ Object.addMethods(Reflect, [
               return parent.path.concat([arrayIndex, name].removeNull());
             },
             get: () => {
-              if (Reflect.has(descriptor, 'get')) return descriptor.get?.();
+              if (Reflect.has(descriptor, 'get')) return Reflect.get(innerTarget as object, name);
               if (Reflect.has(descriptor, 'value')) return descriptor.value;
             },
             set: (value: unknown) => {

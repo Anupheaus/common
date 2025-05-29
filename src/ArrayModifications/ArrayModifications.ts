@@ -46,7 +46,7 @@ export class ArrayModifications<RecordType extends Record>  {
   public remove(record: RecordType): void;
   public remove(recordOrId: string | RecordType): void {
     if (recordOrId == null) return;
-    const id = is.not.empty(recordOrId) ? recordOrId : (recordOrId as RecordType).id;
+    const id = is.not.blank(recordOrId) ? recordOrId : (recordOrId as RecordType).id;
     this.#removed.add(id);
     Event.raise(this.onRemoved, id);
     Event.raise(this.onModified, { added: [], updated: [], removed: [id] });

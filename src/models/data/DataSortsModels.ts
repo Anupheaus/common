@@ -1,4 +1,5 @@
 import { is, type AnyObject } from '../../extensions';
+import { SortDirections } from '../sort';
 
 export type DataSortDirection = 'asc' | 'desc';
 
@@ -13,6 +14,14 @@ export namespace DataSorts {
     if (sorts == null) return [];
     if (is.array(sorts)) return sorts.map(sort => is.array(sort) ? sort : [sort, 'asc']);
     return [[sorts, 'asc']];
+  }
+
+  export function applyTo<T extends AnyObject = AnyObject>(records: T[], sorts: DataSorts<T>): T[] {
+    const strictSorts = toArray(sorts);
+    strictSorts.forEach(sort => {
+      records = records.orderBy(record => record[sort[0]], sort[1] === 'desc' ? SortDirections.Descending : SortDirections.Ascending);
+    });
+    return records;
   }
 }
 

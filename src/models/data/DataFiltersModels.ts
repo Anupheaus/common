@@ -4,7 +4,7 @@ import { is } from '../../extensions/is';
 import type { ListItem } from '../../extensions/ListItem';
 import { ListItems } from '../../extensions/ListItem';
 
-export type DataFilterValueTypes = 'string' | 'number' | 'boolean' | 'date' | 'currency';
+export type DataFilterValueTypes = 'string' | 'regex' | 'number' | 'boolean' | 'date' | 'currency';
 
 interface DataFilterOperatorListItem extends ListItem {
   acceptableTypes: DataFilterValueTypes[];
@@ -22,7 +22,9 @@ const { ids: filterOperatorIds, pairs: DataFilterOperatorPairs } = ListItems.as<
   { id: '$endsWith', text: 'ends with', acceptableTypes: ['string'] },
   { id: '$in', text: 'is one of', acceptableTypes: ['string', 'number', 'boolean', 'date', 'currency'] },
   { id: '$ni', text: 'is not one of', acceptableTypes: ['string', 'number', 'boolean', 'date', 'currency'] },
-  { id: '$exists', text: 'exists', acceptableTypes: ['string', 'number', 'boolean', 'date', 'currency'] }
+  { id: '$all', text: 'is all of', acceptableTypes: ['string', 'number', 'boolean', 'date', 'currency'] },
+  { id: '$exists', text: 'exists', acceptableTypes: ['string', 'number', 'boolean', 'date', 'currency'] },
+  { id: '$regex', text: 'matches regex', acceptableTypes: ['string'] },
 ] as const);
 
 export const DataFilterOperators = DataFilterOperatorPairs;
@@ -30,22 +32,29 @@ export type DataFilterOperator = typeof filterOperatorIds;
 
 export namespace DataFilterOperator {
   export const booleanKeys = ['$exists'] as const;
-  export const singleValueKeys = ['$gt', '$lt', '$gte', '$lte', '$eq', '$ne', '$like', '$beginsWith', '$endsWith'] as const;
-  export const multiValueKeys = ['$in', '$ni'] as const;
+  export const singleValueKeys = ['$gt', '$lt', '$gte', '$lte', '$eq', '$ne', '$like', '$beginsWith', '$endsWith', '$regex'] as const;
+  export const multiValueKeys = ['$in', '$ni', '$all'] as const;
   export const arrayValueSingleKeys = ['$elemMatch'] as const;
-  export const arrayValueMultiKeys = ['$in', '$ni'] as const;
+  export const arrayValueMultiKeys = ['$in', '$ni', '$all'] as const;
   export const allKeys = [...singleValueKeys, ...multiValueKeys, ...booleanKeys] as const;
 }
 
 type SingleValueKeys<ValueType> = Partial<Record<typeof DataFilterOperator.singleValueKeys[number], ValueType | null>>;
+type SingleValueStringKeys<ValueType> = Omit<SingleValueKeys<ValueType>, '$regex'> & { $regex?: RegExp | string; };
 type MultiValueKeys<ValueType> = Partial<Record<typeof DataFilterOperator.multiValueKeys[number], ValueType[]>>;
 type BooleanValueKeys = Partial<Record<typeof DataFilterOperator.booleanKeys[number], boolean>>;
-// eslint-disable-next-line max-len
-type ArrayValueKeys<ValueType extends Array<any>> = Partial<Record<typeof DataFilterOperator.arrayValueSingleKeys[number], ValueType[number]> & Record<typeof DataFilterOperator.arrayValueMultiKeys[number], ValueType>>;
+/* eslint-disable @typescript-eslint/indent */
+type ArrayValueKeys<ValueType extends Array<any>> = Partial<
+  Record<typeof DataFilterOperator.arrayValueSingleKeys[number], ValueType[number]> &
+  Record<typeof DataFilterOperator.arrayValueMultiKeys[number], ValueType> &
+  { $size?: number; }
+>;
+/* eslint-enable @typescript-eslint/indent */
 
 /* eslint-disable @typescript-eslint/indent */
 type WhereClauseWrapper<ValueType> =
   NonNullable<ValueType> extends Array<any> ? ArrayValueKeys<NonNullable<ValueType>> & BooleanValueKeys
+  : NonNullable<ValueType> extends string ? SingleValueStringKeys<ValueType> & MultiValueKeys<ValueType> & BooleanValueKeys
   : NonNullable<ValueType> extends PrimitiveType ? SingleValueKeys<ValueType> & MultiValueKeys<ValueType> & BooleanValueKeys
   : NonNullable<ValueType> extends DateTime<any> ? SingleValueKeys<ValueType> & BooleanValueKeys
   : NonNullable<ValueType> extends AnyObject ? DataFilters<NonNullable<ValueType>> & BooleanValueKeys : never;

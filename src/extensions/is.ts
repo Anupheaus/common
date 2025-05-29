@@ -68,6 +68,10 @@ export class Is {
     return /^[{(]?[0-9A-F]{8}[-]?(?:[0-9A-F]{4}[-]?){3}[0-9A-F]{12}[)}]?$/gmi.test(value);
   }
 
+  public production() {
+    return process.env.NODE_ENV === 'production';
+  }
+
   public keyValuePair(value: unknown): value is { key: unknown; value: unknown; } {
     if (!is.object(value)) { return false; }
     return Object.prototype.hasOwnProperty.call(value, 'key') && Object.prototype.hasOwnProperty.call(value, 'value');
@@ -113,20 +117,24 @@ export class Is {
     return typeof (value) === 'string';
   }
 
+  public empty<T extends string | number | null | void | undefined>(value: T): value is Exclude<T, string | number> {
+    return !((typeof (value) === 'string' && value.trim().length > 0) || (typeof (value) === 'number' && !isNaN(value) && value !== 0));
+  }
+
   /**
    * Checks whether or not the value is a string and if it is then whether or not it is also zero length.  If true, the value is either not a string 
    * or is a string but is zero length.
-   * @param {any} value The value to be tested.
+   * @param {string} value The value to be tested.
    * @returns {boolean} True if the value is not a string or is zero length.
    */
-  public empty<T extends string | null | void | undefined>(value: T): value is Exclude<T, string> {
-    return typeof (value) !== 'string' || value.length === 0;
+  public blank<T extends string | null | void | undefined>(value: T): value is Exclude<T, string> {
+    return typeof (value) !== 'string' || value.trim().length === 0;
   }
 
   public errorLike(value: unknown): value is ErrorLike {
     if (value instanceof Error) { return true; }
     if (!is.plainObject(value)) { return false; }
-    return is.not.empty(value['@error']);
+    return is.not.blank(value['@error']);
   }
 
   public number(value: unknown): value is number {
@@ -134,7 +142,7 @@ export class Is {
   }
 
   public numeric(value: string | undefined): boolean {
-    if (value == null || is.empty(value)) return false;
+    if (value == null || is.blank(value)) return false;
     return /^-?\d+\.?\d*$/.test(value);
   }
 
@@ -142,6 +150,17 @@ export class Is {
   public enum(value: any, enumDefinition: object): boolean {
     const keys = Reflect.ownKeys(enumDefinition);
     return value != null && keys.includes(value.toString());
+  }
+
+  public email(value: unknown): value is string {
+    if (!is.string(value)) { return false; }
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  }
+
+  public phoneNumber(value: unknown): value is string {
+    if (!is.string(value)) { return false; }
+    // eslint-disable-next-line max-len
+    return /^(?:(?:\(?(?:0(?:0|11)\)?[\s-]?\(?|\+)44\)?[\s-]?(?:\(?0\)?[\s-]?)?)|(?:\(?0))(?:(?:\d{5}\)?[\s-]?\d{4,5})|(?:\d{4}\)?[\s-]?(?:\d{5}|\d{3}[\s-]?\d{3}))|(?:\d{3}\)?[\s-]?\d{3}[\s-]?\d{3,4})|(?:\d{2}\)?[\s-]?\d{4}[\s-]?\d{4}))(?:[\s-]?(?:x|ext\.?|#)\d{3,4})?$/.test(value);
   }
 
   public instance<T extends object>(value: T | unknown): value is T {
@@ -188,7 +207,7 @@ export class Is {
 
   public listItem(item: unknown): item is ListItem {
     if (!is.object(item)) { return false; }
-    return is.not.empty(item['id']) && Reflect.has(item, 'text');
+    return is.not.blank(item['id']) && Reflect.has(item, 'text');
   }
 
 }
@@ -220,9 +239,14 @@ export class IsNot {
   //   return undefined;
   // }
 
-  public empty(value: unknown): value is string;
-  public empty(...values: unknown[]): boolean;
-  public empty(...values: unknown[]): boolean {
+  public empty<T extends string | number | null | undefined | void>(value: T): value is Exclude<T, null | undefined | void>;
+  public empty<T extends string | number | null | undefined | void>(value: T): value is Exclude<T, null | undefined | void> {
+    return !is.empty(value);
+  }
+
+  public blank(value: unknown): value is string;
+  public blank(...values: unknown[]): boolean;
+  public blank(...values: unknown[]): boolean {
     // check if being used in a array.filter (value, index, array)
     if (values.length === 3 && typeof (values[1]) === 'number' && values[2] instanceof Array) { values = [values[0]]; }
     return values.every(item => typeof (item) === 'string' && item.length > 0);

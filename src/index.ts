@@ -17,3 +17,4 @@ export * from './logger';
 export * from './Collection';
 export * from './ArrayModifications';
 export * from './DoubleMap';
+export * from './auditor';

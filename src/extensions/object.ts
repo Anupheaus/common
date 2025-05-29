@@ -3,6 +3,7 @@ import { hash as utilsHash } from './utils';
 import { is } from './is';
 import { v4 as uuid } from 'uuid';
 import type { } from './array';
+import { DateTime } from 'luxon';
 
 type HashOptions = Parameters<typeof utilsHash>[1];
 
@@ -141,6 +142,8 @@ function parseValue(existingValue: unknown, newValue: unknown, checkForOverridab
   if (newValue === undefined || existingValue === newValue) { return existingValue; }
   if (is.date(newValue)) {
     return newValue;
+  } else if (DateTime.isDateTime(newValue)) {
+    return newValue;
   } else if (is.plainObject(newValue)) {
     if (existingValue == null) { existingValue = {}; }
     return parseObject(existingValue as object, newValue, checkForOverridableItems, replacer);
@@ -169,6 +172,7 @@ Object.addMethods(Object, [
   },
 
   function clone<T>(this: Object, target: T, replacer?: (value: unknown) => unknown): T {
+    // if (replacer == null) return structuredClone(target);
     if (target == null) { return target; }
     if (target instanceof Array) {
       const newTarget = [] as T;

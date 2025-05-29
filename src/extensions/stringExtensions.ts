@@ -164,4 +164,8 @@ export class StringConstructorExtensions {
     return (longerLength - editDistance(longer, shorter)) / longerLength;
   }
 
+  public undefined(): string {
+    return undefined as unknown as string;
+  }
+
 }

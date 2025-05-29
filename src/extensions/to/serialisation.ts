@@ -13,7 +13,7 @@ const serialiseDateTime = (value: DateTime | Date): string => DateTime.isDateTim
 //#region Error
 const isError = (value: unknown): value is ErrorLike => Error.isErrorObject(value) || value instanceof globalThis.Error;
 const serialiseError = (value: ErrorLike) => JSON.stringify(value);
-const deserialiseError = (value: ErrorLike) => new Error(value);
+const deserialiseError = (value: ErrorLike) => new Error({ error: value });
 //#endregion
 
 function deserialiseArray(data: any[]) {

@@ -32,14 +32,15 @@ export class Error extends global.Error {
     }
     const { error } = props;
     if (error != null) {
-      if (typeof ((error as AnyObject)['@error']) === 'string') {
-        const errorType = errorTypes.get((error as AnyObject)['@error']);
+      const errorTypeAsString = (error as AnyObject)['@error'];
+      if (errorTypeAsString != null) {
+        const errorType = errorTypes.get(errorTypeAsString);
         if (errorType) return new errorType(props);
       }
-      if (error instanceof global.Error) {
-        props.message = error.message;
-        props.title = error.name;
-        this.stack = error.stack;
+      if (error instanceof global.Error || (errorTypeAsString === 'Error' && typeof error === 'object')) {
+        if ('message' in error && typeof error.message === 'string') props.message = error.message;
+        if ('name' in error && typeof error.name === 'string') props.title = error.name;
+        if ('stack' in error && typeof error.stack === 'string') this.stack = error.stack;
       }
     }
     this.name = new.target.name;

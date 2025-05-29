@@ -8,6 +8,7 @@ import './reflect';
 import './string';
 import './map';
 import './set';
+import './weakMap';
 
 export * from './is';
 export * from './global';
