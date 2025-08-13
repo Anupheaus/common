@@ -3,8 +3,11 @@
 import type { ProxyOf } from '../proxy';
 import { isProxySymbol } from '../proxy/privateModels';
 import type { NotPromise, AnyObject, AnyFunction, ErrorLike, Record } from './global';
+import type { IsEqualOptions } from './is.equal';
 import { isEqual } from './is.equal';
 import type { ListItem } from './ListItem';
+
+export { IsEqualOptions };
 
 function parseArguments<R, T = unknown>(value: T, result: boolean, type?: string, defaultValue?: () => T | R, isIncorrectType?: () => T | R,
   isCorrectType?: (value: T) => T | R): T | R | boolean {
@@ -171,12 +174,12 @@ export class Is {
     return is.not.null(value) && !is.object(value);
   }
 
-  public deepEqual(value: unknown, other: unknown): boolean {
-    return isEqual(value, other, false);
+  public deepEqual(value: unknown, other: unknown, options?: IsEqualOptions): boolean {
+    return isEqual(value, other, false, options);
   }
 
-  public shallowEqual(value: unknown, other: unknown): boolean {
-    return isEqual(value, other, true);
+  public shallowEqual(value: unknown, other: unknown, options?: IsEqualOptions): boolean {
+    return isEqual(value, other, true, options);
   }
 
   public browser(): boolean {

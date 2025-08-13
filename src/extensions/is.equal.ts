@@ -2,6 +2,10 @@ import type { TypeEqualityComparator } from 'fast-equals';
 import { createCustomCircularEqual, sameValueZeroEqual } from 'fast-equals';
 import { DateTime } from 'luxon';
 
+export interface IsEqualOptions {
+  ignoreUndefined?: boolean;
+}
+
 function compareFunctions(valA: unknown, valB: unknown): boolean | undefined {
   if (typeof (valA) !== 'function' && typeof (valB) !== 'function') return;
   if (typeof (valA) !== 'function' || typeof (valB) !== 'function') return false;
@@ -38,10 +42,17 @@ function compareReactNodes(valA: unknown, valB: unknown, isShallow: boolean): bo
   }
 }
 
-export function isEqual(value: unknown, other: unknown, isShallow: boolean): boolean {
+function getKeys(value: unknown, ignoreUndefined: boolean): (string | symbol)[] {
+  if (typeof value !== 'object' || value == null) return [];
+  const keys = Reflect.ownKeys(value);
+  if (ignoreUndefined) return keys.filter(key => value[key as keyof typeof value] !== undefined);
+  return keys;
+}
+
+export function isEqual(value: unknown, other: unknown, isShallow: boolean, { ignoreUndefined = true }: IsEqualOptions = {}): boolean {
   const areObjectsEqual: TypeEqualityComparator<any, undefined> = (a, b, internalValidator, meta) => {
-    const aKeys = Reflect.ownKeys(a);
-    const bKeys = Reflect.ownKeys(b);
+    const aKeys = getKeys(a, ignoreUndefined);
+    const bKeys = getKeys(b, ignoreUndefined);
     if (aKeys.length !== bKeys.length) return false;
     for (const key of aKeys) {
       if (a[key] === b[key]) continue;

@@ -1,6 +1,6 @@
 import { pluralize, singularize } from 'inflection';
 import { NotImplementedError } from '../../errors/NotImplementedError';
-import type { MapOf } from '../global';
+import type { AnyObject, MapOf } from '../global';
 import { is } from '../is';
 import numeral from 'numeral';
 import type { ProxyApi, ProxyOf, ProxyOfApi } from '../../proxy';
@@ -8,10 +8,18 @@ import { createProxyOf } from '../../proxy';
 import { getProxyApiFrom } from '../../proxy/getProxyApiFrom';
 import { Error, InternalError } from '../../errors';
 import { deserialise, serialise } from './serialisation';
+import type { Operation } from 'just-diff';
+import { diff } from 'just-diff';
 
 export type BooleanOrFunc = boolean | (() => boolean);
 
 export type StandardDataTypes = 'string' | 'number' | 'bigint' | 'boolean' | 'symbol' | 'undefined' | 'object' | 'function' | 'date' | 'array' | Date | [];
+
+export interface Difference {
+  op: Operation;
+  path: (string | number)[];
+  value: any;
+}
 
 class To {
 
@@ -143,6 +151,14 @@ class To {
 
   public deserialise<T = unknown>(value: unknown, reviver?: (key: string, value: unknown) => unknown): T {
     return deserialise(value, reviver) as T;
+  }
+
+  public differences(target1: AnyObject, target2: AnyObject): Difference[] {
+    const results = diff(target1, target2);
+    return results.filter(({ op, value }) => {
+      if (op === 'add' && value == null) return false;
+      return true;
+    });
   }
 
 }

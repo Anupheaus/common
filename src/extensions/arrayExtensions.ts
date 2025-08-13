@@ -29,7 +29,7 @@ function isRecord(item: any): item is Record {
   return item != null && typeof (item) === 'object' && 'id' in item;
 }
 
-function performUpsert<T>(target: T[], foundIndex: number, found: UpdateDelegate<T>, notFound?: (() => T), index?: number): T[] {
+function performUpsert<T>(target: T[], foundIndex: number, found: UpdateDelegate<T>, notFound?: (() => T), index?: number, merge = true): T[] {
   const array = target.slice();
   let item: T = undefined as unknown as T;
   if (foundIndex !== -1) {
@@ -41,7 +41,7 @@ function performUpsert<T>(target: T[], foundIndex: number, found: UpdateDelegate
       item = partialItem as T;
       if (originalItem === item && !isIndexChanged) { return target; }
     } else {
-      item = Object.merge({}, originalItem, partialItem);
+      item = merge ? Object.merge({}, originalItem, partialItem) : partialItem as T;
       if (is.shallowEqual(item, originalItem) && !isIndexChanged) { return target; } // no change
     }
     array.splice(foundIndex, 1);
@@ -139,10 +139,11 @@ export class ArrayExtensions<T> {
     return this.slice();
   }
 
-  public filterByIds<R extends T & Record>(values: R[]): R[];
-  public filterByIds<R extends T & Record>(ids: string[]): R[];
-  public filterByIds<R extends T & Record>(this: R[], valuesOrIds: R[] | string[]): R[] {
-    return valuesOrIds.map(v => this.findById(typeof (v) === 'string' ? v : v.id)).removeNull();
+  public filterByIds<R extends T & Record>(values: R[]): T[];
+  public filterByIds(ids: string[]): T[];
+  public filterByIds<R extends T & Record>(this: R[], valuesOrIds: R[] | string[]): T[] {
+    const ids = valuesOrIds.map(v => typeof (v) === 'string' ? v : v.id).distinct();
+    return this.filter(item => ids.includes(item.id));
   }
 
   public filterBy<K extends keyof T>(field: K, value: T[K]): T[];
@@ -202,7 +203,7 @@ export class ArrayExtensions<T> {
   public upsert(item: Upsertable<T>, index: number): T[];
   public upsert(this: T[], item: Upsertable<T>, index?: number): T[] {
     const foundIndex = isRecord(item) ? this.indexOfId(item.id) : this.indexOf(item as T);
-    return performUpsert(this, foundIndex, () => item as DeepPartial<T>, () => item as T, index);
+    return performUpsert(this, foundIndex, () => item as DeepPartial<T>, () => item as T, index, false);
   }
 
   public upsertMany(this: T[], items: Upsertable<T>[], newIndex?: number): T[] {
@@ -221,6 +222,12 @@ export class ArrayExtensions<T> {
       return Object.merge({}, innerItem, update(innerItem, index));
     });
     return hasUpserted ? array : array.concat(update(undefined, array.length) as T);
+  }
+
+  public repsert(item: T): T[];
+  public repsert(this: T[], item: T): T[] {
+    const foundIndex = isRecord(item) ? this.indexOfId(item.id) : this.indexOf(item as T);
+    return performUpsert(this, foundIndex, () => item as DeepPartial<T>, () => item as T, undefined, false);
   }
 
   public replace(item: T): T[];
@@ -304,7 +311,9 @@ export class ArrayExtensions<T> {
     let items: ArrayOrderByConfig<T>[] | DataSort[] = [];
     if (typeof (arg) === 'function') { items = [{ delegate: arg, direction: sortDirection }]; }
     else if (typeof (arg) === 'string') { items = [[arg, 'asc']]; }
+    else if (arg instanceof Array) { items = arg as DataSort[]; }
     if (items instanceof Array) {
+      if (items.length === 0) return this;
       const strictItems: ArrayOrderByConfig<any>[] = items.mapWithoutNull(item => {
         let delegate: SimpleMapDelegate<T, any> | undefined;
         let direction: SortDirections | undefined;
@@ -352,9 +361,11 @@ export class ArrayExtensions<T> {
 
   public distinct(): T[];
   public distinct<V>(delegate: MapDelegate<T, V>): T[];
-  public distinct<V>(this: T[], delegate: (item: T, index: number) => V = item => item as unknown as V): T[] {
+  public distinct(key: keyof T): T[];
+  public distinct<V>(this: T[], keyOrDelegate: keyof T | ((item: T, index: number) => V) = item => item as unknown as V): T[] {
     const values = new Array<V>();
     const results = new Array<T>();
+    const delegate = typeof (keyOrDelegate) === 'function' ? keyOrDelegate : (item: T) => item[keyOrDelegate] as unknown as V;
     this.forEach((item, index) => {
       const value = delegate(item, index);
       if (values.includes(value)) { return; }
@@ -618,17 +629,32 @@ export class ArrayExtensions<T> {
     }
   }
 
+  /** @deprecated Please use forEachAsync */
   public async forEachPromise(callback: (item: T, index: number) => Promise<void>): Promise<void>;
   public async forEachPromise(this: T[], callback: (item: T, index: number) => Promise<void>): Promise<void> {
-    const [, errors] = await Promise.whenAllSettled(this.map((item, index) => callback(item, index)));
-    if (errors.length > 0) throw new InternalError('The following errors occurred while looping through the array', { meta: { errors } });
+    return this.forEachAsync(callback);
   }
 
+  public async forEachAsync(callback: (item: T, index: number) => Promise<void>): Promise<void>;
+  public async forEachAsync(this: T[], callback: (item: T, index: number) => Promise<void>): Promise<void> {
+    const [, errors] = await Promise.whenAllSettled(this.map((item, index) => callback(item, index)));
+    if (errors.length === 0) return;
+    const errorMessages = errors.map(error => error.message).distinct().join('\n');
+    throw new InternalError(`The following errors occurred while looping through the array:\n${errorMessages}`, { meta: { errors } });
+  }
+
+  /** @deprecated Please use mapAsync */
   public async mapPromise<R>(callback: (item: T, index: number) => Promise<R>): Promise<R[]>;
   public async mapPromise<R>(this: T[], callback: (item: T, index: number) => Promise<R>): Promise<R[]> {
+    return this.mapAsync(callback);
+  }
+
+  public async mapAsync<R>(callback: (item: T, index: number) => Promise<R>): Promise<R[]>;
+  public async mapAsync<R>(this: T[], callback: (item: T, index: number) => Promise<R>): Promise<R[]> {
     const [results, errors] = await Promise.whenAllSettled(this.map((item, index) => callback(item, index)));
-    if (errors.length > 0) throw new InternalError('The following errors occurred while mapping through the array', { meta: { errors } });
-    return results;
+    if (errors.length === 0) return results;
+    const errorMessages = errors.map(error => error.message).distinct().join('\n');
+    throw new InternalError(`The following errors occurred while mapping through the array:\n${errorMessages}`, { meta: { errors } });
   }
 
   public findBy<K extends keyof T>(field: K, value: T[K]): T | undefined;
