@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { PromiseMaybe } from '../extensions';
+import type { PromiseMaybe } from '../extensions';
 
 export async function captureConsole(delegate: () => PromiseMaybe<void>) {
   const capture = (methodName: keyof typeof console): [() => void, unknown[][]] => {

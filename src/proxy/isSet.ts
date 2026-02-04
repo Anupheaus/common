@@ -1,4 +1,4 @@
-import { CommonProps } from './privateModels';
+import type { CommonProps } from './privateModels';
 import { pathFromArgs } from './proxyUtils';
 
 interface Props extends CommonProps { }

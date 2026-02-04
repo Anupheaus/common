@@ -1,4 +1,5 @@
-import { AnyObject, StandardDataTypes, to } from '../extensions';
+import type { AnyObject, StandardDataTypes } from '../extensions';
+import { to } from '../extensions';
 
 interface SettingsFromOptions<T> {
   defaultValue?: T;

@@ -1,4 +1,4 @@
-import { Location } from './location';
-import { Size } from './size';
+import type { Location } from './location';
+import type { Size } from './size';
 
 export interface Dimensions extends Location, Size { }

@@ -1,5 +1,5 @@
 import { bind } from '../decorators';
-import { CancellationCallback } from './models';
+import type { CancellationCallback } from './models';
 
 export class CancellationToken {
   private constructor() {

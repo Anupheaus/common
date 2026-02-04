@@ -1,11 +1,14 @@
 /* eslint-disable max-classes-per-file */
-import { getProxyApiSymbol, isProxySymbol, ProxyContext } from './privateModels';
-import { createInternalApi, InternalApi } from './internalApi';
+import { getProxyApiSymbol, isProxySymbol } from './privateModels';
+import type { ProxyContext } from './privateModels';
+import { createInternalApi } from './internalApi';
+import type { InternalApi } from './internalApi';
 import { createGet } from './get';
 import { createIsSet } from './isSet';
-import { createSet, OnSetProps } from './set';
+import { createSet } from './set';
+import type { OnSetProps } from './set';
 import { createOnDefault } from './onDefault';
-import { ProxyOf } from './publicModels';
+import type { ProxyOf } from './publicModels';
 import { convertToCorrectPropertyType } from './proxyUtils';
 
 const proxyCache = new WeakMap<object, ProxyContext>();

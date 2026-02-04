@@ -1,7 +1,7 @@
-import { CommonProps } from './privateModels';
-import { OnGetCallback, OnGetEvent } from './publicModels';
+import type { CommonProps } from './privateModels';
+import type { OnGetCallback, OnGetEvent } from './publicModels';
 import { pathFromArgs, pathsMatch } from './proxyUtils';
-import { Unsubscribe } from '../events';
+import type { Unsubscribe } from '../events';
 
 export interface OnGetProps {
   includeSubProperties?: boolean;

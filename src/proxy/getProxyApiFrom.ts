@@ -1,7 +1,7 @@
 import { is } from '../extensions';
-import { ProxyApi } from './createProxyOf';
+import type { ProxyApi } from './createProxyOf';
 import { getProxyApiSymbol } from './privateModels';
-import { ProxyOf } from './publicModels';
+import type { ProxyOf } from './publicModels';
 
 export function getProxyApiFrom<T>(target: T | ProxyOf<T>): ProxyApi<T> | undefined {
   if (!is.proxy(target)) return;

@@ -1,4 +1,4 @@
-import { AnyFunction } from '../extensions';
+import type { AnyFunction } from '../extensions';
 
 export function createSubscriber<TFunc extends AnyFunction>() {
   const callbacks = new Set<TFunc>();

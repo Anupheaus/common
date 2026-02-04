@@ -1,4 +1,5 @@
-import { ApiError, ApiErrorProps } from './ApiError';
+import { ApiError } from './ApiError';
+import type { ApiErrorProps } from './ApiError';
 import { Error } from './BaseError';
 
 interface Props extends Pick<ApiErrorProps, 'url' | 'method' | 'message' | 'body'> { }

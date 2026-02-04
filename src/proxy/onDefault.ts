@@ -1,8 +1,8 @@
-import { CommonProps } from './privateModels';
-import { OnDefaultCallback, OnDefaultEvent } from './publicModels';
-import { TraverseProps } from './traverse';
+import type { CommonProps } from './privateModels';
+import type { OnDefaultCallback, OnDefaultEvent } from './publicModels';
+import type { TraverseProps } from './traverse';
 import { pathFromArgs, pathsMatch } from './proxyUtils';
-import { Unsubscribe } from '../events';
+import type { Unsubscribe } from '../events';
 
 export interface OnDefaultProps {
   includeSubProperties?: boolean;

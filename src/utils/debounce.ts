@@ -1,4 +1,4 @@
-import { AnyFunction } from '../extensions';
+import type { AnyFunction } from '../extensions';
 
 export type Debounced<Func extends AnyFunction> = (...args: Parameters<Func>) => Promise<void>;
 

@@ -1,4 +1,4 @@
-import { ISyncWithOptions } from './syncOptions';
+import type { ISyncWithOptions } from './syncOptions';
 
 export const MergeWithUpdateOperations = {
   UseTargetIfDifferent<T1, T2>(item1: T1, item2: T2) { return item1 === item2 as unknown ? item1 : item2; },

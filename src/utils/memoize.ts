@@ -1,4 +1,4 @@
-import { AnyFunction } from '../extensions';
+import type { AnyFunction } from '../extensions';
 import '../extensions/reflect';
 
 interface Cache {

@@ -1,5 +1,5 @@
 import { createProxyOf } from './createProxyOf';
-import { OnAfterSetEvent, OnDefaultEvent, OnGetEvent, OnSetEvent } from './publicModels';
+import type { OnAfterSetEvent, OnDefaultEvent, OnGetEvent, OnSetEvent } from './publicModels';
 
 interface Props {
   onGet?(event: OnGetEvent): void;

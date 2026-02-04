@@ -1,4 +1,4 @@
-import { ProxyCache } from './privateModels';
+import type { ProxyCache } from './privateModels';
 
 export function pathFromArgs(args: unknown[], proxyCache: ProxyCache): PropertyKey[] {
   const proxy = args[0] instanceof Array ? undefined : args[0];

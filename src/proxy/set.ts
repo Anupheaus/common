@@ -1,8 +1,9 @@
-import { CommonProps } from './privateModels';
-import { OnAfterSetCallback, OnAfterSetEvent, OnSetCallback, OnSetEvent } from './publicModels';
-import { traverseObject, TraverseProps } from './traverse';
+import type { CommonProps } from './privateModels';
+import type { OnAfterSetCallback, OnAfterSetEvent, OnSetCallback, OnSetEvent } from './publicModels';
+import { traverseObject } from './traverse';
+import type { TraverseProps } from './traverse';
 import { pathFromArgs, pathsMatch } from './proxyUtils';
-import { Unsubscribe } from '../events';
+import type { Unsubscribe } from '../events';
 
 interface Props extends Omit<CommonProps, 'api'> {
   target: object;
