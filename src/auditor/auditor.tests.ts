@@ -2,7 +2,7 @@ import { auditor } from './auditor';
 import type { AuditOf, AuditRecord, AuditUpdateRecord } from './auditor-models';
 // import type { AuditInfo, AuditOf } from './auditor-models';
 
-describe.only('auditor', () => {
+describe('auditor', () => {
 
   it('should create a simple audit from a record', () => {
     const audit = auditor.createAuditFrom({ id: '1', name: 'test' }, 'user1');

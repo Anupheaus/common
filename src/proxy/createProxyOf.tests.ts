@@ -1,5 +1,6 @@
 import { expect } from 'chai';
-import { createProxyOf, OnDefaultEvent, OnGetEvent, OnSetEvent } from '.';
+import { createProxyOf } from '.';
+import type { OnDefaultEvent, OnGetEvent, OnSetEvent } from '.';
 
 describe('createProxyOf', () => {
 

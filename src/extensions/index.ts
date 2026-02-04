@@ -15,3 +15,4 @@ export * from './global';
 export * from './to';
 export * from './promise';
 export * from './ListItem';
+export * from './currency';

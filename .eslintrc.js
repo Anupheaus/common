@@ -14,7 +14,7 @@ module.exports = {
     ecmaVersion: 2019,
     sourceType: 'module'
   },
-  plugins: ['@typescript-eslint/eslint-plugin'],
+  plugins: ['@typescript-eslint/eslint-plugin', 'mocha'],
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/eslint-recommended',
@@ -105,5 +105,13 @@ module.exports = {
         ignoreRestSiblings: true
       }
     ]
-  }
+  },
+  overrides: [
+    {
+      files: ['**/*.tests.ts', '**/*.tests.tsx', '**/*.spec.ts', '**/*.spec.tsx'],
+      rules: {
+        'mocha/no-exclusive-tests': 'error'
+      }
+    }
+  ]
 };

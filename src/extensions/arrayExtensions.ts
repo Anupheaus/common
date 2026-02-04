@@ -225,8 +225,9 @@ export class ArrayExtensions<T> {
   }
 
   public repsert(item: T): T[];
-  public repsert(this: T[], item: T): T[] {
-    const foundIndex = isRecord(item) ? this.indexOfId(item.id) : this.indexOf(item as T);
+  public repsert(item: T, delegate: FilterDelegate<T>): T[];
+  public repsert(this: T[], item: T, delegate?: FilterDelegate<T>): T[] {
+    const foundIndex = delegate != null ? this.findIndex(delegate) : isRecord(item) ? this.indexOfId(item.id) : this.indexOf(item as T);
     return performUpsert(this, foundIndex, () => item as DeepPartial<T>, () => item as T, undefined, false);
   }
 
@@ -235,7 +236,7 @@ export class ArrayExtensions<T> {
   public replace(this: T[], item: T, index?: number): T[] {
     const foundIndex = isRecord(item) ? this.indexOfId(item.id) : typeof (index) === 'number' ? Math.max(index, -1) : -1;
     if (foundIndex === -1) { return this; }
-    return performUpsert(this, foundIndex, () => item as DeepPartial<T>, undefined, index);
+    return performUpsert(this, foundIndex, () => item as DeepPartial<T>, undefined, index, false);
   }
 
   public replaceMany(items: T[]): T[];
@@ -353,10 +354,14 @@ export class ArrayExtensions<T> {
   public except<U extends Record>(array: U[]): T[];
   public except<U extends Record>(this: T[], array: T[] | U[]): T[] {
     const results = this
-      .slice()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .filter(item => item && isRecord(item) && item.id != null ? array.findById(item.id) == null : !array.includes(item as any));
     return results.length === this.length ? this : results;
+  }
+
+  public exceptWhere(filter: FilterDelegate<T>): T[];
+  public exceptWhere(this: T[], filter: FilterDelegate<T>): T[] {
+    return this.filter((item, index) => !filter(item, index));
   }
 
   public distinct(): T[];
@@ -663,9 +668,10 @@ export class ArrayExtensions<T> {
   }
 
   public toggle(item: T): T[];
-  public toggle(this: T[], item: T): T[] {
-    if (this.includes(item)) return this.remove(item);
-    return this.concat(item);
+  public toggle(item: T, include: boolean): T[];
+  public toggle(this: T[], item: T, include?: boolean): T[] {
+    if (this.includes(item) && (include == null || include === false)) return this.remove(item);
+    return include == null || include === true ? this.upsert(item) : this;
   }
 
   public generateNextName<P extends T & ({ name: string; } | { text: string; })>(this: P[], name: string): string;

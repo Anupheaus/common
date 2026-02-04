@@ -101,7 +101,7 @@ function parseObject<T extends object>(existingObject: T, newObject: T, checkFor
     } : undefined;
     const set = newSet ? (...args: any[]) => newSet.call(existingObject, args) : undefined;
     const value = newValue !== undefined ? (typeof (newValue) === 'function' ? (...args: any[]) => newValue.apply(existingObject, args) :
-      parseValue(existingValue, newValue, checkForOverridableItems, replacer)) : undefined; // eslint-disable-line @typescript-eslint/no-use-before-define
+      parseValue(existingValue, newValue, checkForOverridableItems, replacer)) : undefined;
     Object.defineProperty(existingObject, key, {
       ...otherProps,
       ...(get ? { get } : {}),
@@ -117,9 +117,10 @@ function parseArray(existingValue: unknown[], newValue: unknown[], checkForOverr
   if (existingValue.length === 0 && newValue.length === 0) { return existingValue; }
   // Check to see if the items are overridable
   if (checkForOverridableItems && isOverridableItemArray(existingValue) && isOverridableItemArray(newValue)) {
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define    
-    existingValue = existingValue.syncWith(newValue, { updateMatched: (a, b) => parseValue(Object.clone(a), b, true, replacer) as Record });
-    return existingValue;
+    return existingValue.syncWith(newValue, {
+      createBy: b => parseValue(undefined, b, true, replacer) as Record,
+      updateMatched: (a, b) => parseValue(Object.clone(a), b, true, replacer) as Record
+    });
   }
   const changedArray = existingValue.slice();
   let hasChangedArray = false;
@@ -128,7 +129,6 @@ function parseArray(existingValue: unknown[], newValue: unknown[], checkForOverr
     hasChangedArray = true;
   }
   newValue.forEach((item, index) => {
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
     const result = parseValue(existingValue[index], item, checkForOverridableItems, replacer);
     if (result === existingValue[index]) { return; }
     hasChangedArray = true;

@@ -1,6 +1,6 @@
 // tslint:disable:no-console
 import '../extensions/promise';
-import { PromiseMaybe } from '../extensions';
+import type { PromiseMaybe } from '../extensions';
 import { Event } from './Event';
 
 function createEvent() {

@@ -70,9 +70,18 @@ class To {
   public number(value: unknown, defaultValue?: number): number | undefined {
     if (typeof (value) === 'number') { return value; }
     if (typeof (value) === 'string') {
-      const intValue = parseInt(value, 0);
+      let numericValueAsString = '';
+      for (const char of value) {
+        if (['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.'].includes(char)) {
+          numericValueAsString += char;
+        } else if (numericValueAsString.length > 0) {
+          // we've found a non-numeric character after we have already found some numbers, so we can stop parsing
+          break;
+        }
+      }
+      const intValue = parseInt(numericValueAsString, 0);
       if (isNaN(intValue)) { return defaultValue; }
-      const floatValue = parseFloat(value);
+      const floatValue = parseFloat(numericValueAsString);
       if (intValue === floatValue) { return intValue; }
       return floatValue;
     }

@@ -33,7 +33,7 @@ export class StringExtensions {
   public toPascalCase(this: string): string {
     if (typeof (this) !== 'string' || this.length === 0) { return ''; }
     if (this.length === 1) { return this.toUpperCase(); }
-    return this.split(/\s+/g)
+    return this.split(/[\s-_]+/g)
       .filter(word => typeof (word) === 'string' && word.length > 0)
       .map(word => `${word.slice(0, 1).toUpperCase()}${word.slice(1)}`)
       .join(' ');
@@ -44,12 +44,12 @@ export class StringExtensions {
     if (typeof (this) !== 'string' || this.length === 0) { return ''; }
     if (this.length === 1) { return this.toLowerCase(); }
     const value = this.toPascalCase();
-    return `${value.substr(0, 1).toLowerCase()}${value.substr(1)}`;
+    return `${value.substring(0, 1).toLowerCase()}${value.substring(1)}`;
   }
 
-  public toVariableName(): string;
-  public toVariableName(this: string): string {
-    return this.toCamelCase().replace(/\s+/g, '');
+  public toVariableName(casing?: 'camel' | 'pascal'): string;
+  public toVariableName(this: string, casing: 'camel' | 'pascal' = 'camel'): string {
+    return (casing === 'camel' ? this.toCamelCase() : this.toPascalCase()).replace(/[\s-_]+/g, '');
   }
 
   public countOf(value: string): number;
