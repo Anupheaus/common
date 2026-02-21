@@ -18,7 +18,8 @@
     "findDeclarationErrors": "tsc --declaration --declarationDir ./dist --emitDeclarationOnly"
   },
   "files": [
-    "dist"
+    "dist",
+    "Agents.md"
   ],
   "types": "dist/index",
   "typings": "dist/index",
