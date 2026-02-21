@@ -1,0 +1,19 @@
+# Use .npmignore instead of .gitignore for packing.
+# dist is in .gitignore but MUST be included in the published package.
+# By using .npmignore, we override .gitignore and do NOT exclude dist.
+
+node_modules
+*.log
+.cache
+.vscode
+*.tgz
+tests
+src
+.git
+.github
+.eslintrc.js
+tsconfig.json
+webpack.config.js
+wallaby.js
+.nvmrc
+.circleci
