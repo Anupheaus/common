@@ -27,6 +27,7 @@ const levelSettings: LevelSettings[] = [
   { name: 'warn', consoleMethod: 'warn', levelColors: { node: '\x1b[2m\x1b[30m\x1b[43m', browserTextColor: '#000', browserBackgroundColor: '#8e8e25' } },
   { name: 'error', consoleMethod: 'error', levelColors: { node: '\x1b[2m\x1b[41m\x1b[37m', browserTextColor: '#fff', browserBackgroundColor: '#823435' } },
   { name: 'fatal', consoleMethod: 'error', levelColors: { node: '\x1b[1m\x1b[41m\x1b[37m', browserTextColor: '#fff', browserBackgroundColor: '#823435' } },
+  { name: 'always', consoleMethod: 'log', levelColors: { node: '\x1b[2m\x1b[37m', browserTextColor: '#aaa' } },
 ];
 
 interface LoggerSettings {
@@ -45,11 +46,12 @@ export const LogLevels = {
   'warn': 4,
   'error': 5,
   'fatal': 6,
+  'always': 7,
 } as const;
 
 const logLevelNumberToString = Object.entries(LogLevels).reduce((acc, [key, value]) => ({ ...acc, [value]: key }), {} as Record<number, string>);
 
-const alwaysLog: number[] = (['error', 'fatal', 'warn'] as (keyof typeof LogLevels)[]).map(level => LogLevels[level]);
+const alwaysLog: number[] = (['error', 'fatal', 'warn', 'always'] as (keyof typeof LogLevels)[]).map(level => LogLevels[level]);
 
 interface InternalLoggerSettings extends Omit<Required<LoggerSettings>, 'globalMeta' | 'filename'> {
   globalMeta: AnyObject | undefined;
@@ -98,35 +100,40 @@ export class Logger {
 
 
   public silly(message: string, meta?: AnyObject): void {
-    this.report(0, message, meta);
+    this.report(LogLevels.silly, message, meta);
   }
 
   public trace(message: string, meta?: AnyObject): void {
-    this.report(1, message, meta);
+    this.report(LogLevels.trace, message, meta);
   }
 
   public debug(message: string, meta?: AnyObject): void {
-    this.report(2, message, meta);
+    this.report(LogLevels.debug, message, meta);
   }
 
   public info(message: string, meta?: AnyObject): void {
-    this.report(3, message, meta);
+    this.report(LogLevels.info, message, meta);
   }
 
   public warn(message: string, meta?: AnyObject): void {
-    this.report(4, message, meta);
+    this.report(LogLevels.warn, message, meta);
   }
 
   public error(message: string, meta?: AnyObject): void;
   public error(error: Error, meta?: AnyObject): void;
   public error(messageOrError: string | Error, meta?: AnyObject): void {
-    this.report(5, ...this.parseError(messageOrError, meta));
+    this.report(LogLevels.error, ...this.parseError(messageOrError, meta));
   }
 
   public fatal(message: string, meta?: AnyObject): void;
   public fatal(error: Error, meta?: AnyObject): void;
   public fatal(messageOrError: string | Error, meta?: AnyObject): void {
-    this.report(6, ...this.parseError(messageOrError, meta));
+    this.report(LogLevels.fatal, ...this.parseError(messageOrError, meta));
+  }
+
+  /** Logs a message that is always shown regardless of the current logging level. */
+  public always(message: string, meta?: AnyObject): void {
+    this.report(LogLevels.always, message, meta);
   }
 
   public wrap<T>(level: keyof typeof LogLevels, message: string, delegate: () => T): T {
@@ -259,7 +266,7 @@ export class Logger {
     const parseLevel = (value: string | null | undefined): number | undefined => {
       if (value == null) return undefined;
       const level = parseInt(value);
-      if (!isNaN(level)) return Math.between(level, 0, 6);
+      if (!isNaN(level)) return Math.between(level, 0, 7);
     };
     if (is.browser()) {
       name = `Logging.${name.replace(/_/g, '.')}`;

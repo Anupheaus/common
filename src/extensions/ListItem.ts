@@ -1,4 +1,5 @@
 import type { F } from 'ts-toolbelt';
+import { is as isCommon } from '../extensions/is';
 
 export interface ListItem {
   id: string;
@@ -21,6 +22,8 @@ export namespace ListItems {
   export function as<B extends ListItem>(): { create<T extends B[]>(items: F.Narrow<T>): CreateListItems<T>; } {
     return { create };
   }
+
+  export const is = (item: unknown): item is ListItem => isCommon.plainObject(item) && isCommon.string(item.id) && isCommon.string(item.text);
 }
 
 // const { ids, pairs } = ListItems.create([
