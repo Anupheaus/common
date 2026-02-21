@@ -68,12 +68,10 @@ export class ArrayModifications<RecordType extends Record>  {
   }
 
   public applyTo(array: RecordType[], { applyAddedAtTheEnd = false }: ArrayModificationsApplyToOptions = {}): AddIsNewFlagToRecord<RecordType>[] {
-    let { added, removed, updated } = this.toJSON();
-    added = added.map(record => ({ ...record, isNew: true }));
-    let newRecords = array.filter(({ id }) => !removed.includes(id));
-    newRecords = newRecords.map(record => updated.findById(record.id) ?? record);
-    newRecords = applyAddedAtTheEnd ? newRecords.concat(added) : added.concat(newRecords);
-    return newRecords;
+    const added = Array.from(this.#added.values()).map(record => ({ ...record, isNew: true } as AddIsNewFlagToRecord<RecordType>));
+    let newRecords: AddIsNewFlagToRecord<RecordType>[] = array.filter(({ id }) => !this.#removed.has(id));
+    newRecords = newRecords.map(record => this.#updated.get(record.id) ?? record);
+    return applyAddedAtTheEnd ? newRecords.concat(added) : added.concat(newRecords);
   }
 
   public clear(): void {

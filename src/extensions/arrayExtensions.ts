@@ -89,7 +89,12 @@ export class ArrayExtensions<T> {
   public groupBy<K>(groupingDelegate: GroupingDelegate<T, K>): Map<K, T[]>;
   public groupBy<K>(this: T[], groupingDelegate: GroupingDelegate<T, K>): Map<K, T[]> {
     const groups = new Map<K, T[]>();
-    this.forEach((item, index) => (key => groups.set(key, (groups.get(key) ?? []).concat(item)))(groupingDelegate(item, index, Array.from(groups.keys()))));
+    this.forEach((item, index) => {
+      const key = groupingDelegate(item, index, Array.from(groups.keys()));
+      let arr = groups.get(key);
+      if (!arr) { arr = []; groups.set(key, arr); }
+      arr.push(item);
+    });
     return groups;
   }
 
@@ -143,7 +148,8 @@ export class ArrayExtensions<T> {
   public filterByIds(ids: string[]): T[];
   public filterByIds<R extends T & Record>(this: R[], valuesOrIds: R[] | string[]): T[] {
     const ids = valuesOrIds.map(v => typeof (v) === 'string' ? v : v.id).distinct();
-    return this.filter(item => ids.includes(item.id));
+    const idSet = new Set(ids);
+    return this.filter(item => idSet.has(item.id));
   }
 
   public filterBy<K extends keyof T>(field: K, value: T[K]): T[];
@@ -165,7 +171,8 @@ export class ArrayExtensions<T> {
 
   public removeMany(items: T[]): T[];
   public removeMany(this: T[], items: T[]): T[] {
-    return this.filter(item => items.indexOf(item) === -1);
+    const itemsSet = new Set(items);
+    return this.filter(item => !itemsSet.has(item));
   }
 
   public removeAt(index: number): T[];
@@ -368,13 +375,13 @@ export class ArrayExtensions<T> {
   public distinct<V>(delegate: MapDelegate<T, V>): T[];
   public distinct(key: keyof T): T[];
   public distinct<V>(this: T[], keyOrDelegate: keyof T | ((item: T, index: number) => V) = item => item as unknown as V): T[] {
-    const values = new Array<V>();
+    const seen = new Set<V>();
     const results = new Array<T>();
     const delegate = typeof (keyOrDelegate) === 'function' ? keyOrDelegate : (item: T) => item[keyOrDelegate] as unknown as V;
     this.forEach((item, index) => {
       const value = delegate(item, index);
-      if (values.includes(value)) { return; }
-      values.push(value);
+      if (seen.has(value)) { return; }
+      seen.add(value);
       results.push(item);
     });
     return results.length === this.length ? this : results;
@@ -404,20 +411,18 @@ export class ArrayExtensions<T> {
   public min(delegate: CalculationDelegate<T>): number;
   public min(this: T[], delegate?: CalculationDelegate<T>): number {
     const newDelegate = typeof (delegate) === 'function' ? delegate : (item: T) => item as unknown as number;
-    return this
-      .map((t, i, a) => newDelegate(t, i, a[i - 1], a[i + 1]))
-      .sort((a, b) => a != null && b != null ? a - b : a == null ? 1 : b == null ? -1 : 0)
-      .first() ?? 0;
+    const values = this.map((t, i, a) => newDelegate(t, i, a[i - 1], a[i + 1]));
+    const valid = values.filter((v): v is number => v != null && typeof v === 'number');
+    return valid.length > 0 ? valid.reduce((a, b) => a < b ? a : b) : 0;
   }
 
   public max(): number;
   public max(delegate: CalculationDelegate<T>): number;
   public max(this: T[], delegate?: CalculationDelegate<T>): number {
     const newDelegate = typeof (delegate) === 'function' ? delegate : (item: T) => item as unknown as number;
-    return this
-      .map((t, i, a) => newDelegate(t, i, a[i - 1], a[i + 1]))
-      .sort((a, b) => a != null && b != null ? a - b : a == null ? -1 : b == null ? 1 : 0)
-      .last() ?? 0;
+    const values = this.map((t, i, a) => newDelegate(t, i, a[i - 1], a[i + 1]));
+    const valid = values.filter((v): v is number => v != null && typeof v === 'number');
+    return valid.length > 0 ? valid.reduce((a, b) => a > b ? a : b) : 0;
   }
 
   public mapWithoutNull<V>(delegate: MapDelegate<T, V>): NonNullableOrVoid<V>[];

@@ -50,7 +50,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 19.x
-          registry-url: https://registry.npmjs.org/
+          registry-url: https://npm.pkg.github.com/
       - name: Setup PNPM
         uses: pnpm/action-setup@v3
         with:
@@ -65,4 +65,4 @@ jobs:
           fi
           pnpm publish --no-git-checks "$TGZ"
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

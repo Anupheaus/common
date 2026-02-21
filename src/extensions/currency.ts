@@ -1,3 +1,5 @@
+import { ArgumentInvalidError } from '../errors';
+
 export type CurrencyRounding = 'upTo99' | 'downTo99' | 'upTo0' | 'downTo0';
 
 export const Currency = {
@@ -10,6 +12,7 @@ export const Currency = {
       case 'downTo99': return (value - floor !== 0.99 ? value : floor - 0.01);
       case 'upTo0': return ceil;
       case 'downTo0': return floor;
+      default: throw new ArgumentInvalidError('rounding', rounding);
     }
   }
 };

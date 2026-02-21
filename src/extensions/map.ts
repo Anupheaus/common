@@ -33,11 +33,16 @@ class MapExtensions<K, V> {
   public merge<R>(other: V[], options: ArrayMergeOptions<K, V, V, R>): Map<K, R>;
   public merge<R>(other: Map<K, V>, options: MergeOptions<K, V, V, R>): Map<K, R>;
   public merge<R>(this: Map<K, V>, other: Map<K, V> | V[], options: ArrayMergeOptions<K, V, V, R>): Map<K, V> {
-    if (other instanceof Map) for (const [key, value] of other) this.set(key, value);
-    const ignoredKeys: K[] = [];
+    const ignoredKeys = new Set<K>();
+    if (other instanceof Map) {
+      for (const [key, value] of other) {
+        this.set(key, value);
+        ignoredKeys.add(key);
+      }
+    }
     if (other instanceof Array) other.forEach(item => {
       const key = options.keyExtractor(item);
-      ignoredKeys.push(key);
+      ignoredKeys.add(key);
       let newItem: V | undefined = undefined;
 
       if (this.has(key)) {
@@ -51,7 +56,7 @@ class MapExtensions<K, V> {
       if (newItem != null) this.set(key, newItem);
     });
     this.forEach((value, key) => {
-      if (ignoredKeys.includes(key)) return;
+      if (ignoredKeys.has(key)) return;
       const newItem = options.mapUnmatchedLeftTo?.(value, key) as unknown as V | undefined;
       if (newItem != null) this.set(key, newItem);
     });

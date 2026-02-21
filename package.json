@@ -6,6 +6,7 @@
   "author": "Anupheaus",
   "license": "Apache-2.0",
   "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
     "access": "public"
   },
   "private": false,

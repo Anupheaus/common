@@ -6,7 +6,9 @@ export class DoubleMap<K1, K2, V> {
   #data: Map<K1, Map<K2, V>>;
 
   public get size(): number {
-    return this.#data.map((_, map) => map.size).sum();
+    let size = 0;
+    this.#data.forEach(map => { size += map.size; });
+    return size;
   }
 
   public keys(): K1[];

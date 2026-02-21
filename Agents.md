@@ -8,10 +8,11 @@ This document describes the **@anupheaus/common** library for AI agents and deve
 
 - **Package:** `@anupheaus/common`
 - **Repository:** https://github.com/Anupheaus/common
+- **Registry:** GitHub Packages (`@anupheaus:registry=https://npm.pkg.github.com`)
 - **License:** Apache-2.0
 - **Runtime:** Node.js and browser (where applicable). Some modules (e.g. `createSettings`) assume a Node environment.
 
-The library is built with TypeScript, exports from `./dist/index.js` with typings at `dist/index`, and is organized into focused modules under `src/`.
+The library is built with TypeScript, exports from `./dist/index.js` with typings at `dist/index`, and is organized into focused modules under `src/`. Test files follow `*.tests.ts`; run with `pnpm run test-ci`.
 
 ---
 
@@ -175,7 +176,9 @@ Proxies for observable or lazy object graphs.
 
 ### Logger (`src/logger`)
 
-- **`Logger`** — Levelled logging (silly, trace, debug, info, warn, error, fatal) with optional timestamps, colours, and meta. Supports listeners and services.
+- **`Logger`** — Levelled logging (silly, trace, debug, info, warn, error, fatal, **always**) with optional timestamps, colours, and meta. Supports listeners and services.
+- **`logger.always(message, meta?)`** — Always shown regardless of `minLevel`; use for critical messages that must never be filtered.
+- **`LogLevels`** — Level constants (0–7); `always` is 7.
 - **`LoggerEntry`**, **`LoggerService`** — Listener and service interfaces for custom sinks or formatting.
 
 **When to use:** Structured app logging with levels and pluggable outputs.
@@ -232,7 +235,25 @@ Proxies for observable or lazy object graphs.
 | Audit log / history         | `auditor`                            |
 | Env-based config (Node)     | `createSettings`                     |
 | Levelled logging           | `logger`                             |
+| Always-show log message    | `logger.always()`                    |
 | Shared API/data types       | `models` (data, geometry, sort, etc.)|
+
+---
+
+## File Layout (for agents)
+
+- **`src/index.ts`** — Root exports; imports extensions for side effects, then re-exports all modules.
+- **`src/extensions/`** — `is`, `to`, `currency`, `ListItem`, plus side-effect imports that extend built-ins (`array`, `object`, `date`, etc.).
+- **`src/errors/`**, **`src/events/`**, **`src/models/`** — Errors, Event, and shared models.
+- **`src/decorators/`** — `@bind`, `@throttle`.
+- **`src/cancellationToken/`**, **`src/settings/`**, **`src/wrappers/`**, **`src/utils/`** — Cancellation, env config, `repeatOnError`, `chain`/`memoize`/`debounce`.
+- **`src/proxy/`** — `createProxyOf`, `getProxyApiFrom`, traverse, public/private models.
+- **`src/subscriptions/`** — `createSubscriber`.
+- **`src/Records/`**, **`src/Collection/`**, **`src/ArrayModifications/`**, **`src/DoubleMap/`** — Collections.
+- **`src/auditor/`** — Audit history and replay.
+- **`src/logger/`** — Logger, listeners, services.
+
+**Search tips:** Use `is.`, `to.`, `Event.`, `Records`, `createProxyOf`, `logger.`, etc. as anchors. Tests live next to source as `*.tests.ts`.
 
 ---
 

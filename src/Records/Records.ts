@@ -22,6 +22,16 @@ export class Records<T extends Record = Record> {
 
   #records: Map<string, T>;
   #onModifiedCallbacks: Set<(records: T[], reason: RecordsModifiedReason, allRecords: T[]) => void>;
+  #idsSetCache: Set<string> | null = null;
+
+  #invalidateIdsCache(): void {
+    this.#idsSetCache = null;
+  }
+
+  #getIdsSet(): Set<string> {
+    if (this.#idsSetCache == null) this.#idsSetCache = new Set(this.#records.keys());
+    return this.#idsSetCache;
+  }
 
   public get length(): number {
     return this.#records.size;
@@ -33,7 +43,7 @@ export class Records<T extends Record = Record> {
 
   @bind
   public ids(): string[] {
-    return Array.from(this.#records.keys());
+    return Array.from(this.#getIdsSet());
   }
 
   public indexOf(id: string): number;
@@ -58,6 +68,7 @@ export class Records<T extends Record = Record> {
       this.#records.set(record.id, record);
     });
     if (newRecords.length === 0) return;
+    this.#invalidateIdsCache();
     this.#invokeCallbacks(newRecords, 'add');
   }
 
@@ -88,9 +99,14 @@ export class Records<T extends Record = Record> {
   @bind
   public remove(arg: string | string[] | T | T[]): void {
     const ids = is.string(arg) ? [arg] : is.array(arg) ? arg.map(value => is.string(value) ? value : value.id) : [arg.id];
-    const recordsToRemove = this.toArray().filter(({ id }) => ids.includes(id));
+    const idsSet = new Set(ids);
+    const recordsToRemove: T[] = [];
+    for (const record of this.#records.values()) {
+      if (idsSet.has(record.id)) recordsToRemove.push(record);
+    }
     if (recordsToRemove.length === 0) return;
     recordsToRemove.forEach(({ id }) => this.#records.delete(id));
+    this.#invalidateIdsCache();
     this.#invokeCallbacks(recordsToRemove, 'remove');
   }
 
@@ -104,6 +120,7 @@ export class Records<T extends Record = Record> {
     if (this.#records.size === 0) return;
     const oldRecords = this.toArray();
     this.#records.clear();
+    this.#invalidateIdsCache();
     this.#invokeCallbacks(oldRecords, 'clear');
   }
 
@@ -128,7 +145,8 @@ export class Records<T extends Record = Record> {
       if (is.plainObject(idOrRecordOrRecords)) return idOrRecordOrRecords;
       return record;
     };
-    this.#update(record => ids.includes(record.id) ? predicate(record) : record, 'update');
+    const idsSet = new Set(ids);
+    this.#update(record => idsSet.has(record.id) ? predicate(record) : record, 'update');
   }
 
   public onUpdated(id: string, callback: (record: T) => void): () => void;
@@ -153,10 +171,10 @@ export class Records<T extends Record = Record> {
       if (is.not.blank(record.id)) return;
       record.id = Math.uniqueId();
     });
-    const allIds = this.ids();
+    const allIdsSet = this.#getIdsSet();
     const existingRecords = [] as T[];
     const newRecords = [] as T[];
-    records.forEach(record => allIds.includes(record.id) ? existingRecords.push(record) : newRecords.push(record));
+    records.forEach(record => allIdsSet.has(record.id) ? existingRecords.push(record) : newRecords.push(record));
     if (existingRecords.length > 0) this.update(existingRecords);
     if (newRecords.length > 0) this.add(newRecords);
   }
@@ -190,7 +208,10 @@ export class Records<T extends Record = Record> {
   public onModified(callback: (records: T[], reason: RecordsModifiedReason, allRecords: T[]) => void, { acceptableIds, acceptableReasons, filterOn }: OnModifiedOptions<T> = {}): () => void {
     const callbackWrapper = (records: T[], reason: RecordsModifiedReason, allRecords: T[]) => {
       if (is.array(acceptableReasons) && !acceptableReasons.includes(reason)) return;
-      if (is.array(acceptableIds)) records = records.filter(({ id }) => acceptableIds.includes(id));
+      if (is.array(acceptableIds)) {
+        const acceptableIdsSet = new Set(acceptableIds);
+        records = records.filter(({ id }) => acceptableIdsSet.has(id));
+      }
       if (is.function(filterOn)) records = records.filter(filterOn);
       if (records.length === 0) return;
       callback(records, reason, allRecords);
@@ -203,28 +224,30 @@ export class Records<T extends Record = Record> {
   public reorder(ids: string[]): void {
     let records = this.toArray();
     const maxLength = records.length;
-    records = records.orderBy(({ id }) => {
-      const index = ids.indexOf(id);
-      return index === -1 ? maxLength : index;
-    });
+    const idToIndex = new Map(ids.map((id, i) => [id, i]));
+    records = records.orderBy(({ id }) => idToIndex.get(id) ?? maxLength);
     this.#records = new Map(records.map(record => [record.id, record]));
+    this.#invalidateIdsCache();
     this.#invokeCallbacks(records, 'reorder');
   }
 
   #update(delegate: (record: T, index: number) => T, reason: RecordsModifiedReason): void {
     const updatedRecords: T[] = [];
-    this.toArray().forEach((record, index) => {
+    let index = 0;
+    for (const record of this.#records.values()) {
       const newRecord = delegate(record, index);
-      if (is.deepEqual(record, newRecord)) return;
-      updatedRecords.push(newRecord);
-      this.#records.set(newRecord.id, newRecord);
-    });
+      if (!is.deepEqual(record, newRecord)) {
+        updatedRecords.push(newRecord);
+        this.#records.set(newRecord.id, newRecord);
+      }
+      index++;
+    }
     if (updatedRecords.length === 0) return;
     this.#invokeCallbacks(updatedRecords, reason);
   }
 
   #invokeCallbacks(records: T[], reason: RecordsModifiedReason): void {
-    const allRecords = this.toArray();
+    const allRecords = Array.from(this.#records.values());
     this.#onModifiedCallbacks.forEach(callback => callback(records, reason, allRecords));
   }
 

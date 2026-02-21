@@ -20,7 +20,8 @@ describe('to', () => {
   describe('proxy', () => {
 
     it('can create a proxy', () => {
-      const result = to.proxy({ something: 'hey', setToUndefined: undefined });
+      const target = { something: 'hey', setToUndefined: undefined };
+      const result = to.proxy(target);
       expect(result).not.to.be.undefined;
       expect(result).to.have.property('proxy').and.is.an('object');
       expect(result).to.have.property('get').and.is.a('function');
@@ -29,7 +30,14 @@ describe('to', () => {
       expect(result).to.have.property('onDefault').and.is.a('function');
       expect(result).to.have.property('onGet').and.is.a('function');
       expect(result).to.have.property('onSet').and.is.a('function');
-      // expect(result).to.have.property('traverse').and.is.a('function');
+    });
+
+    it('proxy get returns target and set mutates it', () => {
+      const target = { count: 0 };
+      const { proxy, get, set } = to.proxy(target);
+      expect(get()).to.deep.equal({ count: 0 });
+      set(proxy.count, 5);
+      expect(get().count).to.equal(5);
     });
 
   });
