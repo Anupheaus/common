@@ -2,6 +2,7 @@ const path = require('path');
 const root = process.cwd();
 const nodeExternals = require('webpack-node-externals');
 const TerserPlugin = require('terser-webpack-plugin');
+const CircularDependencyPlugin = require('circular-dependency-plugin');
 
 const isDev = false;
 
@@ -43,9 +44,9 @@ module.exports = {
       options: {
         onlyCompileBundledFiles: true,
         compilerOptions: {
-          declaration: true,
-          declarationDir: './dist',
           noEmit: false,
+          declaration: false,
+          declarationMap: false,
         },
       },
     }, {
@@ -74,6 +75,17 @@ module.exports = {
   resolve: {
     extensions: ['.ts', '.tsx', '.js', '.jsx'],
   },
+  plugins: [
+    new CircularDependencyPlugin({
+      exclude: /node_modules/,
+      failOnError: false,
+      allowAsyncCycles: false,
+      cwd: root,
+      onDetected({ paths }) {
+        console.warn('\n⚠ Circular dependency detected:\n  ' + paths.join(' -> ') + '\n');
+      },
+    }),
+  ],
   stats: {
     assets: false,
     builtAt: isDev,

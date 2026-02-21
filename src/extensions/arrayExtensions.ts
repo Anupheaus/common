@@ -5,7 +5,6 @@ import { MergeWithUpdateOperations } from '../models';
 import { ArgumentInvalidError } from '../errors/ArgumentInvalidError';
 import { SortDirections } from '../models/sort';
 import type { DeepPartial, Record, TypeOf, Upsertable, UpdatableRecord, NonNullableOrVoid, AnyObject } from './global';
-import './reflect';
 import { is } from './is';
 import { InternalError } from '../errors';
 

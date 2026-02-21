@@ -1,4 +1,4 @@
-import { is, type AnyObject } from '../../extensions';
+import type { AnyObject } from '../../extensions/global';
 import { SortDirections } from '../sort';
 
 export type DataSortDirection = 'asc' | 'desc';
@@ -12,7 +12,7 @@ export type DataSorts<T extends AnyObject = AnyObject> = (DataSort<T>[]) | keyof
 export namespace DataSorts {
   export function toArray<T extends AnyObject = AnyObject>(sorts?: DataSorts<T>): StrictDataSort<T>[] {
     if (sorts == null) return [];
-    if (is.array(sorts)) return sorts.map(sort => is.array(sort) ? sort : [sort, 'asc']);
+    if (Array.isArray(sorts)) return sorts.map(sort => Array.isArray(sort) ? sort : [sort, 'asc']);
     return [[sorts, 'asc']];
   }
 

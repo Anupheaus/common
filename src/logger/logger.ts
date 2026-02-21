@@ -30,6 +30,8 @@ const levelSettings: LevelSettings[] = [
   { name: 'always', consoleMethod: 'log', levelColors: { node: '\x1b[2m\x1b[37m', browserTextColor: '#aaa' } },
 ];
 
+import { LogLevels, getLevelAsString as getLevelAsStringFromUtils } from './logger-utils';
+
 interface LoggerSettings {
   minLevel?: number;
   includeTimestamp?: boolean;
@@ -38,18 +40,7 @@ interface LoggerSettings {
   useColors?: boolean;
 }
 
-export const LogLevels = {
-  'silly': 0,
-  'trace': 1,
-  'debug': 2,
-  'info': 3,
-  'warn': 4,
-  'error': 5,
-  'fatal': 6,
-  'always': 7,
-} as const;
-
-const logLevelNumberToString = Object.entries(LogLevels).reduce((acc, [key, value]) => ({ ...acc, [value]: key }), {} as Record<number, string>);
+export { LogLevels } from './logger-utils';
 
 const alwaysLog: number[] = (['error', 'fatal', 'warn', 'always'] as (keyof typeof LogLevels)[]).map(level => LogLevels[level]);
 
@@ -88,7 +79,7 @@ export class Logger {
   }
 
   public static getLevelAsString(level: number): string {
-    return logLevelNumberToString[level] ?? 'silly';
+    return getLevelAsStringFromUtils(level);
   }
 
   protected parent: Logger | undefined;

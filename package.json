@@ -11,11 +11,11 @@
   },
   "private": false,
   "scripts": {
-    "build": "webpack --mode production",
+    "build": "webpack --mode production && tsc -p tsconfig.build.json",
     "build:dev": "anux build dev",
     "test": "mocha --config ./tests/mocha.js --watch",
     "test-ci": "mocha --config ./tests/mocha.js",
-    "findDeclarationErrors": "tsc --declaration --declarationDir ./dist --emitDeclarationOnly"
+    "findDeclarationErrors": "tsc -p tsconfig.build.json"
   },
   "files": [
     "dist",
@@ -62,6 +62,7 @@
     "@typescript-eslint/parser": "^6.13.0",
     "chai": "^4.3.10",
     "chai-as-promised": "^7.1.1",
+    "circular-dependency-plugin": "^5.2.2",
     "eslint": "^8.57.0",
     "eslint-plugin-mocha": "10",
     "mocha": "^10.2.0",

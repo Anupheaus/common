@@ -1,6 +1,5 @@
 import { InternalError } from '../errors/InternalError';
 import { is } from './is';
-import './array';
 import './object';
 import type { AnyObject } from './global';
 import { DateTime } from 'luxon';

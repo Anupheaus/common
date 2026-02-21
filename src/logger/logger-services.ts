@@ -1,5 +1,5 @@
 import type { LoggerEntry } from './logger-listener';
-import { Logger } from './logger';
+import { getLevelAsString } from './logger-utils';
 
 function useGrafanaLoki(userName: string, password: string, server: string = 'logs-prod-012.grafana.net') {
   const url = `https://${userName}:${password}@${server}/loki/api/v1/push`;
@@ -10,7 +10,7 @@ function useGrafanaLoki(userName: string, password: string, server: string = 'lo
           stream: {
             'app': 'vision',
             'env': 'dev',
-            'level': Logger.getLevelAsString(level),
+            'level': getLevelAsString(level),
           },
           values: levelEntries.map(({ timestamp, message, ...rest }) => [(timestamp.toUTC().valueOf() * 1000000).toString(), message, rest]),
         })),
@@ -39,7 +39,7 @@ function useNewRelic(apiKey: string, server: string = 'log-api.eu.newrelic.com')
           attributes: {
             'app': 'vision',
             'env': 'dev',
-            'level': Logger.getLevelAsString(level),
+            'level': getLevelAsString(level),
           },
         },
         logs: levelEntries.map(({ timestamp, message, level: _ignored, ...rest }) => ({

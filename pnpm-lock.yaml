@@ -87,6 +87,9 @@ devDependencies:
   chai-as-promised:
     specifier: ^7.1.1
     version: 7.1.1(chai@4.3.10)
+  circular-dependency-plugin:
+    specifier: ^5.2.2
+    version: 5.2.2(webpack@5.105.0)
   eslint:
     specifier: ^8.57.0
     version: 8.57.1
@@ -874,6 +877,15 @@ packages:
   /chrome-trace-event@1.0.3:
     resolution: {integrity: sha512-p3KULyQg4S7NIHixdwbGX+nFHkoBiA4YQmyWtjb8XngSKV124nJmRysgAeujbUVb15vh+RvFUfCPqU7rXk+hZg==}
     engines: {node: '>=6.0'}
+    dev: true
+
+  /circular-dependency-plugin@5.2.2(webpack@5.105.0):
+    resolution: {integrity: sha512-g38K9Cm5WRwlaH6g03B9OEz/0qRizI+2I7n+Gz+L5DxXJAPAiWQvwlYNm1V1jkdpUv95bOe/ASm2vfi/G560jQ==}
+    engines: {node: '>=6.0.0'}
+    peerDependencies:
+      webpack: '>=5.94.0'
+    dependencies:
+      webpack: 5.105.0(webpack-cli@5.1.4)
     dev: true
 
   /cliui@7.0.4:
