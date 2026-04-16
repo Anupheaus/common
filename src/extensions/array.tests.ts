@@ -1050,6 +1050,264 @@ describe('extension > array', () => {
       ]);
     });
 
+    it('groups items by a key', () => {
+      const array = [1, 2, 3, 4, 5, 6];
+      const result = array.groupBy(item => item % 2 === 0 ? 'even' : 'odd');
+      expect(result.get('even')).to.eql([2, 4, 6]);
+      expect(result.get('odd')).to.eql([1, 3, 5]);
+    });
+
+    it('returns an empty Map for an empty array', () => {
+      const result = ([] as number[]).groupBy(item => item);
+      expect(result).to.be.instanceof(Map);
+      expect(result.size).to.equal(0);
+    });
+
+    it('groups objects by a property', () => {
+      const array = [{ type: 'a', val: 1 }, { type: 'b', val: 2 }, { type: 'a', val: 3 }];
+      const result = array.groupBy(item => item.type);
+      expect(result.get('a')).to.eql([{ type: 'a', val: 1 }, { type: 'a', val: 3 }]);
+      expect(result.get('b')).to.eql([{ type: 'b', val: 2 }]);
+    });
+
+  });
+
+  describe('orderBy', () => {
+
+    it('sorts numbers ascending by default', () => {
+      expect([3, 1, 2].orderBy(item => item)).to.eql([1, 2, 3]);
+    });
+
+    it('sorts objects by a field', () => {
+      const array = [{ name: 'Charlie' }, { name: 'Alice' }, { name: 'Bob' }];
+      expect(array.orderBy(item => item.name).map(r => r.name)).to.eql(['Alice', 'Bob', 'Charlie']);
+    });
+
+    it('does not mutate the original array', () => {
+      const array = [3, 1, 2];
+      const result = array.orderBy(item => item);
+      expect(array).to.eql([3, 1, 2]);
+      expect(result).not.to.equal(array);
+    });
+
+  });
+
+  describe('equals', () => {
+
+    it('returns true for identical arrays', () => {
+      expect([1, 2, 3].equals([1, 2, 3])).to.be.true;
+    });
+
+    it('returns true regardless of order by default', () => {
+      expect([1, 3, 2].equals([1, 2, 3])).to.be.true;
+    });
+
+    it('returns false when order differs and ignoreOrder is false', () => {
+      expect([1, 3, 2].equals([1, 2, 3], false)).to.be.false;
+    });
+
+    it('returns false for different lengths', () => {
+      expect([1, 2].equals([1, 2, 3])).to.be.false;
+    });
+
+    it('returns true for two empty arrays', () => {
+      expect(([] as number[]).equals([])).to.be.true;
+    });
+
+  });
+
+  describe('removeMany', () => {
+
+    it('removes all listed items', () => {
+      expect([1, 2, 3, 4].removeMany([2, 4])).to.eql([1, 3]);
+    });
+
+  });
+
+  describe('removeAt', () => {
+
+    it('removes item at given index', () => {
+      expect([1, 2, 3].removeAt(1)).to.eql([1, 3]);
+    });
+
+  });
+
+  describe('filterByIds / filterBy', () => {
+
+    it('filterByIds returns records matching given ids', () => {
+      const array = [{ id: '1' }, { id: '2' }, { id: '3' }];
+      expect(array.filterByIds(['1', '3'])).to.eql([{ id: '1' }, { id: '3' }]);
+    });
+
+    it('filterBy returns items where field matches value', () => {
+      const array = [{ type: 'a' }, { type: 'b' }, { type: 'a' }];
+      expect(array.filterBy('type', 'a')).to.eql([{ type: 'a' }, { type: 'a' }]);
+    });
+
+  });
+
+  describe('chunk', () => {
+
+    it('splits array into chunks of given size', () => {
+      expect([1, 2, 3, 4, 5].chunk(2)).to.eql([[1, 2], [3, 4], [5]]);
+    });
+
+    it('returns a single chunk when size >= array length', () => {
+      expect([1, 2, 3].chunk(10)).to.eql([[1, 2, 3]]);
+    });
+
+    it('returns empty array for empty input', () => {
+      expect(([] as number[]).chunk(2)).to.eql([]);
+    });
+
+  });
+
+  describe('move', () => {
+
+    it('moves an item from one index to another', () => {
+      expect([1, 2, 3, 4].move(0, 2)).to.eql([2, 3, 1, 4]);
+    });
+
+    it('does not mutate the original', () => {
+      const array = [1, 2, 3];
+      array.move(0, 1);
+      expect(array).to.eql([1, 2, 3]);
+    });
+
+  });
+
+  describe('insert', () => {
+
+    it('inserts an item at a given index', () => {
+      expect([1, 2, 4].insert(3, 2)).to.eql([1, 2, 3, 4]);
+    });
+
+    it('inserts multiple items at a given index', () => {
+      expect([1, 4].insert([2, 3], 1)).to.eql([1, 2, 3, 4]);
+    });
+
+  });
+
+  describe('takeUntil', () => {
+
+    it('takes items until predicate is true', () => {
+      expect([1, 2, 3, 4, 5].takeUntil(item => item === 3)).to.eql([1, 2]);
+    });
+
+    it('includes the matching item when andIncluding is true', () => {
+      expect([1, 2, 3, 4, 5].takeUntil(item => item === 3, true)).to.eql([1, 2, 3]);
+    });
+
+    it('returns full array if predicate never matches', () => {
+      expect([1, 2, 3].takeUntil(item => item === 99)).to.eql([1, 2, 3]);
+    });
+
+  });
+
+  describe('findBy / findMap', () => {
+
+    it('findBy finds an item by field value', () => {
+      const array = [{ name: 'Alice' }, { name: 'Bob' }];
+      expect(array.findBy('name', 'Bob')).to.eql({ name: 'Bob' });
+    });
+
+    it('findBy returns undefined when not found', () => {
+      expect([{ name: 'Alice' }].findBy('name', 'Zach')).to.be.undefined;
+    });
+
+    it('findMap returns the first non-undefined mapped value', () => {
+      const result = [1, 2, 3, 4].findMap(item => item > 2 ? item * 10 : undefined);
+      expect(result).to.equal(30);
+    });
+
+    it('findMap returns undefined when nothing matches', () => {
+      expect([1, 2].findMap(item => item > 99 ? item : undefined)).to.be.undefined;
+    });
+
+  });
+
+  describe('sum / min / max / average', () => {
+
+    it('sum adds all numbers', () => {
+      expect([1, 2, 3].sum()).to.equal(6);
+    });
+
+    it('sum with delegate', () => {
+      expect([{ v: 1 }, { v: 2 }].sum(item => item.v)).to.equal(3);
+    });
+
+    it('min returns smallest value', () => {
+      expect([3, 1, 2].min()).to.equal(1);
+    });
+
+    it('max returns largest value', () => {
+      expect([3, 1, 2].max()).to.equal(3);
+    });
+
+    it('average returns mean', () => {
+      expect([1, 2, 3].average()).to.equal(2);
+    });
+
+    it('sum/min/max/average return 0 for empty array', () => {
+      expect(([] as number[]).sum()).to.equal(0);
+      expect(([] as number[]).min()).to.equal(0);
+      expect(([] as number[]).max()).to.equal(0);
+      expect(([] as number[]).average()).to.equal(0);
+    });
+
+  });
+
+  describe('mapWithoutNull / removeNull', () => {
+
+    it('mapWithoutNull filters out null/undefined from mapped values', () => {
+      const result = [1, 2, 3].mapWithoutNull(item => item % 2 === 0 ? item : undefined);
+      expect(result).to.eql([2]);
+    });
+
+    it('removeNull removes null and undefined from array', () => {
+      expect([1, null, 2, undefined, 3].removeNull()).to.eql([1, 2, 3]);
+    });
+
+  });
+
+  describe('exceptWhere', () => {
+
+    it('removes items matching predicate', () => {
+      expect([1, 2, 3, 4].exceptWhere(item => item % 2 === 0)).to.eql([1, 3]);
+    });
+
+  });
+
+  describe('ids', () => {
+
+    it('extracts ids from Record array', () => {
+      expect([{ id: '1', name: 'a' }, { id: '2', name: 'b' }].ids()).to.eql(['1', '2']);
+    });
+
+    it('returns empty for non-record array', () => {
+      expect([1, 2, 3].ids()).to.eql([]);
+    });
+
+  });
+
+  describe('toggle', () => {
+
+    it('adds item when not present', () => {
+      expect([1, 2].toggle(3)).to.include(3);
+    });
+
+    it('removes item when present', () => {
+      expect([1, 2, 3].toggle(2)).to.eql([1, 3]);
+    });
+
+    it('forces include with true', () => {
+      expect([1, 2, 3].toggle(2, true)).to.include(2);
+    });
+
+    it('forces exclude with false', () => {
+      expect([1, 2, 3].toggle(2, false)).not.to.include(2);
+    });
+
   });
 
 });
