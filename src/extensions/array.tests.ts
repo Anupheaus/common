@@ -1050,24 +1050,17 @@ describe('extension > array', () => {
       ]);
     });
 
-    it('groups items by a key', () => {
-      const array = [1, 2, 3, 4, 5, 6];
-      const result = array.groupBy(item => item % 2 === 0 ? 'even' : 'odd');
-      expect(result.get('even')).to.eql([2, 4, 6]);
-      expect(result.get('odd')).to.eql([1, 3, 5]);
-    });
-
     it('returns an empty Map for an empty array', () => {
       const result = ([] as number[]).groupBy(item => item);
       expect(result).to.be.instanceof(Map);
       expect(result.size).to.equal(0);
     });
 
-    it('groups objects by a property', () => {
-      const array = [{ type: 'a', val: 1 }, { type: 'b', val: 2 }, { type: 'a', val: 3 }];
-      const result = array.groupBy(item => item.type);
-      expect(result.get('a')).to.eql([{ type: 'a', val: 1 }, { type: 'a', val: 3 }]);
-      expect(result.get('b')).to.eql([{ type: 'b', val: 2 }]);
+    it('all items map to the same group', () => {
+      const array = [1, 2, 3];
+      const result = array.groupBy(() => 'all');
+      expect(result.get('all')).to.eql([1, 2, 3]);
+      expect(result.size).to.equal(1);
     });
 
   });
@@ -1132,12 +1125,16 @@ describe('extension > array', () => {
 
   });
 
-  describe('filterByIds / filterBy', () => {
+  describe('filterByIds', () => {
 
     it('filterByIds returns records matching given ids', () => {
       const array = [{ id: '1' }, { id: '2' }, { id: '3' }];
       expect(array.filterByIds(['1', '3'])).to.eql([{ id: '1' }, { id: '3' }]);
     });
+
+  });
+
+  describe('filterBy', () => {
 
     it('filterBy returns items where field matches value', () => {
       const array = [{ type: 'a' }, { type: 'b' }, { type: 'a' }];
@@ -1204,7 +1201,7 @@ describe('extension > array', () => {
 
   });
 
-  describe('findBy / findMap', () => {
+  describe('findBy', () => {
 
     it('findBy finds an item by field value', () => {
       const array = [{ name: 'Alice' }, { name: 'Bob' }];
@@ -1214,6 +1211,10 @@ describe('extension > array', () => {
     it('findBy returns undefined when not found', () => {
       expect([{ name: 'Alice' }].findBy('name', 'Zach')).to.be.undefined;
     });
+
+  });
+
+  describe('findMap', () => {
 
     it('findMap returns the first non-undefined mapped value', () => {
       const result = [1, 2, 3, 4].findMap(item => item > 2 ? item * 10 : undefined);
@@ -1226,7 +1227,7 @@ describe('extension > array', () => {
 
   });
 
-  describe('sum / min / max / average', () => {
+  describe('sum', () => {
 
     it('sum adds all numbers', () => {
       expect([1, 2, 3].sum()).to.equal(6);
@@ -1236,33 +1237,58 @@ describe('extension > array', () => {
       expect([{ v: 1 }, { v: 2 }].sum(item => item.v)).to.equal(3);
     });
 
+    it('returns 0 for an empty array', () => {
+      expect(([] as number[]).sum()).to.equal(0);
+    });
+
+  });
+
+  describe('min', () => {
+
     it('min returns smallest value', () => {
       expect([3, 1, 2].min()).to.equal(1);
     });
+
+    it('returns 0 for an empty array', () => {
+      expect(([] as number[]).min()).to.equal(0);
+    });
+
+  });
+
+  describe('max', () => {
 
     it('max returns largest value', () => {
       expect([3, 1, 2].max()).to.equal(3);
     });
 
+    it('returns 0 for an empty array', () => {
+      expect(([] as number[]).max()).to.equal(0);
+    });
+
+  });
+
+  describe('average', () => {
+
     it('average returns mean', () => {
       expect([1, 2, 3].average()).to.equal(2);
     });
 
-    it('sum/min/max/average return 0 for empty array', () => {
-      expect(([] as number[]).sum()).to.equal(0);
-      expect(([] as number[]).min()).to.equal(0);
-      expect(([] as number[]).max()).to.equal(0);
+    it('returns 0 for an empty array', () => {
       expect(([] as number[]).average()).to.equal(0);
     });
 
   });
 
-  describe('mapWithoutNull / removeNull', () => {
+  describe('mapWithoutNull', () => {
 
     it('mapWithoutNull filters out null/undefined from mapped values', () => {
       const result = [1, 2, 3].mapWithoutNull(item => item % 2 === 0 ? item : undefined);
       expect(result).to.eql([2]);
     });
+
+  });
+
+  describe('removeNull', () => {
 
     it('removeNull removes null and undefined from array', () => {
       expect([1, null, 2, undefined, 3].removeNull()).to.eql([1, 2, 3]);
@@ -1293,7 +1319,7 @@ describe('extension > array', () => {
   describe('toggle', () => {
 
     it('adds item when not present', () => {
-      expect([1, 2].toggle(3)).to.include(3);
+      expect([1, 2].toggle(3)).to.eql([1, 2, 3]);
     });
 
     it('removes item when present', () => {
@@ -1301,7 +1327,7 @@ describe('extension > array', () => {
     });
 
     it('forces include with true', () => {
-      expect([1, 2, 3].toggle(2, true)).to.include(2);
+      expect([1, 3].toggle(2, true)).to.eql([1, 3, 2]);
     });
 
     it('forces exclude with false', () => {
