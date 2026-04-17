@@ -148,6 +148,132 @@ describe('extensions', () => {
 
     });
 
+    describe('toPascalCase', () => {
+
+      it('converts space-separated words', () => {
+        expect('hello world'.toPascalCase()).to.equal('Hello World');
+      });
+
+      it('converts hyphen-separated words', () => {
+        expect('hello-world'.toPascalCase()).to.equal('Hello World');
+      });
+
+      it('converts underscore-separated words', () => {
+        expect('hello_world'.toPascalCase()).to.equal('Hello World');
+      });
+
+      it('returns empty string for empty input', () => {
+        expect(''.toPascalCase()).to.equal('');
+      });
+
+      it('handles a single character', () => {
+        expect('a'.toPascalCase()).to.equal('A');
+      });
+
+    });
+
+    describe('toCamelCase', () => {
+
+      it('converts space-separated words to camelCase', () => {
+        expect('hello world'.toCamelCase()).to.equal('hello World');
+      });
+
+      it('lowercases the first letter', () => {
+        expect('Hello World'.toCamelCase()).to.equal('hello World');
+      });
+
+      it('returns empty string for empty input', () => {
+        expect(''.toCamelCase()).to.equal('');
+      });
+
+    });
+
+    describe('toVariableName', () => {
+
+      it('removes spaces and converts to camelCase by default', () => {
+        expect('hello world'.toVariableName()).to.equal('helloWorld');
+      });
+
+      it('removes hyphens and converts to camelCase', () => {
+        expect('my-variable-name'.toVariableName()).to.equal('myVariableName');
+      });
+
+      it('converts to PascalCase when specified', () => {
+        expect('hello world'.toVariableName('pascal')).to.equal('HelloWorld');
+      });
+
+    });
+
+    describe('countOf', () => {
+
+      it('counts occurrences of a substring', () => {
+        expect('abcabcabc'.countOf('abc')).to.equal(3);
+      });
+
+      it('returns 0 when substring not found', () => {
+        expect('hello'.countOf('xyz')).to.equal(0);
+      });
+
+      it('returns 0 for empty string input', () => {
+        expect(''.countOf('a')).to.equal(0);
+      });
+
+      it('returns 0 when search value is empty', () => {
+        expect('hello'.countOf('')).to.equal(0);
+      });
+
+    });
+
+    describe('condenseWhitespace', () => {
+
+      it('replaces newlines and surrounding whitespace with a single space', () => {
+        expect('hello\n  world'.condenseWhitespace()).to.equal('hello world');
+      });
+
+      it('removes leading whitespace', () => {
+        expect('  hello'.condenseWhitespace()).to.equal(' hello');
+      });
+
+      it('leaves single-line strings without leading spaces unchanged', () => {
+        expect('hello world'.condenseWhitespace()).to.equal('hello world');
+      });
+
+    });
+
+    describe('asTemplate', () => {
+
+      it('substitutes a variable into a template string', () => {
+        expect('Hello ${name}!'.asTemplate({ name: 'World' })).to.equal('Hello World!');
+      });
+
+      it('substitutes multiple variables', () => {
+        expect('${a} + ${b} = ${c}'.asTemplate({ a: 1, b: 2, c: 3 })).to.equal('1 + 2 = 3');
+      });
+
+    });
+
+    describe('percentageMatch', () => {
+
+      it('returns 1 for identical strings', () => {
+        expect(String.percentageMatch('hello', 'hello')).to.equal(1);
+      });
+
+      it('returns 0 when either value is undefined', () => {
+        expect(String.percentageMatch(undefined, 'hello')).to.equal(0);
+        expect(String.percentageMatch('hello', undefined)).to.equal(0);
+      });
+
+      it('returns 1 for two empty strings', () => {
+        expect(String.percentageMatch('', '')).to.equal(1);
+      });
+
+      it('returns a value between 0 and 1 for partially matching strings', () => {
+        const result = String.percentageMatch('hello', 'help');
+        expect(result).to.be.above(0).and.below(1);
+      });
+
+    });
+
   });
 
 });
