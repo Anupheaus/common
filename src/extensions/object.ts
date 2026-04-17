@@ -186,75 +186,8 @@ Object.addMethods(Object, [
     }
   },
 
-  // function diff(this: Object, target: object, comparison: object): object {
-
-  //   const compareObject = (targetObject: AnyObject, comparisonObject: AnyObject): AnyObject | undefined => {
-  //     const changes: AnyObject = {};
-  //     let hasChanged = false;
-  //     const keys = Reflect.ownKeys(targetObject)
-  //       .concat(Reflect.ownKeys(comparisonObject))
-  //       .reduce((list, key) => list.includes(key) ? list : list.concat([key]), new Array<PropertyKey>());
-  //     // tslint:disable-next-line:forin
-  //     for (const key of keys) {
-  //       // eslint-disable-next-line @typescript-eslint/no-use-before-define
-  //       const result = compareValue(targetObject[key as string], comparisonObject[key as string]);
-  //       if (result === undefined) { continue; }
-  //       changes[key as string] = result;
-  //       hasChanged = true;
-  //     }
-  //     if (!hasChanged) { return; }
-  //     return changes;
-  //   };    
-
-  //   const compareArray = (targetArray: unknown[], comparisonArray: unknown[]): unknown[] | undefined => {
-  //     if (targetArray.length === comparisonArray.length && JSON.stringify(targetArray) === JSON.stringify(comparisonArray)) { return; }
-  //     comparisonArray.forEach((item, index) => {
-  //       if (item == null) { return; }
-  //       if (!is.object<AnyObject>(item) || is.empty(item.id)) { return; }
-  //       const existingItem = targetArray.find(i => is.object<AnyObject>(i) && i.id === item.id);
-  //       if (!existingItem) { return; }
-  //       const result = compareObject(existingItem, item) || {} as any;
-  //       result.id = item.id;
-  //       comparisonArray[index] = result;
-  //     });
-  //     return comparisonArray;
-  //   };
-
-  //   const compareValue = (targetValue: any, comparisonValue: any): any => {
-  //     if (targetValue === comparisonValue) { return undefined; }
-  //     if (is.null(targetValue) && !is.null(comparisonValue)) { return comparisonValue; }
-  //     if (!is.null(targetValue) && is.null(comparisonValue)) { return undefined; }
-  //     if (typeof (targetValue) !== typeof (comparisonValue)) { return comparisonValue; }
-  //     if (is.plainObject(targetValue)) {
-  //       return compareObject(targetValue, comparisonValue);
-  //     } else if (is.array(targetValue)) {
-  //       return compareArray(targetValue, comparisonValue);
-  //     } else {
-  //       return comparisonValue;
-  //     }
-  //   };
-
-  //   return compareValue(target, comparison);
-  // },
-
   function hash(this: Object, target: object, options?: HashOptions): string {
     return utilsHash(target, options);
-    // const hashableValues: string[] = [];
-    // if (target && typeof (target) === 'object' && typeof (target.constructor) === 'function') {
-    //   const isPrototype = is.prototype(target);
-    //   if (isPrototype) {
-    //     target = target.constructor;
-    //   } else {
-    //     if (target.constructor.name === 'Object') {
-    //       hashableValues.push(JSON.stringify(target));
-    //     } else {
-    //       hashableValues.push(`InstanceOf_${target.constructor.name}`);
-    //     }
-    //   }
-    // }
-    // Reflect.getAllPrototypesOf(target)
-    //   .forEach(value => hashableValues.push(typeof (value.constructor) === 'function' ? value.constructor.toString() : value.toString()));
-    // return utilsHash(hashableValues.join('|'));
   },
 
   function remove<T, P>(this: Object, target: T, delegate: (target: T) => P): P {
@@ -280,7 +213,11 @@ Object.addMethods(Object, [
   },
 
   function mixin(destinationClass: Function, sourceClass: Function): void {
-    Object.getOwnPropertyNames(sourceClass.prototype).forEach(name => destinationClass.prototype[name] = sourceClass.prototype[name]);
+    Object.getOwnPropertyNames(sourceClass.prototype).forEach(name => {
+      if (name === 'constructor') return;
+      const descriptor = Object.getOwnPropertyDescriptor(sourceClass.prototype, name);
+      if (descriptor) Object.defineProperty(destinationClass.prototype, name, { ...descriptor, enumerable: false });
+    });
   },
 
   function using<T extends Disposable, R = unknown>(object: T, use: (object: T) => R): R {

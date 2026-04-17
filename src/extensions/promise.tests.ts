@@ -1,5 +1,4 @@
 import { PromiseState } from './promise';
-import './date_old';
 
 describe('promise', () => {
 

@@ -9,32 +9,6 @@ export enum PropertyAccess {
   CanWrite,
 }
 
-// const fastEquals = (customComparer?: (source: unknown, target: unknown) => boolean | void, isDeepComparison?: boolean) => {
-//   customComparer = typeof (customComparer) === 'function' ? customComparer : undefined;
-//   return createCustomEqual(v=>({
-//     ...v,
-//     areObjectsEqual: (a: any, b: any, isEqual, meta: any) => {
-
-//       return v.areObjectsEqual(a, b, isEqual, meta);
-//     },
-//   }))/*((objA: any, objB: any): any => {
-//     if (customComparer) {
-//       const result = customComparer(objA, objB);
-//       if (result === true || result === false) { return result; }
-//     }
-//     if (typeof (objA) === 'function' && typeof (objB) === 'function' && objA.toString() === objB.toString()) { return true; }
-//     if (!isDeepComparison && typeof (objA) === 'object' && typeof (objB) === 'object') {
-//       if (!(objA instanceof Date)) { return objA === objB; }
-//     }
-//     const finalResult = comparitor(objA, objB);
-//     return isDeepComparison ? finalResult : finalResult === true;
-//   });*/
-// };
-
-// function performComparison(source: unknown, target: unknown, customComparer?: (source: unknown, target: unknown) => boolean | void, isDeepComparison = false): boolean {
-//   return fastEquals(customComparer, isDeepComparison)(source, target);
-// }
-
 declare global {
 
   namespace Reflect {

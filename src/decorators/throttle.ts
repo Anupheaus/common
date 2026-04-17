@@ -32,7 +32,7 @@ export function throttle(propsOrTimeout: number | Props): MethodDecorator {
         return value;
       },
       configurable: true,
-      enumerable: true,
+      enumerable: false,
       writable: false,
     };
   };
