@@ -250,6 +250,27 @@ describe('extensions', () => {
         expect('${a} + ${b} = ${c}'.asTemplate({ a: 1, b: 2, c: 3 })).to.equal('1 + 2 = 3');
       });
 
+      it('should replace named placeholders with values', () => {
+        expect('Hello, ${name}!'.asTemplate({ name: 'World' })).to.equal('Hello, World!');
+      });
+
+      it('should replace multiple placeholders', () => {
+        expect('${a} + ${b} = ${c}'.asTemplate({ a: '1', b: '2', c: '3' })).to.equal('1 + 2 = 3');
+      });
+
+      it('should leave unmatched placeholders as-is', () => {
+        expect('Hello, ${name}!'.asTemplate({})).to.equal('Hello, ${name}!');
+      });
+
+      it('should not execute injected code', () => {
+        const result = 'Value: ${x}'.asTemplate({ x: '${y}' });
+        expect(result).to.equal('Value: ${y}');
+      });
+
+      it('should handle numeric values', () => {
+        expect('Count: ${n}'.asTemplate({ n: 42 as any })).to.equal('Count: 42');
+      });
+
     });
 
     describe('percentageMatch', () => {

@@ -14,9 +14,10 @@ export class StringExtensions {
 
   public asTemplate(values: object): string;
   public asTemplate(this: string, values: object): string {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mapped = Reflect.ownKeys(values).map(key => [key, (values as any)[key]]);
-    return new Function(...mapped.map(item => item[0]), `return \`${this}\`;`)(...mapped.map(item => item[1]));
+    return this.replace(/\$\{(\w+)\}/g, (_, key) => {
+      const val = (values as Record<string, unknown>)[key];
+      return val !== undefined ? String(val) : `\${${key}}`;
+    });
   }
 
   public hash(options?: HashOptions): string;
