@@ -135,6 +135,28 @@ describe('is', () => {
       expect(is.guid([])).to.be.false;
     });
 
+    it('should return true on repeated calls with the same valid GUID', () => {
+      const guid = '6BA7B810-9DAD-11D1-80B4-00C04FD430C8';
+      expect(is.guid(guid)).to.be.true;
+      expect(is.guid(guid)).to.be.true;
+      expect(is.guid(guid)).to.be.true;
+    });
+
+    it('should return false on repeated calls for invalid GUIDs', () => {
+      expect(is.guid('not-a-guid')).to.be.false;
+      expect(is.guid('not-a-guid')).to.be.false;
+    });
+
+    it('should return true for a valid uppercase GUID', () => {
+      expect(is.guid('6BA7B810-9DAD-11D1-80B4-00C04FD430C8')).to.be.true;
+    });
+
+    it('should return false for non-string values', () => {
+      expect(is.guid(null)).to.be.false;
+      expect(is.guid(123)).to.be.false;
+      expect(is.guid(undefined)).to.be.false;
+    });
+
   });
 
   describe('array', () => {

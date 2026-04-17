@@ -68,7 +68,7 @@ export class Is {
 
   public guid(value: unknown): value is string {
     if (!is.string(value)) return false;
-    return /^[{(]?[0-9A-F]{8}[-]?(?:[0-9A-F]{4}[-]?){3}[0-9A-F]{12}[)}]?$/gmi.test(value);
+    return /^[{(]?[0-9A-F]{8}[-]?(?:[0-9A-F]{4}[-]?){3}[0-9A-F]{12}[)}]?$/mi.test(value);
   }
 
   public production() {
