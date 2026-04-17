@@ -1336,4 +1336,123 @@ describe('extension > array', () => {
 
   });
 
+  describe('diff', () => {
+
+    it('identifies added, removed, and matched items by id', () => {
+      const source = [{ id: '1' }, { id: '2' }];
+      const target = [{ id: '2' }, { id: '3' }];
+      const result = source.diff(target);
+      expect(result.removed).to.eql([{ id: '1' }]);
+      expect(result.added).to.eql([{ id: '3' }]);
+      expect(result.matched).to.eql([{ sourceItem: { id: '2' }, targetItem: { id: '2' } }]);
+    });
+
+    it('uses a custom matcher when provided', () => {
+      const source = [1, 2, 3];
+      const target = [2, 3, 4];
+      const result = source.diff(target, (a, b) => a === b);
+      expect(result.removed).to.eql([1]);
+      expect(result.added).to.eql([4]);
+      expect(result.matched.map(m => m.sourceItem)).to.eql([2, 3]);
+    });
+
+    it('all items removed when target is empty', () => {
+      const result = [{ id: '1' }, { id: '2' }].diff([]);
+      expect(result.removed).to.eql([{ id: '1' }, { id: '2' }]);
+      expect(result.added).to.eql([]);
+      expect(result.matched).to.eql([]);
+    });
+
+    it('all items added when source is empty', () => {
+      const result = ([] as { id: string }[]).diff([{ id: '1' }]);
+      expect(result.added).to.eql([{ id: '1' }]);
+      expect(result.removed).to.eql([]);
+      expect(result.matched).to.eql([]);
+    });
+
+  });
+
+  describe('merge', () => {
+
+    it('joins matched pairs with mapMatchedTo', () => {
+      const left = [{ id: '1', a: 1 }];
+      const right = [{ id: '1', b: 2 }];
+      const result = left.merge(right, {
+        matchBy: (l, r) => l.id === r.id,
+        mapMatchedTo: (l, r) => ({ ...l, ...r }),
+      });
+      expect(result).to.eql([{ id: '1', a: 1, b: 2 }]);
+    });
+
+    it('handles unmatched left items with mapUnmatchedLeftTo', () => {
+      const left = [{ id: '1' }, { id: '2' }];
+      const right = [{ id: '1' }];
+      const result = left.merge(right, {
+        matchBy: (l, r) => l.id === r.id,
+        mapMatchedTo: l => l,
+        mapUnmatchedLeftTo: l => ({ id: l.id, source: 'left' }),
+      });
+      expect(result).to.eql([{ id: '1' }, { id: '2', source: 'left' }]);
+    });
+
+    it('handles unmatched right items with mapUnmatchedRightTo', () => {
+      const left = [{ id: '1' }];
+      const right = [{ id: '1' }, { id: '2' }];
+      const result = left.merge(right, {
+        matchBy: (l, r) => l.id === r.id,
+        mapMatchedTo: l => l,
+        mapUnmatchedRightTo: r => ({ id: r.id, source: 'right' }),
+      });
+      expect(result).to.eql([{ id: '1' }, { id: '2', source: 'right' }]);
+    });
+
+  });
+
+  describe('repsert', () => {
+
+    it('replaces the whole item (not a merge)', () => {
+      const array: { id: string; name: string; extra?: boolean }[] = [{ id: '1', name: 'old', extra: true }];
+      const result = array.repsert({ id: '1', name: 'new' });
+      expect(result).to.eql([{ id: '1', name: 'new' }]);
+    });
+
+    it('inserts when not found', () => {
+      const array = [{ id: '1' }];
+      expect(array.repsert({ id: '2' }).ids()).to.eql(['1', '2']);
+    });
+
+  });
+
+  describe('update (additional cases)', () => {
+
+    it('merges partial update into matched items', () => {
+      const array = [{ id: '1', name: 'Alice', age: 30 }];
+      const result = array.update(item => item.id === '1', () => ({ age: 31 }));
+      expect(result).to.eql([{ id: '1', name: 'Alice', age: 31 }]);
+    });
+
+    it('updates multiple matching items', () => {
+      const array = [{ id: '1', active: false }, { id: '2', active: false }];
+      const result = array.update(() => true, () => ({ active: true }));
+      expect(result.every(item => item.active)).to.be.true;
+    });
+
+  });
+
+  describe('syncWith (simple)', () => {
+
+    it('results match incoming order and removes unmatched source items', () => {
+      const source = [{ id: '1' }, { id: '2' }, { id: '3' }];
+      const incoming = [{ id: '3' }, { id: '1' }];
+      const result = source.syncWith(incoming);
+      expect(result.ids()).to.eql(['3', '1']);
+    });
+
+    it('empty incoming clears result', () => {
+      const source = [{ id: '1' }, { id: '2' }];
+      expect(source.syncWith([])).to.eql([]);
+    });
+
+  });
+
 });
