@@ -44,7 +44,7 @@ describe('to', () => {
 
   describe('deserialise with malformed JSON', () => {
     it('should throw a descriptive error for malformed JSON string', () => {
-      expect(() => to.deserialise('{not valid json')).to.throw();
+      expect(() => to.deserialise('{not valid json')).to.throw(/Failed to deserialise/);
     });
 
     it('should parse valid JSON objects', () => {

@@ -1,5 +1,6 @@
 import type { AnyObject, StandardDataTypes } from '../extensions';
 import { to } from '../extensions';
+import { Error } from '../errors';
 
 interface SettingsFromOptions<T> {
   defaultValue?: T;
@@ -35,7 +36,7 @@ function createSettingsFrom(): SettingsFrom {
             try {
               return JSON.parse(value);
             } catch {
-              throw new globalThis.Error(`The setting "${key}" could not be parsed as JSON: ${value}`);
+              throw new Error({ message: `The setting "${key}" could not be parsed as JSON: ${value}` });
             }
           }
           return to.type(defaultType, value);
@@ -44,9 +45,9 @@ function createSettingsFrom(): SettingsFrom {
       };
 
       const { defaultValue, isRequired, transform } = settings;
-      if (typeof (process) === 'undefined') throw new Error('The settings should not be used outside of a node environment.');
+      if (typeof (process) === 'undefined') throw new Error({ message: 'The settings should not be used outside of a node environment.' });
       if (key in process.env && transform) { return transform(process.env[key] ?? ''); }
-      if (isRequired) { throw new Error(`The setting "${key}" was not found in the environment variables, but this is a required setting.`); }
+      if (isRequired) { throw new Error({ message: `The setting "${key}" was not found in the environment variables, but this is a required setting.` }); }
       return defaultValue as T;
     },
     preset: {
