@@ -524,7 +524,6 @@ export class ArrayExtensions<T> {
     return results;
   }
 
-  /** @deprecated Please use merge */
   public mergeWith<P>(items: P[]): T[];
   public mergeWith<P>(items: P[], options: IMergeWithOptions<T, P>): T[];
   public mergeWith<P>(this: T[], items: P[], options?: IMergeWithOptions<T, P>): T[] {

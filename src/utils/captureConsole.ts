@@ -1,3 +1,4 @@
+// Test utility — not part of the public API
 /* eslint-disable no-console */
 import type { PromiseMaybe } from '../extensions';
 
