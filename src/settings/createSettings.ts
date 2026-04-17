@@ -31,7 +31,13 @@ function createSettingsFrom(): SettingsFrom {
           const defaultType: StandardDataTypes = to.type(settings.defaultValue);
           if (valueType === defaultType) { return value; }
           if (defaultType === 'array') { return value.split('|') as unknown as T; }
-          if (defaultType === 'object') { return JSON.parse(value); }
+          if (defaultType === 'object') {
+            try {
+              return JSON.parse(value);
+            } catch {
+              throw new globalThis.Error(`The setting "${key}" could not be parsed as JSON: ${value}`);
+            }
+          }
           return to.type(defaultType, value);
         },
         ...options,

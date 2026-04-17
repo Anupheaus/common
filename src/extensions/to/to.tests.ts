@@ -42,4 +42,20 @@ describe('to', () => {
 
   });
 
+  describe('deserialise with malformed JSON', () => {
+    it('should throw a descriptive error for malformed JSON string', () => {
+      expect(() => to.deserialise('{not valid json')).to.throw();
+    });
+
+    it('should parse valid JSON objects', () => {
+      const result = to.deserialise<{ key: string }>('{"key":"value"}');
+      expect(result).to.eql({ key: 'value' });
+    });
+
+    it('should parse valid JSON arrays', () => {
+      const result = to.deserialise<number[]>('[1, 2, 3]');
+      expect(result).to.eql([1, 2, 3]);
+    });
+  });
+
 });

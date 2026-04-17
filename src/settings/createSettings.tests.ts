@@ -129,4 +129,25 @@ describe('createSettings', () => {
     if (prev === undefined) { delete process.env['NODE_ENV']; } else { process.env['NODE_ENV'] = prev; }
   });
 
+  describe('env with object defaultValue', () => {
+    afterEach(() => {
+      delete process.env['TEST_OBJ_SETTING'];
+    });
+
+    it('should throw a descriptive error when env var contains invalid JSON', () => {
+      process.env['TEST_OBJ_SETTING'] = 'not-valid-json{';
+      expect(() => createSettings(from => ({
+        obj: from.env('TEST_OBJ_SETTING', { defaultValue: {} as any }),
+      }))).to.throw(/invalid json|could not be parsed/i);
+    });
+
+    it('should parse valid JSON object from env var', () => {
+      process.env['TEST_OBJ_SETTING'] = '{"key":"value"}';
+      const settings = createSettings(from => ({
+        obj: from.env<{ key: string }>('TEST_OBJ_SETTING', { defaultValue: {} as any }),
+      }));
+      expect(settings.obj).to.eql({ key: 'value' });
+    });
+  });
+
 });

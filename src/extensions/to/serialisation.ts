@@ -50,7 +50,13 @@ export function deserialise(value: unknown, reviver?: (key: string, value: unkno
   };
   if (is.string(value)) {
     const trimmedValue = value.trim();
-    if (trimmedValue.startsWith('{') || trimmedValue.startsWith('[')) return JSON.parse(trimmedValue, innerReviver(true));
+    if (trimmedValue.startsWith('{') || trimmedValue.startsWith('[')) {
+      try {
+        return JSON.parse(trimmedValue, innerReviver(true));
+      } catch {
+        throw new Error({ message: 'Failed to deserialise value: invalid JSON' });
+      }
+    }
   }
   return innerReviver(false)('', value);
 }
