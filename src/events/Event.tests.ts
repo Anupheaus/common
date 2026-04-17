@@ -125,6 +125,61 @@ describe('events', () => {
       expect(() => Event.raise(b, 'hey')).to.throw();
     });
 
+    describe('orderIndex', () => {
+      it('calls handlers in orderIndex order regardless of subscription order', () => {
+        const a = Event.create<() => void>();
+        const order: number[] = [];
+        a(() => { order.push(3); }, { orderIndex: 3 });
+        a(() => { order.push(1); }, { orderIndex: 1 });
+        a(() => { order.push(2); }, { orderIndex: 2 });
+        Event.raise(a);
+        expect(order).to.eql([1, 2, 3]);
+        Event.dispose(a);
+      });
+    });
+
+    describe('raisePreviousEventsOnNewSubscribers', () => {
+      it('replays the last event to a new subscriber', () => {
+        const a = Event.create<(value: string) => void>({ raisePreviousEventsOnNewSubscribers: true });
+        let received: string | undefined;
+        Event.raise(a, 'initial');
+        a(value => { received = value; });
+        expect(received).to.equal('initial');
+        Event.dispose(a);
+      });
+
+      it('does not replay when option is not set', () => {
+        const a = Event.create<(value: string) => void>();
+        let received: string | undefined;
+        Event.raise(a, 'initial');
+        a(value => { received = value; });
+        expect(received).to.be.undefined;
+        Event.dispose(a);
+      });
+    });
+
+    describe('unsubscribe', () => {
+      it('calling the returned function stops the handler receiving events', () => {
+        const a = Event.create<(v: string) => void>();
+        let count = 0;
+        const unsub = a(() => count++);
+        Event.raise(a, 'first');
+        unsub();
+        Event.raise(a, 'second');
+        expect(count).to.equal(1);
+        Event.dispose(a);
+      });
+    });
+
+    describe('error handling', () => {
+      it('a throwing handler propagates the error synchronously from Event.raise', () => {
+        const a = Event.create<() => void>();
+        a(() => { throw new Error('handler error'); });
+        expect(() => Event.raise(a)).to.throw('handler error');
+        Event.dispose(a);
+      });
+    });
+
   });
 
 });
