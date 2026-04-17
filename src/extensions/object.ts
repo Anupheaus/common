@@ -95,7 +95,7 @@ const DANGEROUS_KEYS = new Set<string>(['__proto__', 'constructor', 'prototype']
 function parseObject<T extends object>(existingObject: T, newObject: T, checkForOverridableItems: boolean, replacer: (value: unknown) => unknown): T {
   if (newObject === undefined) return existingObject;
   Reflect.ownKeys(newObject).forEach(key => {
-    if (DANGEROUS_KEYS.has(key as string)) return;
+    if (typeof key === 'string' && DANGEROUS_KEYS.has(key)) return;
     let { get: existingGet, value: existingValue } = Object.getOwnPropertyDescriptor(existingObject, key) ?? {};
     existingValue = existingGet ? existingGet.call(existingObject) : (typeof (existingValue) !== 'function' ? existingValue : undefined);
     const { get: newGet, set: newSet, value: newValue, ...otherProps } = Object.getOwnPropertyDescriptor(newObject, key) ?? {};
