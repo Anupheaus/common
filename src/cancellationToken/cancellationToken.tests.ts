@@ -74,4 +74,37 @@ describe('cancellationToken', () => {
     expect(token['_callbacks']).to.have.lengthOf(0);
   });
 
+  it('second cancel call is ignored — first reason wins', () => {
+    const token = CancellationToken.create();
+    token.cancel('first');
+    token.cancel('second');
+    expect(token.isCancelled).to.be.true;
+    expect(token.reason).to.equal('first');
+  });
+
+  it('onCancelled fires immediately when token is already cancelled', () => {
+    const token = CancellationToken.create();
+    token.cancel('done');
+    let called = false;
+    token.onCancelled(() => { called = true; });
+    expect(called).to.be.true;
+  });
+
+  it('all onCancelled callbacks fire on cancel', () => {
+    const token = CancellationToken.create();
+    let count = 0;
+    token.onCancelled(() => count++);
+    token.onCancelled(() => count++);
+    token.onCancelled(() => count++);
+    token.cancel();
+    expect(count).to.equal(3);
+  });
+
+  it('onCancelled returns false after token is disposed', () => {
+    const token = CancellationToken.create();
+    token.dispose();
+    const result = token.onCancelled(() => { /* noop */ });
+    expect(result).to.be.false;
+  });
+
 });
