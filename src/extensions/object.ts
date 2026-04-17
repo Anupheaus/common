@@ -90,7 +90,7 @@ function isOverridableItemArray<T>(items: T[]): items is (T & Record)[] {
   return items.cast<T & Record>().every(item => item != null && typeof (item) === 'object' && item.id != null);
 }
 
-const DANGEROUS_KEYS = new Set<string | symbol>(['__proto__', 'constructor', 'prototype']);
+const DANGEROUS_KEYS = new Set<string>(['__proto__', 'constructor', 'prototype']);
 
 function parseObject<T extends object>(existingObject: T, newObject: T, checkForOverridableItems: boolean, replacer: (value: unknown) => unknown): T {
   if (newObject === undefined) return existingObject;

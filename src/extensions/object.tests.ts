@@ -152,6 +152,10 @@ describe('object', () => {
     });
 
     describe('prototype pollution protection', () => {
+      afterEach(() => {
+        delete (Object.prototype as any).polluted;
+      });
+
       it('should ignore __proto__ key', () => {
         const target = { a: 1 };
         const source = JSON.parse('{"__proto__": {"polluted": true}}');
@@ -165,6 +169,7 @@ describe('object', () => {
         const source = JSON.parse('{"constructor": {"prototype": {"polluted": true}}}');
         Object.merge(target, source as any);
         expect((Object.prototype as any).polluted).to.be.undefined;
+        expect((target as any).constructor).to.equal(Object);
       });
 
       it('should ignore prototype key', () => {
