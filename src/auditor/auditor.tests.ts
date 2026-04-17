@@ -116,5 +116,239 @@ describe('auditor', () => {
     expect(branchedAudit).to.be.deep.equal({ ...audit, history: [{ type: 'branched', value: { id: '1', name: 'test2' }, timestamp }] });
   });
 
+  it('merges multiple updates within mergeRecentUpdatesWithinSeconds into a single audit entry', () => {
+    let audit = auditor.createAuditFrom({ id: '1', name: 'a' }, 'user1');
+    audit = auditor.updateAuditWith({ id: '1', name: 'b' }, audit, 'user1', undefined, { mergeRecentUpdatesWithinSeconds: 3 });
+    audit = auditor.updateAuditWith({ id: '1', name: 'c' }, audit, 'user1', undefined, { mergeRecentUpdatesWithinSeconds: 3 });
+    expect(audit.history).to.have.lengthOf(2);
+    const lastOp = audit.history[1] as AuditUpdateRecord;
+    expect(lastOp.type).to.equal('updated');
+    expect(lastOp.ops).to.be.deep.equal([{ type: 'replace', path: ['name'], value: 'c' }]);
+    expect(auditor.createRecordFrom(audit)).to.be.deep.equal({ id: '1', name: 'c' });
+  });
+
+  it('can delete a record and then restore it via updateAuditWith', () => {
+    const record = { id: '1', name: 'test' };
+    let audit = auditor.createAuditFrom(record, 'user1');
+    audit = auditor.delete(audit, 'user1');
+    expect(auditor.isDeleted(audit)).to.be.true;
+    expect(auditor.createRecordFrom(audit)).to.be.undefined;
+    audit = auditor.updateAuditWith(record, audit, 'user1');
+    expect(auditor.isDeleted(audit)).to.be.false;
+    expect(auditor.createRecordFrom(audit)).to.be.deep.equal(record);
+    expect(audit.history.map(op => op.type)).to.be.deep.equal(['created', 'deleted', 'restored']);
+  });
+
+  it('createRecordFrom correctly processes deleted followed by restored when bypassing cache', () => {
+    const record = { id: '1', name: 'test' };
+    let audit = auditor.createAuditFrom(record, 'user1');
+    audit = auditor.delete(audit, 'user1');
+    audit = auditor.updateAuditWith(record, audit, 'user1');
+    const restoredTimestamp = audit.history[2].timestamp;
+    const recreated = auditor.createRecordFrom({ ...audit, history: audit.history } as typeof audit, restoredTimestamp);
+    expect(recreated).to.be.deep.equal(record);
+  });
+
+  it('creates separate audit entries when update falls outside mergeRecentUpdatesWithinSeconds window', async () => {
+    let audit = auditor.createAuditFrom({ id: '1', name: 'a' }, 'user1');
+    audit = auditor.updateAuditWith({ id: '1', name: 'b' }, audit, 'user1', undefined, { mergeRecentUpdatesWithinSeconds: 1 });
+    await Promise.delay(1500);
+    audit = auditor.updateAuditWith({ id: '1', name: 'c' }, audit, 'user1', undefined, { mergeRecentUpdatesWithinSeconds: 1 });
+    expect(audit.history).to.have.lengthOf(3);
+    const updatedOps = audit.history.filter(op => op.type === 'updated') as AuditUpdateRecord[];
+    expect(updatedOps).to.have.lengthOf(2);
+    expect(updatedOps[0].ops).to.be.deep.equal([{ type: 'replace', path: ['name'], value: 'b' }]);
+    expect(updatedOps[1].ops).to.be.deep.equal([{ type: 'replace', path: ['name'], value: 'c' }]);
+    expect(auditor.createRecordFrom(audit)).to.be.deep.equal({ id: '1', name: 'c' });
+  });
+
+  it('createBranchFrom accepts a record directly', () => {
+    const record = { id: '1', name: 'test' };
+    const branchedAudit = auditor.createBranchFrom(record);
+    expect(branchedAudit?.history[0].type).to.equal('branched');
+    expect(branchedAudit?.history[0]).to.have.property('value');
+    expect((branchedAudit?.history[0] as { value: typeof record }).value).to.be.deep.equal(record);
+    const normalAudit = auditor.createFromBranch(branchedAudit!, 'user1');
+    expect(normalAudit).to.not.be.undefined;
+    expect(auditor.createRecordFrom(normalAudit!)).to.be.deep.equal(record);
+  });
+
+  it('createBranchFrom returns undefined when audit is deleted', () => {
+    let audit = auditor.createAuditFrom({ id: '1', name: 'test' }, 'user1');
+    audit = auditor.delete(audit, 'user1');
+    const branchedAudit = auditor.createBranchFrom(audit);
+    expect(branchedAudit).to.be.undefined;
+  });
+
+  it('createFromBranch converts branched audit to normal audit with created', () => {
+    const record = { id: '1', name: 'test' };
+    const branchedAudit = auditor.createBranchFrom(record)!;
+    const normalAudit = auditor.createFromBranch(branchedAudit, 'user1');
+    expect(normalAudit).to.not.be.undefined;
+    expect(normalAudit!.history[0].type).to.equal('created');
+    expect((normalAudit!.history[0] as { value: typeof record }).value).to.be.deep.equal(record);
+    expect(auditor.createRecordFrom(normalAudit!)).to.be.deep.equal(record);
+  });
+
+  it('hasHistory returns false for audit with only created op', () => {
+    const audit = auditor.createAuditFrom({ id: '1', name: 'test' }, 'user1');
+    expect(auditor.hasHistory(audit)).to.be.false;
+  });
+
+  it('hasHistory returns true when audit has updates', () => {
+    let audit = auditor.createAuditFrom({ id: '1', name: 'test' }, 'user1');
+    audit = auditor.updateAuditWith({ id: '1', name: 'test2' }, audit, 'user1');
+    expect(auditor.hasHistory(audit)).to.be.true;
+  });
+
+  it('isAudit rejects null, non-objects, and invalid shapes', () => {
+    expect(auditor.isAudit(null)).to.be.false;
+    expect(auditor.isAudit(undefined)).to.be.false;
+    expect(auditor.isAudit('string')).to.be.false;
+    expect(auditor.isAudit({})).to.be.false;
+    expect(auditor.isAudit({ id: '1' })).to.be.false;
+    expect(auditor.isAudit({ id: '1', history: [] })).to.be.false;
+    expect(auditor.isAudit({ id: '1', history: [{ type: 'updated' }] })).to.be.false;
+    const validAudit = auditor.createAuditFrom({ id: '1', name: 'test' }, 'user1');
+    expect(auditor.isAudit(validAudit)).to.be.true;
+  });
+
+  it('lastUpdated returns timestamp of last history entry', () => {
+    const audit = auditor.createAuditFrom({ id: '1', name: 'test' }, 'user1');
+    const lastTs = audit.history[0].timestamp;
+    expect(auditor.lastUpdated(audit)).to.equal(lastTs);
+    const updatedAudit = auditor.updateAuditWith({ id: '1', name: 'test2' }, audit, 'user1');
+    expect(auditor.lastUpdated(updatedAudit)).to.equal(updatedAudit.history[1].timestamp);
+  });
+
+  it('delete when already deleted is idempotent', () => {
+    let audit = auditor.createAuditFrom({ id: '1', name: 'test' }, 'user1');
+    audit = auditor.delete(audit, 'user1');
+    const deletedAgain = auditor.delete(audit, 'user1');
+    expect(deletedAgain).to.equal(audit);
+    expect(deletedAgain.history).to.have.lengthOf(2);
+  });
+
+  it('restoreTo when timestamp points to deleted state returns record undefined and deletes audit', async () => {
+    let audit = auditor.createAuditFrom({ id: '1', name: 'test' }, 'user1');
+    await Promise.delay(2);
+    audit = auditor.updateAuditWith({ id: '1', name: 'test2' }, audit, 'user1');
+    const updatedTimestamp = audit.history[1].timestamp;
+    await Promise.delay(2);
+    audit = auditor.delete(audit, 'user1');
+    const deletedTimestamp = audit.history[2].timestamp;
+    const { record, audit: resultAudit } = auditor.restoreTo(audit, deletedTimestamp, 'user1');
+    expect(record).to.be.undefined;
+    expect(auditor.isDeleted(resultAudit)).to.be.true;
+    const { record: restoredRecord } = auditor.restoreTo(audit, updatedTimestamp, 'user1');
+    expect(restoredRecord).to.be.deep.equal({ id: '1', name: 'test2' });
+  });
+
+  it('merge throws when validateRecord does not match merged result', () => {
+    let oldAudit = auditor.createAuditFrom({ id: '1', name: 'test' }, 'user1');
+    oldAudit = auditor.updateAuditWith({ id: '1', name: 'test2' }, oldAudit, 'user1');
+    let newAudit = auditor.createAuditFrom({ id: '1', name: 'test2' }, 'user1');
+    newAudit = auditor.updateAuditWith({ id: '1', name: 'test3' }, newAudit, 'user1');
+    expect(() => auditor.merge(oldAudit, newAudit, { id: '1', name: 'wrong' } as any)).to.throw('Record does not match');
+  });
+
+  it('merge returns originalAudit when newAudit is invalid', () => {
+    const originalAudit = auditor.createAuditFrom({ id: '1', name: 'test' }, 'user1');
+    const invalidAudit = { id: '1', history: [{ type: 'updated' }] } as any;
+    const result = auditor.merge(originalAudit, invalidAudit);
+    expect(result).to.equal(originalAudit);
+  });
+
+  it('handles multiple consecutive updates correctly', () => {
+    let audit = auditor.createAuditFrom({ id: '1', name: 'v1' }, 'user1');
+    audit = auditor.updateAuditWith({ id: '1', name: 'v2' }, audit, 'user1');
+    audit = auditor.updateAuditWith({ id: '1', name: 'v3' }, audit, 'user1');
+    expect(audit.history).to.have.length(3);
+    expect(audit.history[2].type).to.equal('updated');
+  });
+
+  it('reconstructs the current record correctly from history', () => {
+    let audit = auditor.createAuditFrom({ id: '1', name: 'original', count: 0 }, 'user1');
+    audit = auditor.updateAuditWith({ id: '1', name: 'updated', count: 1 }, audit, 'user1');
+    const record = auditor.createRecordFrom(audit);
+    expect(record).to.eql({ id: '1', name: 'updated', count: 1 });
+  });
+
+  it('tracks nested object field changes', () => {
+    const original = { id: '1', address: { city: 'London', zip: 'EC1' } };
+    let audit = auditor.createAuditFrom(original, 'user1');
+    audit = auditor.updateAuditWith({ id: '1', address: { city: 'Paris', zip: 'EC1' } }, audit, 'user1');
+    const lastOp = audit.history[1] as any;
+    expect(lastOp.type).to.equal('updated');
+    const cityOp = lastOp.ops.find((op: any) => op.path.join('.') === 'address.city');
+    expect(cityOp).not.to.be.undefined;
+    expect(cityOp.value).to.equal('Paris');
+  });
+
+  it('allows further updates after restore', async () => {
+    let audit = auditor.createAuditFrom({ id: '1', name: 'v1' }, 'user1');
+    const t1 = Date.now();
+    await Promise.delay(2);
+    audit = auditor.updateAuditWith({ id: '1', name: 'v2' }, audit, 'user1');
+    const { record, audit: restoredAudit } = auditor.restoreTo(audit, t1, 'user1');
+    expect(record?.name).to.equal('v1');
+    const furtherAudit = auditor.updateAuditWith({ id: '1', name: 'v3' }, restoredAudit, 'user1');
+    expect(furtherAudit.history.last()?.type).to.equal('updated');
+  });
+
+  it('merge correctly handles delete and restore in history', () => {
+    let oldAudit = auditor.createAuditFrom({ id: '1', name: 'a' }, 'user1');
+    oldAudit = auditor.updateAuditWith({ id: '1', name: 'b' }, oldAudit, 'user1');
+    oldAudit = auditor.delete(oldAudit, 'user1');
+    oldAudit = auditor.updateAuditWith({ id: '1', name: 'b' }, oldAudit, 'user1');
+    let newAudit = auditor.createAuditFrom({ id: '1', name: 'b' }, 'user1');
+    newAudit = auditor.updateAuditWith({ id: '1', name: 'c' }, newAudit, 'user1');
+    const merged = auditor.merge(oldAudit, newAudit);
+    expect(auditor.createRecordFrom(merged)).to.be.deep.equal({ id: '1', name: 'c' });
+  });
+
+  it('updateAuditWith with identical record returns original audit', () => {
+    const audit = auditor.createAuditFrom({ id: '1', name: 'test' }, 'user1');
+    const result = auditor.updateAuditWith({ id: '1', name: 'test' }, audit, 'user1');
+    expect(result).to.equal(audit);
+    expect(result.history).to.have.lengthOf(1);
+  });
+
+  it('createRecordFrom with timestamp returns record at that point in time', async () => {
+    const audit = auditor.createAuditFrom({ id: '1', name: 'a' }, 'user1');
+    const createdTs = audit.history[0].timestamp;
+    await Promise.delay(2);
+    const updated = auditor.updateAuditWith({ id: '1', name: 'b' }, audit, 'user1');
+    const updatedTs = updated.history[1].timestamp;
+    await Promise.delay(2);
+    const updated2 = auditor.updateAuditWith({ id: '1', name: 'c' }, updated, 'user1');
+    expect(auditor.createRecordFrom(updated2)).to.be.deep.equal({ id: '1', name: 'c' });
+    expect(auditor.createRecordFrom(updated2, createdTs)).to.be.deep.equal({ id: '1', name: 'a' });
+    expect(auditor.createRecordFrom(updated2, updatedTs)).to.be.deep.equal({ id: '1', name: 'b' });
+  });
+
+  it('createRecordFrom with timestamp does not corrupt cache for subsequent current-record lookups', async () => {
+    const audit = auditor.createAuditFrom({ id: '1', name: 'a' }, 'user1');
+    await Promise.delay(2);
+    const updated = auditor.updateAuditWith({ id: '1', name: 'b' }, audit, 'user1');
+    const updatedTs = updated.history[1].timestamp;
+    await Promise.delay(2);
+    const updated2 = auditor.updateAuditWith({ id: '1', name: 'c' }, updated, 'user1');
+    auditor.createRecordFrom(updated2, updatedTs);
+    expect(auditor.createRecordFrom(updated2)).to.be.deep.equal({ id: '1', name: 'c' });
+  });
+
+  it('merges updates after delete-then-restore when within merge window', () => {
+    let audit = auditor.createAuditFrom({ id: '1', name: 'a' }, 'user1');
+    audit = auditor.updateAuditWith({ id: '1', name: 'b' }, audit, 'user1', undefined, { mergeRecentUpdatesWithinSeconds: 3 });
+    audit = auditor.delete(audit, 'user1');
+    audit = auditor.updateAuditWith({ id: '1', name: 'b' }, audit, 'user1');
+    audit = auditor.updateAuditWith({ id: '1', name: 'c' }, audit, 'user1', undefined, { mergeRecentUpdatesWithinSeconds: 3 });
+    const updatedOps = audit.history.filter(op => op.type === 'updated') as AuditUpdateRecord[];
+    expect(updatedOps).to.have.lengthOf(2);
+    expect(updatedOps[1].ops).to.be.deep.equal([{ type: 'replace', path: ['name'], value: 'c' }]);
+    expect(auditor.createRecordFrom(audit)).to.be.deep.equal({ id: '1', name: 'c' });
+  });
+
 });
 
