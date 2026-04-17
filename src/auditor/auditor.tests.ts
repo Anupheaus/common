@@ -348,7 +348,7 @@ describe('auditor', () => {
 
     it('should still apply safe ops when an updated entry also contains a dangerous op', () => {
       const record = { id: '1', name: 'Alice' };
-      let audit = auditor.createAuditFrom(record, 'user1');
+      const audit = auditor.createAuditFrom(record, 'user1');
 
       // Add a mixed entry: one safe op + one dangerous op
       const mixedOp = {

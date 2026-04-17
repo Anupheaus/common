@@ -35,10 +35,10 @@ describe('Records', () => {
     expect(records.length).to.equal(2);
   });
 
-    it('throws when adding record without id', () => {
-      const records = new Records<TestRecord>();
-      expect(() => records.add({ id: undefined as any, name: 'x' })).to.throw('No valid id');
-    });
+  it('throws when adding record without id', () => {
+    const records = new Records<TestRecord>();
+    expect(() => records.add({ id: undefined as any, name: 'x' })).to.throw('No valid id');
+  });
 
   it('remove by id', () => {
     const records = new Records([r('1', 'a'), r('2', 'b')]);
