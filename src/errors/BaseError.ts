@@ -10,6 +10,7 @@ interface InternalProps {
   meta?: AnyObject;
   statusCode?: number;
   isAsync: boolean;
+  code?: unknown;
 }
 
 interface Props extends Partial<InternalProps> { }
@@ -32,15 +33,20 @@ export class Error extends global.Error {
     }
     const { error } = props;
     if (error != null) {
-      const errorTypeAsString = (error as AnyObject)['@error'];
-      if (errorTypeAsString != null) {
-        const errorType = errorTypes.get(errorTypeAsString);
-        if (errorType) return new errorType(props);
-      }
-      if (error instanceof global.Error || (errorTypeAsString === 'Error' && typeof error === 'object')) {
-        if ('message' in error && typeof error.message === 'string') props.message = error.message;
-        if ('name' in error && typeof error.name === 'string') props.title = error.name;
-        if ('stack' in error && typeof error.stack === 'string') this.stack = error.stack;
+      if (typeof error === 'string') {
+        if (error.length > 0) props.message = error;
+      } else if (typeof error === 'object') {
+        const anyError = error as AnyObject;
+        const errorTypeAsString = anyError['@error'];
+        if (errorTypeAsString != null) {
+          const errorType = errorTypes.get(errorTypeAsString as string);
+          if (errorType) return new errorType(props);
+        }
+        if (typeof anyError.message === 'string' && anyError.message.length > 0) props.message = anyError.message;
+        if (typeof anyError.name === 'string' && anyError.name.length > 0) props.title = anyError.name;
+        else if (typeof (error as object).constructor?.name === 'string' && (error as object).constructor.name !== 'Object') props.title = (error as object).constructor.name;
+        if (typeof anyError.stack === 'string') this.stack = anyError.stack;
+        if (anyError.code != null) props.code = anyError.code;
       }
     }
     this.name = new.target.name;
@@ -85,7 +91,7 @@ export class Error extends global.Error {
       isAsync: this.#props.isAsync,
       meta: this.#props.meta,
       statusCode: this.#props.statusCode,
-      stack: this.stack,
+      code: this.#props.code,
     };
   }
 

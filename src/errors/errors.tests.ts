@@ -48,6 +48,12 @@ describe('errors', () => {
       expect(err.toJSON().hasBeenHandled).to.be.true;
     });
 
+    it('should not include stack trace in toJSON output', () => {
+      const err = new BaseError({ message: 'test error', title: 'Test Title' });
+      const json = err.toJSON();
+      expect(json).to.not.have.property('stack');
+    });
+
     it('handles error prop by propagating message from Error instance', () => {
       const inner = new Error('inner message');
       const result = new BaseError({ error: inner });
