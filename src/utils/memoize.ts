@@ -1,12 +1,7 @@
 import type { AnyFunction } from '../extensions';
-import '../extensions/reflect';
+import '../extensions/object';
 
-interface Cache {
-  dependencies: unknown[];
-  result: unknown;
-}
-
-const cache = new WeakMap<AnyFunction, Cache[]>();
+const cache = new WeakMap<AnyFunction, Map<string, unknown>>();
 
 interface MemoizeConfig {
   dependencies?: unknown[];
@@ -15,28 +10,28 @@ interface MemoizeConfig {
 
 export function memoize<T extends AnyFunction>(func: T, config?: MemoizeConfig): T {
   const { dependencies, maxCacheLength } = {
-    dependencies: [],
+    dependencies: [] as unknown[],
     maxCacheLength: 0,
     ...config,
   };
 
-  const funcCache: Cache[] = (cache.has(func) ? cache.get(func) : undefined) ?? [];
+  const funcCache: Map<string, unknown> = cache.get(func) ?? new Map();
   cache.set(func, funcCache);
 
   return ((...args: unknown[]) => {
-    const innerDependencies = [...args, ...dependencies];
+    const key = Object.hash([...args, ...dependencies]);
 
-    let cacheItem = funcCache.find(item => Reflect.areShallowEqual(item.dependencies, innerDependencies));
-    if (cacheItem) { return cacheItem.result; }
+    if (funcCache.has(key)) return funcCache.get(key);
 
     const result = func(...args);
+    funcCache.set(key, result);
 
-    cacheItem = { dependencies: innerDependencies, result };
-    funcCache.push(cacheItem);
-
-    if (maxCacheLength > 0) { while (funcCache.length > maxCacheLength) { funcCache.shift(); } }
+    if (maxCacheLength > 0) {
+      while (funcCache.size > maxCacheLength) {
+        funcCache.delete(funcCache.keys().next().value!);
+      }
+    }
 
     return result;
   }) as T;
-
 }
