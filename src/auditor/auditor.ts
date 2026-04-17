@@ -7,8 +7,8 @@ import { DateTime } from 'luxon';
 
 const DANGEROUS_PATH_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
 
-function hasDangerousPath(ops: Array<{ path?: (string | number)[] }>): boolean {
-  return ops.some(op => op.path?.some(segment => DANGEROUS_PATH_SEGMENTS.has(String(segment))));
+function hasDangerousPath(ops: Array<{ path: (string | number)[], type: string }>): boolean {
+  return ops.some(op => op.path.some(segment => DANGEROUS_PATH_SEGMENTS.has(String(segment))));
 }
 
 const currentRecordCache = new WeakMap<AuditOf<Record>, Record | undefined>();
@@ -63,9 +63,17 @@ function performOperation<T extends Record>(record: T | undefined, operation: Au
     }
     case 'updated': {
       if (record == null) return;
-      if (!hasDangerousPath(operation.ops as any)) {
+      const safeOps = operation.ops.filter(op => {
+        if (hasDangerousPath([op])) {
+          const error = new InternalError('Audit operation blocked: dangerous path segment', { meta: { op, record } });
+          if (typeof onError === 'function') onError(error);
+          return false;
+        }
+        return true;
+      });
+      if (safeOps.length > 0) {
         try {
-          diffApply(record, operation.ops.map(({ type, ...rest }) => ({ ...rest, op: type })));
+          diffApply(record, safeOps.map(({ type, ...rest }) => ({ ...rest, op: type })));
         } catch (err) {
           const error = new InternalError('Audit operation failed on record', { meta: { error: err, operation, record } });
           if (typeof onError === 'function') {

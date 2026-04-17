@@ -307,6 +307,11 @@ describe('auditor', () => {
   });
 
   describe('prototype pollution via diff ops', () => {
+    afterEach(() => {
+      delete (Object.prototype as any).polluted;
+      delete (Object.prototype as any).polluted2;
+    });
+
     it('should not pollute Object.prototype when audit ops contain dangerous paths', () => {
       const record = { id: '1', name: 'Alice' };
       const audit = auditor.createAuditFrom(record, 'user1');
@@ -323,7 +328,6 @@ describe('auditor', () => {
       // This should not throw, and should not pollute Object.prototype
       auditor.createRecordFrom(audit);
       expect((Object.prototype as any).polluted).to.be.undefined;
-      delete (Object.prototype as any).polluted; // cleanup in case guard is missing
     });
 
     it('should not pollute Object.prototype when audit ops contain constructor path', () => {
@@ -340,7 +344,27 @@ describe('auditor', () => {
 
       auditor.createRecordFrom(audit);
       expect((Object.prototype as any).polluted2).to.be.undefined;
-      delete (Object.prototype as any).polluted2;
+    });
+
+    it('should still apply safe ops when an updated entry also contains a dangerous op', () => {
+      const record = { id: '1', name: 'Alice' };
+      let audit = auditor.createAuditFrom(record, 'user1');
+
+      // Add a mixed entry: one safe op + one dangerous op
+      const mixedOp = {
+        type: 'updated' as const,
+        timestamp: audit.history[0].timestamp + 1,
+        userId: 'user1',
+        ops: [
+          { type: 'replace' as const, path: ['name'], value: 'Bob' },      // safe
+          { type: 'add' as const, path: ['__proto__', 'polluted'], value: true }, // dangerous
+        ],
+      };
+      (audit as any).history.push(mixedOp);
+
+      const result = auditor.createRecordFrom(audit);
+      expect((Object.prototype as any).polluted).to.be.undefined;
+      expect(result?.name).to.equal('Bob'); // safe op was applied
     });
   });
 
