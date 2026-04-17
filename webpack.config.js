@@ -4,40 +4,18 @@ const nodeExternals = require('webpack-node-externals');
 const TerserPlugin = require('terser-webpack-plugin');
 const CircularDependencyPlugin = require('circular-dependency-plugin');
 
-const isDev = false;
-
 module.exports = {
   entry: { index: './src/index.ts' },
   devtool: 'source-map',
-  target: 'node',
+  target: ['web', 'node'],
   output: {
     path: path.resolve(root, './dist'),
     libraryTarget: 'umd',
     library: 'anux-common',
+    globalObject: 'globalThis',
     clean: true,
   },
   module: {
-    // rules: [{
-    //   test: /\.ts$/,
-    //   exclude: /(node_modules|bower_components)/,
-    //   use: {
-    //     loader: 'swc-loader',
-    //     options: {
-    //       // This makes swc-loader invoke swc synchronously.
-    //       sync: true,
-    //       jsc: {
-    //         parser: {
-    //           syntax: 'typescript',
-    //           decorators: true,
-    //         },
-    //         transform: {
-    //           legacyDecorator: true,
-    //           decoratorMetadata: true,
-    //         },
-    //       },
-    //     },
-    //   },
-    // }]
     rules: [{
       test: /\.tsx?$/,
       loader: 'ts-loader',
@@ -60,10 +38,9 @@ module.exports = {
       new TerserPlugin({
         parallel: true,
         terserOptions: {
-          compress: !isDev,
+          compress: true,
           keep_classnames: true,
           keep_fnames: true,
-          mangle: !isDev,
           sourceMap: true,
         },
       }),
@@ -88,7 +65,7 @@ module.exports = {
   ],
   stats: {
     assets: false,
-    builtAt: isDev,
+    builtAt: false,
     cached: false,
     cachedAssets: false,
     children: false,
