@@ -306,6 +306,44 @@ describe('auditor', () => {
     expect(auditor.createRecordFrom(merged)).to.be.deep.equal({ id: '1', name: 'c' });
   });
 
+  describe('prototype pollution via diff ops', () => {
+    it('should not pollute Object.prototype when audit ops contain dangerous paths', () => {
+      const record = { id: '1', name: 'Alice' };
+      const audit = auditor.createAuditFrom(record, 'user1');
+
+      // Inject a poisoned op with __proto__ path
+      const poisonedOp = {
+        type: 'updated' as const,
+        timestamp: Date.now() + 1,
+        userId: 'user1',
+        ops: [{ type: 'add' as const, path: ['__proto__', 'polluted'], value: true }],
+      };
+      (audit as any).history.push(poisonedOp);
+
+      // This should not throw, and should not pollute Object.prototype
+      auditor.createRecordFrom(audit);
+      expect((Object.prototype as any).polluted).to.be.undefined;
+      delete (Object.prototype as any).polluted; // cleanup in case guard is missing
+    });
+
+    it('should not pollute Object.prototype when audit ops contain constructor path', () => {
+      const record = { id: '2', name: 'Bob' };
+      const audit = auditor.createAuditFrom(record, 'user1');
+
+      const poisonedOp = {
+        type: 'updated' as const,
+        timestamp: Date.now() + 1,
+        userId: 'user1',
+        ops: [{ type: 'add' as const, path: ['constructor', 'prototype', 'polluted2'], value: true }],
+      };
+      (audit as any).history.push(poisonedOp);
+
+      auditor.createRecordFrom(audit);
+      expect((Object.prototype as any).polluted2).to.be.undefined;
+      delete (Object.prototype as any).polluted2;
+    });
+  });
+
   it('updateAuditWith with identical record returns original audit', () => {
     const audit = auditor.createAuditFrom({ id: '1', name: 'test' }, 'user1');
     const result = auditor.updateAuditWith({ id: '1', name: 'test' }, audit, 'user1');

@@ -5,6 +5,12 @@ import { diff } from 'just-diff';
 import { InternalError } from '../errors';
 import { DateTime } from 'luxon';
 
+const DANGEROUS_PATH_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
+
+function hasDangerousPath(ops: Array<{ path?: (string | number)[] }>): boolean {
+  return ops.some(op => op.path?.some(segment => DANGEROUS_PATH_SEGMENTS.has(String(segment))));
+}
+
 const currentRecordCache = new WeakMap<AuditOf<Record>, Record | undefined>();
 
 const createTimestamp = () => DateTime.utc().toMillis();
@@ -57,14 +63,16 @@ function performOperation<T extends Record>(record: T | undefined, operation: Au
     }
     case 'updated': {
       if (record == null) return;
-      try {
-        diffApply(record, operation.ops.map(({ type, ...rest }) => ({ ...rest, op: type })));
-      } catch (err) {
-        const error = new InternalError('Audit operation failed on record', { meta: { error: err, operation, record } });
-        if (typeof onError === 'function') {
-          onError(error);
-        } else {
-          throw error;
+      if (!hasDangerousPath(operation.ops as any)) {
+        try {
+          diffApply(record, operation.ops.map(({ type, ...rest }) => ({ ...rest, op: type })));
+        } catch (err) {
+          const error = new InternalError('Audit operation failed on record', { meta: { error: err, operation, record } });
+          if (typeof onError === 'function') {
+            onError(error);
+          } else {
+            throw error;
+          }
         }
       }
       break;
