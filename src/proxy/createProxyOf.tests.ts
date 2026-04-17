@@ -125,4 +125,71 @@ describe('createProxyOf', () => {
     expect(original).to.eql({ something: 'else', setToUndefined: undefined });
   });
 
+  describe('isSet', () => {
+    it('returns true for a property that was explicitly set in the original object', () => {
+      const { proxy, isSet } = setupTest();
+      expect(isSet(proxy.something)).to.be.true;
+    });
+    it('returns false for a property that was never set', () => {
+      const { proxy, isSet } = setupTest();
+      expect(isSet(proxy.notSetAtAll)).to.be.false;
+    });
+    it('returns true for a property explicitly set to undefined', () => {
+      const { proxy, isSet } = setupTest();
+      expect(isSet(proxy.setToUndefined)).to.be.true;
+    });
+  });
+
+  describe('onSet with preventDefault', () => {
+    it('prevents the value being applied when preventDefault is called', () => {
+      const { original, proxy, set, onSet } = setupTest();
+      onSet(proxy.something, (e: OnSetEvent<string>) => { e.preventDefault(); });
+      set(proxy.something, 'changed');
+      expect(original.something).to.equal('hey');
+    });
+    it('allows the value when preventDefault is not called', () => {
+      const { original, proxy, set, onSet } = setupTest();
+      onSet(proxy.something, () => { /* no preventDefault */ });
+      set(proxy.something, 'changed');
+      expect(original.something).to.equal('changed');
+    });
+    it('calls multiple onSet handlers for the same path', () => {
+      const { proxy, set, onSet } = setupTest();
+      let count = 0;
+      onSet(proxy.something, () => { count++; });
+      onSet(proxy.something, () => { count++; });
+      set(proxy.something, 'new');
+      expect(count).to.equal(2);
+    });
+  });
+
+  describe('onGet (additional)', () => {
+    it('is called on every get access', () => {
+      const { proxy, get, onGet } = setupTest();
+      let count = 0;
+      onGet(proxy.something, () => { count++; });
+      get(proxy.something);
+      get(proxy.something);
+      expect(count).to.equal(2);
+    });
+  });
+
+  describe('onDefault (additional)', () => {
+    it('is called exactly once per unset intermediate object when setting a deep path', () => {
+      const { proxy, set, onDefault } = setupTest();
+      let callCount = 0;
+      onDefault(proxy.notSetObject, (e: OnDefaultEvent) => { callCount++; e.value = {} as any; });
+      set(proxy.notSetObject?.subProperty, 'val');
+      expect(callCount).to.equal(1);
+    });
+    it('is NOT called when the intermediate object is already set', () => {
+      const { original, proxy, set, onDefault } = setupTest();
+      (original as any).notSetObject = { subProperty: 'existing' };
+      let callCount = 0;
+      onDefault(proxy.notSetObject, (e: OnDefaultEvent) => { callCount++; e.value = {} as any; });
+      set(proxy.notSetObject?.subProperty, 'val');
+      expect(callCount).to.equal(0);
+    });
+  });
+
 });
