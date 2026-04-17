@@ -15,3 +15,6 @@ node_modules
 
 # generated code
 dist
+
+# Claude Code local settings
+.claude/settings.local.json
