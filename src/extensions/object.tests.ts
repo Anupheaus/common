@@ -151,6 +151,38 @@ describe('object', () => {
       expect(result.previous[0]).to.eql({ date: 0, something: false, other: undefined });
     });
 
+    describe('prototype pollution protection', () => {
+      it('should ignore __proto__ key', () => {
+        const target = { a: 1 };
+        const source = JSON.parse('{"__proto__": {"polluted": true}}');
+        Object.merge(target, source as any);
+        expect((Object.prototype as any).polluted).to.be.undefined;
+        expect((target as any).polluted).to.be.undefined;
+      });
+
+      it('should ignore constructor key', () => {
+        const target = { a: 1 };
+        const source = JSON.parse('{"constructor": {"prototype": {"polluted": true}}}');
+        Object.merge(target, source as any);
+        expect((Object.prototype as any).polluted).to.be.undefined;
+      });
+
+      it('should ignore prototype key', () => {
+        const target = { a: 1 };
+        const source = { prototype: { polluted: true } } as any;
+        Object.merge(target, source);
+        expect((Object.prototype as any).polluted).to.be.undefined;
+        expect(Object.getPrototypeOf(target)).to.equal(Object.prototype);
+      });
+
+      it('should still merge normal keys', () => {
+        const target = { a: 1 };
+        const source = { b: 2 };
+        const result = Object.merge(target, source);
+        expect(result).to.eql({ a: 1, b: 2 });
+      });
+    });
+
   });
 
   describe('stringify', () => {
