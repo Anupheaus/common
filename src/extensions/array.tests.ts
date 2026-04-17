@@ -594,6 +594,18 @@ describe('extension > array', () => {
       expect(result).to.eq(array);
     });
 
+    it('merges partial update into matched items', () => {
+      const array = [{ id: '1', name: 'Alice', age: 30 }];
+      const result = array.update(item => item.id === '1', () => ({ age: 31 }));
+      expect(result).to.eql([{ id: '1', name: 'Alice', age: 31 }]);
+    });
+
+    it('updates multiple matching items', () => {
+      const array = [{ id: '1', active: false }, { id: '2', active: false }];
+      const result = array.update(() => true, () => ({ active: true }));
+      expect(result.every(item => item.active)).to.be.true;
+    });
+
   });
 
   describe('except', () => {
@@ -887,6 +899,18 @@ describe('extension > array', () => {
       expect(c).to.eql([item2, item3]);
       expect(c[0]).to.eq(item2);
       expect(c[1].data).to.eq(itemC);
+    });
+
+    it('results match incoming order and removes unmatched source items', () => {
+      const source = [{ id: '1' }, { id: '2' }, { id: '3' }];
+      const incoming = [{ id: '3' }, { id: '1' }];
+      const result = source.syncWith(incoming);
+      expect(result.ids()).to.eql(['3', '1']);
+    });
+
+    it('empty incoming clears result', () => {
+      const source = [{ id: '1' }, { id: '2' }];
+      expect(source.syncWith([])).to.eql([]);
     });
 
   });
@@ -1419,38 +1443,6 @@ describe('extension > array', () => {
     it('inserts when not found', () => {
       const array = [{ id: '1' }];
       expect(array.repsert({ id: '2' }).ids()).to.eql(['1', '2']);
-    });
-
-  });
-
-  describe('update (additional cases)', () => {
-
-    it('merges partial update into matched items', () => {
-      const array = [{ id: '1', name: 'Alice', age: 30 }];
-      const result = array.update(item => item.id === '1', () => ({ age: 31 }));
-      expect(result).to.eql([{ id: '1', name: 'Alice', age: 31 }]);
-    });
-
-    it('updates multiple matching items', () => {
-      const array = [{ id: '1', active: false }, { id: '2', active: false }];
-      const result = array.update(() => true, () => ({ active: true }));
-      expect(result.every(item => item.active)).to.be.true;
-    });
-
-  });
-
-  describe('syncWith (simple)', () => {
-
-    it('results match incoming order and removes unmatched source items', () => {
-      const source = [{ id: '1' }, { id: '2' }, { id: '3' }];
-      const incoming = [{ id: '3' }, { id: '1' }];
-      const result = source.syncWith(incoming);
-      expect(result.ids()).to.eql(['3', '1']);
-    });
-
-    it('empty incoming clears result', () => {
-      const source = [{ id: '1' }, { id: '2' }];
-      expect(source.syncWith([])).to.eql([]);
     });
 
   });
