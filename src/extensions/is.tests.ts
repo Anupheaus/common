@@ -278,4 +278,20 @@ describe('is', () => {
 
   });
 
+  describe('browser', () => {
+
+    it('should return false in a Node.js test environment', () => {
+      expect(is.browser()).to.be.false;
+    });
+
+  });
+
+  describe('node', () => {
+
+    it('should return true in a Node.js test environment', () => {
+      expect(is.node()).to.be.true;
+    });
+
+  });
+
 });

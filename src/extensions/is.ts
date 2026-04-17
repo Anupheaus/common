@@ -183,11 +183,11 @@ export class Is {
   }
 
   public browser(): boolean {
-    return (new Function('try {return this===window;}catch(e){ return false;}'))();
+    return typeof window !== 'undefined' && typeof window.document !== 'undefined';
   }
 
   public node(): boolean {
-    return (new Function('try {return this===global;}catch(e){return false;}'))();
+    return typeof process !== 'undefined' && process.versions != null && process.versions.node != null;
   }
 
   /**
