@@ -68,4 +68,65 @@ describe('createSettings', () => {
     }).to.throw('The setting "something" was not found in the environment variables, but this is a required setting.');
   });
 
+  it('reads a number from an env var', () => {
+    process.env['TEST_SETTINGS_NUM'] = '42';
+    const settings = createSettings(from => ({ port: from.env('TEST_SETTINGS_NUM', { defaultValue: 0 }) }));
+    expect(settings.port).to.equal(42);
+    delete process.env['TEST_SETTINGS_NUM'];
+  });
+
+  it('uses the numeric defaultValue when env var is absent', () => {
+    delete process.env['TEST_SETTINGS_MISSING_NUM'];
+    const settings = createSettings(from => ({ port: from.env('TEST_SETTINGS_MISSING_NUM', { defaultValue: 9000 }) }));
+    expect(settings.port).to.equal(9000);
+  });
+
+  it('reads true from an env var', () => {
+    process.env['TEST_SETTINGS_BOOL'] = 'true';
+    const settings = createSettings(from => ({ enabled: from.env('TEST_SETTINGS_BOOL', { defaultValue: false }) }));
+    expect(settings.enabled).to.be.true;
+    delete process.env['TEST_SETTINGS_BOOL'];
+  });
+
+  it('reads false from an env var', () => {
+    process.env['TEST_SETTINGS_BOOL'] = 'false';
+    const settings = createSettings(from => ({ enabled: from.env('TEST_SETTINGS_BOOL', { defaultValue: true }) }));
+    expect(settings.enabled).to.be.false;
+    delete process.env['TEST_SETTINGS_BOOL'];
+  });
+
+  it('reads a string from an env var', () => {
+    process.env['TEST_SETTINGS_STR'] = 'hello';
+    const settings = createSettings(from => ({ greeting: from.env('TEST_SETTINGS_STR', { defaultValue: '' }) }));
+    expect(settings.greeting).to.equal('hello');
+    delete process.env['TEST_SETTINGS_STR'];
+  });
+
+  it('uses the string defaultValue when env var is absent', () => {
+    delete process.env['TEST_SETTINGS_MISSING_STR'];
+    const settings = createSettings(from => ({ greeting: from.env('TEST_SETTINGS_MISSING_STR', { defaultValue: 'default' }) }));
+    expect(settings.greeting).to.equal('default');
+  });
+
+  it('throws when a required env var is missing', () => {
+    delete process.env['TEST_SETTINGS_REQUIRED'];
+    expect(() => createSettings(from => ({ val: from.env('TEST_SETTINGS_REQUIRED', { isRequired: true, defaultValue: '' }) }))).to.throw();
+  });
+
+  it('returns "production" when NODE_ENV is production', () => {
+    const prev = process.env['NODE_ENV'];
+    process.env['NODE_ENV'] = 'production';
+    const settings = createSettings(from => ({ mode: from.preset.mode }));
+    expect(settings.mode).to.equal('production');
+    if (prev === undefined) { delete process.env['NODE_ENV']; } else { process.env['NODE_ENV'] = prev; }
+  });
+
+  it('returns "development" when NODE_ENV is development', () => {
+    const prev = process.env['NODE_ENV'];
+    process.env['NODE_ENV'] = 'development';
+    const settings = createSettings(from => ({ mode: from.preset.mode }));
+    expect(settings.mode).to.equal('development');
+    if (prev === undefined) { delete process.env['NODE_ENV']; } else { process.env['NODE_ENV'] = prev; }
+  });
+
 });
