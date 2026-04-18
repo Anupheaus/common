@@ -1,6 +1,6 @@
 module.exports = {
   require: [
-    'ts-node/register',
+    'tsx/cjs',
     './tests/test-setup.js',
   ],
   spec: './src/**/*.tests.+(ts|tsx)',
