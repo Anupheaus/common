@@ -7,7 +7,7 @@ const CircularDependencyPlugin = require('circular-dependency-plugin');
 module.exports = {
   entry: { index: './src/index.ts' },
   devtool: 'source-map',
-  target: ['web', 'node'],
+  target: 'node',
   output: {
     path: path.resolve(root, './dist'),
     libraryTarget: 'umd',
