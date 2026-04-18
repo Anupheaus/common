@@ -7,6 +7,9 @@ const CircularDependencyPlugin = require('circular-dependency-plugin');
 module.exports = {
   entry: { index: './src/index.ts' },
   devtool: 'source-map',
+  // Must be a single target — ['web', 'node'] causes a chunk format conflict in webpack 5
+  // because each target requires a different format (array-push vs commonjs). Since this
+  // library uses nodeExternals(), 'node' is the correct target anyway.
   target: 'node',
   output: {
     path: path.resolve(root, './dist'),
