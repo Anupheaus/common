@@ -38,12 +38,15 @@
       "braces": ">=3.0.3",
       "cross-spawn": ">=7.0.5",
       "micromatch": ">=4.0.8",
-      "serialize-javascript": ">=6.0.2",
+      "serialize-javascript": ">=7.0.5",
       "js-yaml": ">=4.1.1",
-      "brace-expansion": "2.0.2",
+      "brace-expansion": ">=2.0.3",
       "diff": ">=5.2.2",
       "nanoid": "3.3.8",
-      "webpack": ">=5.94.0"
+      "webpack": ">=5.94.0",
+      "minimatch": ">=9.0.0",
+      "flatted": ">=3.4.2",
+      "picomatch": ">=2.3.2"
     }
   },
   "devDependencies": {
