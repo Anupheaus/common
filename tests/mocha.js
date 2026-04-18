@@ -1,8 +1,8 @@
 module.exports = {
   require: [
-    'tsx/cjs',
     './tests/test-setup.js',
   ],
+  import: 'tsx',
   spec: './src/**/*.tests.+(ts|tsx)',
   watchFiles: [
     './src/**/*.+(ts|tsx)'
