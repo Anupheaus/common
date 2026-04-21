@@ -75,4 +75,35 @@ describe('Throttle Decorator', () => {
     expect(argsCount.get('c')).to.eq(2);
   });
 
+  describe('ignoreArguments option', () => {
+
+    it('uses a single shared cache key regardless of arguments passed', async () => {
+      let count = 0;
+      class TestClass {
+        @throttle({ timeout: 20, ignoreArguments: true })
+        public method(..._args: unknown[]): number { return ++count; }
+      }
+      const instance = new TestClass();
+      expect(instance.method('a')).to.equal(1);
+      expect(instance.method('b')).to.equal(1);
+      expect(instance.method('c')).to.equal(1);
+      expect(count).to.equal(1);
+    });
+
+    it('invalidates the shared cache after the timeout and invokes again', async () => {
+      let count = 0;
+      class TestClass {
+        @throttle({ timeout: 5, ignoreArguments: true })
+        public method(..._args: unknown[]): number { return ++count; }
+      }
+      const instance = new TestClass();
+      expect(instance.method('x')).to.equal(1);
+      expect(instance.method('y')).to.equal(1);
+      await Promise.delay(10);
+      expect(instance.method('z')).to.equal(2);
+      expect(count).to.equal(2);
+    });
+
+  });
+
 });

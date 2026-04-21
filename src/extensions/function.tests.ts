@@ -19,6 +19,85 @@ describe('extensions', () => {
 
     });
 
+    describe('setName', () => {
+
+      it('renames a function', () => {
+        const fn = function original() { /* */ };
+        fn.setName('renamed');
+        expect(fn.name).to.equal('renamed');
+      });
+
+      it('returns the same function instance', () => {
+        const fn = function foo() { /* */ };
+        const result = fn.setName('bar');
+        expect(result).to.equal(fn);
+      });
+
+    });
+
+    describe('empty', () => {
+
+      it('returns a function that returns undefined', () => {
+        const emptyFn = (function myFn() { /* */ }).empty();
+        expect(emptyFn).to.be.a('function');
+        expect(emptyFn()).to.be.undefined;
+      });
+
+      it('always returns the same no-op instance', () => {
+        const a = (function a() { /* */ }).empty();
+        const b = (function b() { /* */ }).empty();
+        expect(a).to.equal(b);
+      });
+
+    });
+
+    describe('emptyAsync', () => {
+
+      it('returns a function that returns a resolved Promise', async () => {
+        const fn = (function myFn() { /* */ }).emptyAsync();
+        expect(fn).to.be.a('function');
+        const result = await fn();
+        expect(result).to.be.undefined;
+      });
+
+      it('always returns the same no-op async instance', () => {
+        const a = (function a() { /* */ }).emptyAsync();
+        const b = (function b() { /* */ }).emptyAsync();
+        expect(a).to.equal(b);
+      });
+
+    });
+
+    describe('wrap', () => {
+
+      it('intercepts method calls and allows calling through to the original', () => {
+        class Counter {
+          public count = 0;
+          public increment(): number { return ++this.count; }
+        }
+
+        const c = new Counter();
+        Counter.prototype.increment.wrap(c, (args, next) => {
+          return (next(args) as number) * 10;
+        });
+
+        expect(c.increment()).to.equal(10);
+        expect(c.count).to.equal(1);
+      });
+
+      it('allows blocking the original method', () => {
+        class Greeter {
+          public greet(): string { return 'hello'; }
+        }
+
+        const g = new Greeter();
+        Greeter.prototype.greet.wrap(g, (_args, _next) => 'intercepted');
+
+        expect(g.greet()).to.equal('intercepted');
+      });
+
+    });
+
   });
 
 });

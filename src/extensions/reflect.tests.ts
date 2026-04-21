@@ -408,6 +408,70 @@ describe('reflect', () => {
 
   });
 
+  describe('getProperty', () => {
+
+    it('returns the value of a top-level property', () => {
+      const obj = { name: 'Alice' };
+      expect(Reflect.getProperty(obj, 'name')).to.equal('Alice');
+    });
+
+    it('returns undefined for a missing property with no default', () => {
+      const obj = { a: 1 };
+      expect(Reflect.getProperty(obj, 'missing')).to.be.undefined;
+    });
+
+    it('returns the defaultValue when an intermediate path segment is missing', () => {
+      const obj = {};
+      expect(Reflect.getProperty(obj, 'a.b', 42)).to.equal(42);
+    });
+
+    it('navigates a dotted path to a nested property', () => {
+      const obj = { a: { b: { c: 'deep' } } };
+      expect(Reflect.getProperty(obj, 'a.b.c')).to.equal('deep');
+    });
+
+    it('returns defaultValue when a deep intermediate path segment is missing', () => {
+      const obj = { a: {} };
+      expect(Reflect.getProperty(obj, 'a.b.c', 'fallback')).to.equal('fallback');
+    });
+
+    it('adds the property with defaultValue when addIfNotExists is true', () => {
+      const obj: Record<string, unknown> = {};
+      const result = Reflect.getProperty(obj, 'newProp', 99, true);
+      expect(result).to.equal(99);
+      expect((obj as any).newProp).to.equal(99);
+    });
+
+  });
+
+  describe('setProperty', () => {
+
+    it('sets a top-level property value', () => {
+      const obj: Record<string, unknown> = { x: 1 };
+      Reflect.setProperty(obj, 'x', 2);
+      expect(obj.x).to.equal(2);
+    });
+
+    it('adds a new top-level property when it does not exist', () => {
+      const obj: Record<string, unknown> = {};
+      Reflect.setProperty(obj, 'y', 'hello');
+      expect((obj as any).y).to.equal('hello');
+    });
+
+    it('sets a value on a nested dotted path', () => {
+      const obj = { a: { b: 0 } };
+      Reflect.setProperty(obj, 'a.b', 99);
+      expect(obj.a.b).to.equal(99);
+    });
+
+    it('creates intermediate objects when path does not exist', () => {
+      const obj: Record<string, unknown> = {};
+      Reflect.setProperty(obj, 'a.b.c', 'created');
+      expect((obj as any).a.b.c).to.equal('created');
+    });
+
+  });
+
   describe('setByPath', () => {
 
     it('can set a simple path', () => {

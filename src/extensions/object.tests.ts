@@ -190,6 +190,85 @@ describe('object', () => {
 
   });
 
+  describe('clone', () => {
+
+    it('returns a new object with the same properties', () => {
+      const obj = { a: 1, b: 'hello', c: true };
+      const clone = Object.clone(obj);
+      expect(clone).to.deep.equal(obj);
+      expect(clone).not.to.equal(obj);
+    });
+
+    it('deep-clones nested objects', () => {
+      const obj = { inner: { x: 10 } };
+      const clone = Object.clone(obj);
+      expect(clone.inner).to.deep.equal({ x: 10 });
+      expect(clone.inner).not.to.equal(obj.inner);
+    });
+
+    it('clones arrays', () => {
+      const arr = [1, 2, 3];
+      const clone = Object.clone(arr);
+      expect(clone).to.deep.equal([1, 2, 3]);
+      expect(clone).not.to.equal(arr);
+    });
+
+    it('returns null for null input', () => {
+      expect(Object.clone(null as any)).to.be.null;
+    });
+
+    it('applies a replacer function to values', () => {
+      const obj = { a: 1, b: 2 };
+      const clone = Object.clone(obj, value => typeof value === 'number' ? (value as number) * 2 : value);
+      expect(clone.a).to.equal(2);
+      expect(clone.b).to.equal(4);
+    });
+
+  });
+
+  describe('hash', () => {
+
+    it('returns a non-empty string for any object', () => {
+      expect(Object.hash({ a: 1 })).to.be.a('string').with.length.above(0);
+    });
+
+    it('returns the same hash for two deeply equal objects', () => {
+      expect(Object.hash({ a: 1, b: 2 })).to.equal(Object.hash({ a: 1, b: 2 }));
+    });
+
+    it('returns different hashes for different objects', () => {
+      expect(Object.hash({ a: 1 })).to.not.equal(Object.hash({ a: 2 }));
+    });
+
+  });
+
+  describe('getValueOf', () => {
+
+    it('returns the result of the delegate when no TypeError is thrown', () => {
+      const obj = { value: 42 };
+      expect(Object.getValueOf(obj, o => o.value, 0)).to.equal(42);
+    });
+
+    it('returns the defaultValue when a TypeError is thrown inside the delegate', () => {
+      const obj: any = null;
+      expect(Object.getValueOf(obj, o => o.value, 99)).to.equal(99);
+    });
+
+    it('returns defaultValue when the delegate returns null/undefined', () => {
+      const obj = { value: undefined as number | undefined };
+      expect(Object.getValueOf(obj, o => o.value, 5)).to.equal(5);
+    });
+
+    it('supports two-argument form (delegate + default)', () => {
+      expect(Object.getValueOf(() => 'hello', 'fallback')).to.equal('hello');
+    });
+
+    it('returns defaultValue in two-argument form when delegate returns null', () => {
+      expect(Object.getValueOf(() => null as any, 'fallback')).to.equal('fallback');
+    });
+
+  });
+
   describe('stringify', () => {
 
     it('can stringify recursive objects', () => {
