@@ -1,5 +1,11 @@
 import './function';
 
+class WrapTestSubject {
+  public count = 0;
+  public increment(): number { return ++this.count; }
+  public greet(): string { return 'hello'; }
+}
+
 describe('extensions', () => {
 
   describe('function', () => {
@@ -71,13 +77,8 @@ describe('extensions', () => {
     describe('wrap', () => {
 
       it('intercepts method calls and allows calling through to the original', () => {
-        class Counter {
-          public count = 0;
-          public increment(): number { return ++this.count; }
-        }
-
-        const c = new Counter();
-        Counter.prototype.increment.wrap(c, (args, next) => {
+        const c = new WrapTestSubject();
+        WrapTestSubject.prototype.increment.wrap(c, (args, next) => {
           return (next(args) as number) * 10;
         });
 
@@ -86,12 +87,8 @@ describe('extensions', () => {
       });
 
       it('allows blocking the original method', () => {
-        class Greeter {
-          public greet(): string { return 'hello'; }
-        }
-
-        const g = new Greeter();
-        Greeter.prototype.greet.wrap(g, (_args, _next) => 'intercepted');
+        const g = new WrapTestSubject();
+        WrapTestSubject.prototype.greet.wrap(g, (_args, _next) => 'intercepted');
 
         expect(g.greet()).to.equal('intercepted');
       });

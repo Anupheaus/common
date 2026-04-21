@@ -126,7 +126,7 @@ describe('map', () => {
       it('calls mapUnmatchedLeftTo for keys only in the original map', () => {
         const map = new Map([['a', 1], ['b', 2]]);
         map.merge(new Map([['b', 5]]), {
-          mapUnmatchedLeftTo: (value) => value * 10,
+          mapUnmatchedLeftTo: value => value * 10,
         });
         expect(map.get('a')).to.equal(10);
         expect(map.get('b')).to.equal(5);
@@ -159,7 +159,7 @@ describe('map', () => {
         const map = new Map<string, number>();
         map.merge([42], {
           keyExtractor: () => 'newKey',
-          mapUnmatchedRightTo: (item) => item * 2,
+          mapUnmatchedRightTo: item => item * 2,
         } as any);
         expect(map.get('newKey')).to.equal(84);
       });
@@ -167,8 +167,8 @@ describe('map', () => {
       it('calls mapUnmatchedLeftTo for keys only in the original map', () => {
         const map = new Map([['a', 1], ['b', 2]]);
         map.merge([] as number[], {
-          keyExtractor: (v) => String(v),
-          mapUnmatchedLeftTo: (value) => (value as number) + 100,
+          keyExtractor: v => String(v),
+          mapUnmatchedLeftTo: value => (value as number) + 100,
         } as any);
         expect(map.get('a')).to.equal(101);
         expect(map.get('b')).to.equal(102);
