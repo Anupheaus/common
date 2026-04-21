@@ -43,7 +43,7 @@ jobs:
     steps:
       - uses: Anupheaus/ci-templates/.github/actions/pnpm-setup@v1
       - name: Run tests with coverage
-        run: pnpm exec c8 mocha --config ./tests/mocha.js
+        run: pnpm exec c8 --reporter=lcov --reporter=text mocha --config ./tests/mocha.js
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
