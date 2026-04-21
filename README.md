@@ -1,4 +1,5 @@
-[![Publish Package](https://github.com/Anupheaus/common/actions/workflows/publish.yml/badge.svg)](https://github.com/Anupheaus/common/actions/workflows/publish.yml)
+[![CI](https://github.com/Anupheaus/common/actions/workflows/publish.yml/badge.svg)](https://github.com/Anupheaus/common/actions/workflows/publish.yml)
+[![Coverage](https://codecov.io/gh/Anupheaus/common/branch/master/graph/badge.svg)](https://codecov.io/gh/Anupheaus/common)
 
 # @anupheaus/common
 

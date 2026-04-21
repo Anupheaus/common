@@ -1,66 +1,54 @@
-name: CI
+name: Publish Package
 
 on:
   push:
     branches: [master]
   workflow_dispatch:
 
-env:
-  NODE_VERSION: '22.x'
-  PNPM_VERSION: '10'
-
 jobs:
   Prepare:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
-        with:
-          version: ${{ env.PNPM_VERSION }}
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - uses: Anupheaus/ci-templates/.github/actions/pnpm-setup@v1
 
   Validate:
     needs: Prepare
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
-        with:
-          version: ${{ env.PNPM_VERSION }}
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - uses: Anupheaus/ci-templates/.github/actions/pnpm-setup@v1
       - name: Lint
         run: pnpm exec eslint src --ext .ts,.tsx
       - name: Type check
         run: pnpm exec tsc -p tsconfig.build.json --noEmit
       - name: Security audit
         run: pnpm audit --audit-level high
+      - name: Secret scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.before }}
+          head: HEAD
+          extra_args: --only-verified
+      - name: Vulnerability scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          exit-code: 1
 
   Test:
     needs: Prepare
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
+      - uses: Anupheaus/ci-templates/.github/actions/pnpm-setup@v1
+      - name: Run tests with coverage
+        run: pnpm exec c8 mocha --config ./tests/mocha.js
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
         with:
-          version: ${{ env.PNPM_VERSION }}
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-      - name: Run tests
-        run: pnpm run test-ci
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
 
   Publish:
     needs: [Validate, Test]
@@ -70,19 +58,10 @@ jobs:
       contents: write
       packages: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: Anupheaus/ci-templates/.github/actions/pnpm-setup@v1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: pnpm/action-setup@v3
-        with:
-          version: ${{ env.PNPM_VERSION }}
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-          registry-url: https://npm.pkg.github.com/
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+          node-auth-token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
       - name: Bump version
         uses: phips28/gh-action-bump-version@master
         env:
