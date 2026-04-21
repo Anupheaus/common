@@ -61,6 +61,18 @@ describe('errors', () => {
       expect(result).to.be.instanceOf(Error);
     });
 
+    it('extracts message when a native Error is passed directly as props', () => {
+      const native = new Error('direct native message');
+      const result = new BaseError(native as unknown as Parameters<typeof BaseError>[0]);
+      expect(result.message).to.equal('direct native message');
+    });
+
+    it('uses the native Error name as the title when passed directly', () => {
+      const native = new TypeError('type mismatch');
+      const result = new BaseError(native as unknown as Parameters<typeof BaseError>[0]);
+      expect(result.title).to.equal('TypeError');
+    });
+
     it('deserialises via @error to correct type', () => {
       const json = { '@error': 'InternalError', message: 'bad', title: 'Internal Error' };
       const err = new BaseError(json);

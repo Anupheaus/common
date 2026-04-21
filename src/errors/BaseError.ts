@@ -27,6 +27,11 @@ export class Error extends global.Error {
     Object.setPrototypeOf(this, new.target.prototype);
     const anyProps = props as AnyObject;
     if (anyProps instanceof Error) return anyProps;
+    const propsAsAny = props as any;
+    if (propsAsAny instanceof globalThis.Error) {
+      // A native Error was passed directly as props — extract its message and name
+      props = { message: propsAsAny.message || undefined, title: propsAsAny.name } as Props;
+    }
     if (typeof (anyProps['@error']) === 'string') {
       const errorType = errorTypes.get(anyProps['@error']);
       if (errorType && errorType !== new.target) return new errorType(props);
