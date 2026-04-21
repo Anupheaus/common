@@ -1,5 +1,8 @@
 [![CI](https://github.com/Anupheaus/common/actions/workflows/publish.yml/badge.svg)](https://github.com/Anupheaus/common/actions/workflows/publish.yml)
 [![Coverage](https://codecov.io/gh/Anupheaus/common/branch/master/graph/badge.svg)](https://codecov.io/gh/Anupheaus/common)
+[![Version](https://img.shields.io/github/v/tag/Anupheaus/common?label=version)](https://github.com/Anupheaus/common/releases)
+[![License](https://img.shields.io/github/license/Anupheaus/common)](LICENSE.md)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 
 # @anupheaus/common
 
