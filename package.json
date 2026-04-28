@@ -24,14 +24,14 @@
   "types": "dist/index",
   "typings": "dist/index",
   "dependencies": {
-    "fast-equals": "^4.0.3",
+    "fast-equals": "^6.0.0",
     "inflection": "^3.0.0",
     "just-diff": "^6.0.2",
     "just-diff-apply": "^5.5.0",
     "luxon": "^3.4.4",
     "numeral": "^2.0.6",
     "object-hash": "^3.0.0",
-    "uuid": "^9.0.1"
+    "uuid": "^14.0.0"
   },
   "pnpm": {
     "overrides": {
