@@ -45,7 +45,7 @@ jobs:
       - name: Run tests with coverage
         run: pnpm exec c8 --reporter=lcov --reporter=text mocha --config ./tests/mocha.js
       - name: Upload coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
