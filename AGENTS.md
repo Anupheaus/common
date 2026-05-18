@@ -1,10 +1,6 @@
 # @anupheaus/common — Agent Guide
 
-## Before making changes
-
-- **Read**: `c:/code/personal/agents/global-agent.md`
-
-This document describes the **@anupheaus/common** library for AI agents and developers. It is a TypeScript utility and data-structure library that provides extensions, errors, events, collections, proxy utilities, and more.
+A TypeScript utility and data-structure library providing extensions, errors, events, collections, proxy utilities, and more.
 
 ---
 
@@ -14,250 +10,140 @@ This document describes the **@anupheaus/common** library for AI agents and deve
 - **Repository:** https://github.com/Anupheaus/common
 - **Registry:** GitHub Packages (`@anupheaus:registry=https://npm.pkg.github.com`)
 - **License:** Apache-2.0
-- **Runtime:** Node.js and browser (where applicable). Some modules (e.g. `createSettings`) assume a Node environment.
+- **Runtime:** Node.js and browser (where applicable). `createSettings` and file-based logger output assume a Node environment.
 
-The library is built with TypeScript, exports from `./dist/index.js` with typings at `dist/index`, and is organized into focused modules under `src/`. Test files follow `*.tests.ts`; run with `pnpm run test-ci`.
-
----
-
-## Main Modules and Exports
-
-### Extensions (`src/extensions`)
-
-Type guards, conversions, and prototype extensions used across the library and by consumers.
-
-- **`is`** — Type guards and checks: `is.null`, `is.function`, `is.array`, `is.promise`, `is.guid`, `is.production`, `is.equal` (with options), and many others. Use `is.not.*` for negated checks.
-- **`to`** — Coercion and formatting: `to.string`, `to.number`, `to.boolean`, `to.date`, `to.type`, plus serialisation/deserialisation and diff helpers.
-- **`currency`** — Currency-related helpers (exported from extensions).
-- **`ListItem`** — List item utilities.
-- **Prototype extensions** (imported for side effects): `object`, `array`, `date`, `function`, `math`, `promise`, `reflect`, `string`, `map`, `set`, `weakMap` — add methods to built-in types (e.g. `Array`, `Object`, `Date`, `Map`).
-- **`global`** — Shared types and globals (e.g. `AnyObject`, `AnyFunction`, `Record`, `PromiseMaybe`).
-
-**When to use:** Use `is` for safe type checks and defaults, `to` for parsing/formatting and serialisation; be aware that prototype extensions augment built-ins globally.
+The library is built with TypeScript, exports from `./dist/index.js` with typings at `dist/index`, and is organised into focused modules under `src/`. Test files follow `*.tests.ts`; run with `pnpm run test-ci`.
 
 ---
 
-### Errors (`src/errors`)
+## Main Modules
 
-Structured error classes extending a common base, with optional metadata and status codes.
+### Complex modules — see their own AGENTS.md
 
-- **`Error`** (BaseError) — Base error with `message`, `title`, `meta`, `statusCode`, and serialisation support.
-- **`InternalError`**, **`ArgumentInvalidError`**, **`NotImplementedError`**, **`ValidationError`**, **`AuthenticationError`**, **`ObjectDisposedError`**, **`ApiError`**, **`ServerError`** — Domain-specific subclasses.
+- **[`src/extensions/`](./src/extensions/AGENTS.md)** — `is`, `to`, `currency`, `ListItem`, global types, and prototype extensions for all built-in types. Importing from the package root triggers all side effects.
+- **[`src/errors/`](./src/errors/AGENTS.md)** — Typed, serialisable error classes with status codes and round-trip deserialisation. NOTE: the base class is exported as `Error` — it shadows `globalThis.Error`.
+- **[`src/events/`](./src/events/AGENTS.md)** — `Event`: typed pub/sub with three execution modes (concurrent, in-turn, passthrough) and optional replay to late subscribers.
+- **[`src/models/`](./src/models/AGENTS.md)** — Shared value types for data APIs (filters, pagination, sorts), geometry, arrays, and dates. The common contract between UI, API, and data layers.
+- **[`src/proxy/`](./src/proxy/AGENTS.md)** — `createProxyOf`: observable proxy with intercept hooks for get, set, after-set, and default. Includes `isSet` tracking and `getProxyApiFrom` for inspecting a path on an existing proxy.
+- **[`src/logger/`](./src/logger/AGENTS.md)** — Levelled logger (silly–always) with sub-loggers, batching listeners, and remote sinks (Grafana Loki, New Relic).
+- **[`src/auditor/`](./src/auditor/AGENTS.md)** — Append-only audit log with diff/apply history and time-travel reconstruction over entity state.
 
-**When to use:** Throw these instead of raw `Error` when you need consistent error handling, status codes, or serialisation (e.g. over APIs).
+### Simpler modules — documented here
 
----
+**Decorators (`src/decorators/`)**
+- `@bind` — Binds a method to its instance; use on methods passed as callbacks to avoid losing `this`.
+- `@throttle(timeout | props)` — Caches a method's return value for a duration. `props.ignoreArguments` caches by call only (not by argument values). Useful for expensive computed properties.
 
-### Events (`src/events`)
+**Cancellation (`src/cancellationToken/`)**
+- `CancellationToken` — Create with `CancellationToken.create()`. Call `.cancel(reason?)` to cancel; register with `.onCancelled(callback)`; check `.isCancelled` and `.reason`. Use to abort async workflows or cleanup on unmount.
 
-Typed pub/sub and async event handling.
+**Settings (`src/settings/`)**
+- `createSettings(delegate)` — Builds a settings object from `process.env`. `from.env(key, options?)` reads environment variables with optional default, required check, and transform. `from.preset.mode` returns `'production' | 'development'` from `NODE_ENV`. **Node-only.**
 
-- **`Event`** — Create events with `Event.create<T>()`, subscribe with `.subscribe()`, raise with `Event.raise()`. Supports single-result and array-result modes, optional “raise previous events to new subscribers,” and ordering via `orderIndex`.
-- **`Unsubscribe`** — Function returned from subscribe to remove the handler.
+**Wrappers (`src/wrappers/`)**
+- `repeatOnError(delegate, config)` — Retries `delegate` on failure. Config accepts `maxAttempts` (number) or `onAttempt` (callback returning whether to continue), plus `onSuccess` and `onFailure`. Supports sync and async delegates.
 
-**When to use:** Decouple components with typed events; use for lifecycle hooks, notifications, or async workflows.
+**Utils (`src/utils/`)**
+- `chain` — Fluent optional-pipeline helper.
+- `memoize` — Memoises a function by its arguments.
+- `debounce` — Debounces a function call.
+- `captureConsole` — Redirects `console.*` calls to a callback; Node-only utility used in tests.
 
----
+**Subscriptions (`src/subscriptions/`)**
+- `createSubscriber<TFunc>()` — Returns `{ subscribe(callback): Unsubscribe, invoke(...args) }`. Simpler than `Event` when you don't need ordering, modes, or previous-event replay. Prefer `Event` for complex lifecycles.
 
-### Models (`src/models`)
+**Records (`src/Records/`)**
+- `Records<T extends Record>` — In-memory store of id-keyed entities. Methods: `add`, `remove`, `update`, `clear`, `reorder`, `get(id)`, `toArray()`, `ids()`, `indexOf`. Fires `onModified` (and filtered variants) with reason: `'add' | 'remove' | 'update' | 'clear' | 'reorder'`.
 
-Shared value objects and types for sorting, geometry, data APIs, and dates.
+**Collection (`src/Collection/`)**
+- `Collection<T>` — Set-like collection (no id requirement). Methods: `add`, `remove`, `clear`, `has`, `get`/`toArray`, `onModified`/`onAdded`/`onRemoved`/`onCleared`.
 
-- **`sort`** — Sort direction and related types.
-- **`array`** — Array diff, merge, order-by, sync options, map delegates (see `src/models/array`).
-- **`geometry`** — Coordinates, dimensions, location, size, and geometry types.
-- **`data`** — Data layer models: filters, pagination, request/response, sorts (e.g. for APIs or tables).
-- **`date`** — Date and time models (uses Luxon where relevant).
+**ArrayModifications (`src/ArrayModifications/`)**
+- `ArrayModifications<RecordType>` — Tracks add/update/remove deltas for a record set. Guard events (`onCanAdd`, `onCanUpdate`, `onCanRemove`) let listeners veto changes. `applyTo(array, options)` produces a new array with all modifications applied. Exports `ArrayModificationsModels` and `SerialisedArrayModifications` for persistence.
 
-**When to use:** Use these types in APIs, UI state, or shared logic to keep contracts consistent.
-
----
-
-### Decorators (`src/decorators`)
-
-- **`@bind`** — Binds method to instance so `this` is correct when passed as a callback.
-- **`@throttle(timeout | props)`** — Caches method return value for a duration; optional `ignoreArguments` to throttle by call only.
-
-**When to use:** Use `@bind` on methods used as event handlers or callbacks; use `@throttle` for expensive or repeated calls.
-
----
-
-### Cancellation (`src/cancellationToken`)
-
-- **`CancellationToken`** — Create with `CancellationToken.create()`, call `cancel(reason?)`, and register with `onCancelled(callback)`. Exposes `isCancelled` and `reason`.
-- **`CancellationCallback`** and related types from `models`.
-
-**When to use:** Cancel async workflows, cleanup on unmount, or abort long-running operations.
-
----
-
-### Settings (`src/settings`)
-
-- **`createSettings(delegate)`** — Builds a settings object from a function that receives a `from` helper. `from.env(key)` reads from `process.env` with optional `defaultValue`, `isRequired`, and `transform`. `from.preset.mode` is `'production' | 'development'` from `NODE_ENV`.
-
-**When to use:** Centralise environment-based config in Node apps. Not for browser-only code.
-
----
-
-### Wrappers (`src/wrappers`)
-
-- **`repeatOnError(delegate, config)`** — Retries `delegate` on failure. Config: `maxAttempts` or `onAttempt`, `onSuccess`, `onFailure`. Supports sync and promise-returning delegates.
-
-**When to use:** Transient failure retry (e.g. network or DB) with custom back-off or logging via `onAttempt`/`onFailure`.
-
----
-
-### Utils (`src/utils`)
-
-- **`chain`** — Chain operations (e.g. optional pipeline).
-- **`memoize`** — Memoize function results.
-- **`debounce`** — Debounce function calls.
-
-**When to use:** Performance (memoize, debounce) or fluent APIs (chain).
-
----
-
-### Proxy (`src/proxy`)
-
-Proxies for observable or lazy object graphs.
-
-- **`createProxyOf(target)`** — Creates a proxy of an object; supports `get`, `set`, `onGet`, `onSet`, `onAfterSet`, `onDefault`, and “is set” checks per path.
-- **`getProxyApiFrom(proxy)`** — Gets the proxy API (value, isSet, onSet, set) for a given path.
-- **`traverse`** — Traverse proxy paths.
-- **`ProxyOf`, `ProxyApi`, and related types** from `publicModels`.
-
-**When to use:** When you need change detection, defaults, or lazy access on nested objects without touching every property manually.
-
----
-
-### Subscriptions (`src/subscriptions`)
-
-- **`createSubscriber<TFunc>()`** — Returns `{ subscribe(callback): Unsubscribe, invoke(...args) }`. Invoke calls all subscribed callbacks with the same arguments.
-
-**When to use:** Simple pub/sub where you don’t need full Event semantics (ordering, previous events, etc.).
-
----
-
-### Records (`src/Records`)
-
-- **`Records<T extends Record>`** — Collection of entities with `id`. Methods: `add`, `remove`, `update`, `clear`, reorder; `get(id)`, `toArray()`, `ids()`, `indexOf`; `onModified` (and filtered variants) with reasons: `'add' | 'remove' | 'update' | 'clear' | 'reorder'`.
-
-**When to use:** In-memory store of domain entities keyed by id, with change notifications.
-
----
-
-### Collection (`src/Collection`)
-
-- **`Collection<T>`** — Set-like collection with `add`, `remove`, `clear`, `has`, `get`/`toArray`, and `onModified` / `onAdded` / `onRemoved` / `onCleared`.
-
-**When to use:** Unique items with add/remove/clear and optional observers; no id requirement.
-
----
-
-### ArrayModifications (`src/ArrayModifications`)
-
-- **`ArrayModifications<RecordType>`** — Tracks added/updated/removed records (by id). Events: `onAdded`, `onUpdated`, `onRemoved`, `onCleared`, `onModified`; guard events: `onCanAdd`, `onCanUpdate`, `onCanRemove`. `applyTo(array, options)` produces a new array with modifications applied. Exports **`ArrayModificationsModels`** and **`SerialisedArrayModifications`**.
-
-**When to use:** Deltas for list UIs or sync (e.g. offline queues, batch updates).
-
----
-
-### DoubleMap (`src/DoubleMap`)
-
-- **`DoubleMap<K1, K2, V>`** — Two-key map: `get(key1, key2)`, `set(key1, key2, value)`, `delete`, `clear`, `keys()`, `values()`, `clone`. Uses array extensions (e.g. `sum`, `mapMany`) internally.
-
-**When to use:** Lookups by two keys (e.g. row + column, source + target).
-
----
-
-### Auditor (`src/auditor`)
-
-- **Audit types and APIs** — Create audited objects with history (created/updated/restored/branched). Replay history to reconstruct or rollback state. Uses Luxon for timestamps and integrates with diff/apply (e.g. just-diff/just-diff-apply). Exports **`auditor-models`** for types.
-
-**When to use:** When you need an audit log or time-travel over object state.
-
----
-
-### Logger (`src/logger`)
-
-- **`Logger`** — Levelled logging (silly, trace, debug, info, warn, error, fatal, **always**) with optional timestamps, colours, and meta. Supports listeners and services.
-- **`logger.always(message, meta?)`** — Always shown regardless of `minLevel`; use for critical messages that must never be filtered.
-- **`LogLevels`** — Level constants (0–7); `always` is 7.
-- **`LoggerEntry`**, **`LoggerService`** — Listener and service interfaces for custom sinks or formatting.
-
-**When to use:** Structured app logging with levels and pluggable outputs.
+**DoubleMap (`src/DoubleMap/`)**
+- `DoubleMap<K1, K2, V>` — Two-key map: `get(k1, k2)`, `set(k1, k2, value)`, `delete`, `clear`, `keys()`, `values()`, `clone`. Use for row+column or source+target lookups.
 
 ---
 
 ## Entry Points
 
-- **Main:** Import from `@anupheaus/common` (or from built `dist/index.js`). The root index re-exports the modules above.
-- **Extensions:** Import `'./extensions'` (or the package path) for side-effect registration of prototype extensions; then use `is`, `to`, and extended built-ins.
+- **Main:** Import from `@anupheaus/common`. The root `index.ts` imports all extensions for side effects, then re-exports everything.
+- **Selective imports:** Importing from `src/extensions/is` directly does **not** trigger prototype extensions. Always import from the package root in production code.
 
 ---
 
 ## Dependencies (notable)
 
-- **luxon** — Dates and timestamps (auditor, logger, extensions).
-- **fast-equals** — Deep equality (e.g. `is.equal`).
-- **object-hash** — Hashing for throttle/debounce keys.
-- **just-diff** / **just-diff-apply** — Diffs and patch application (auditor, to).
-- **numeral** — Number formatting in `to`.
-- **inflection** — Pluralisation/singularisation in `to`.
-- **uuid** — UUID generation where used.
+| Dependency | Used by |
+|-----------|---------|
+| `luxon` | auditor (timestamps), logger, extensions (date) |
+| `fast-equals` | `is.equal` |
+| `object-hash` | `@throttle` key hashing |
+| `just-diff` / `just-diff-apply` | auditor, `to.diff` |
+| `numeral` | `to.string` (number formatting) |
+| `inflection` | `to.plural` / `to.singular` |
+| `uuid` | internal ID generation |
 
 ---
 
 ## Conventions
 
-- **Record:** Entities with at least an `id` (string) are typed as `Record` in extensions; used by Records, ArrayModifications, and auditor.
-- **Unsubscribe:** Many subscribe methods return an `Unsubscribe` function (from events) to remove the listener.
-- **PromiseMaybe<T>:** Type for values that may be sync or Promise (used in events and extensions).
+- **`Record`**: entities with at least an `id: string` field. Used by `Records`, `ArrayModifications`, and `auditor`.
+- **`Unsubscribe`**: a `() => void` returned by any subscribe call. Store and call to remove the listener.
+- **`PromiseMaybe<T>`**: `T | Promise<T>` — used in events and extensions for functions that may or may not be async.
 
 ---
 
-## Quick Reference by Task
+## Decision rationale
 
-| Task                         | Module / export to use              |
+- **`Event` vs `createSubscriber`**: `Event` is the full-featured primitive (modes, ordering, previous-event replay, disposal). `createSubscriber` is a lightweight alternative for simple broadcast with no lifecycle requirements.
+- **Prototype extensions**: chosen for ergonomics (`array.findById(id)` > `findById(array, id)`). The trade-off is global prototype mutation, which is intentional. Libraries depending on this package inherit the extensions.
+- **Error serialisation via `@error` marker**: avoids colliding with common `type` fields in API payloads and is visually distinct when inspecting serialised data.
+
+---
+
+## Ambiguities and gotchas
+
+- **`import { Error }` shadows `globalThis.Error`**: any file that imports `Error` from this package loses the built-in. Use `import { Error as CommonError }` or `globalThis.Error` explicitly.
+- **Prototype extensions in browsers**: extensions like `Array.prototype.findById` are safe in most browser contexts, but can conflict with third-party libraries that also extend built-ins. Test for conflicts when integrating.
+- **`createSettings` is Node-only**: it reads `process.env` directly. Do not use in browser builds.
+- **`is.production` is Node-only**: reads `process.env.NODE_ENV`. Returns `false` if `process` is not defined.
+
+---
+
+## Quick Reference
+
+| Task | Export |
 |-----------------------------|--------------------------------------|
-| Type checks / defaults      | `is`, `is.not` from extensions       |
-| Parse/format/serialise      | `to` from extensions                  |
-| Throw structured errors     | `errors` (e.g. `ValidationError`)     |
-| Pub/sub events              | `Event` or `createSubscriber`        |
-| Cancel async work           | `CancellationToken`                  |
-| Retry on failure            | `repeatOnError`                      |
-| Bind method to `this`       | `@bind` decorator                    |
-| Throttle method calls       | `@throttle` decorator                |
-| Memoize / debounce          | `utils`: `memoize`, `debounce`       |
-| Observable/lazy objects     | `createProxyOf`, `getProxyApiFrom`   |
-| Id-based record collection  | `Records`                            |
-| Unique item collection      | `Collection`                         |
-| Two-key map                 | `DoubleMap`                          |
-| Track add/update/remove     | `ArrayModifications`                 |
-| Audit log / history         | `auditor`                            |
-| Env-based config (Node)     | `createSettings`                     |
-| Levelled logging           | `logger`                             |
-| Always-show log message    | `logger.always()`                    |
-| Shared API/data types       | `models` (data, geometry, sort, etc.)|
+| Type checks / defaults | `is`, `is.not` |
+| Parse/format/serialise | `to` |
+| Throw structured errors | errors module (e.g. `ValidationError`) |
+| Pub/sub events | `Event` or `createSubscriber` |
+| Cancel async work | `CancellationToken` |
+| Retry on failure | `repeatOnError` |
+| Bind method to `this` | `@bind` |
+| Throttle method calls | `@throttle` |
+| Memoize / debounce | `memoize`, `debounce` |
+| Observable/lazy objects | `createProxyOf`, `getProxyApiFrom` |
+| Id-based record collection | `Records` |
+| Unique item collection | `Collection` |
+| Two-key map | `DoubleMap` |
+| Track add/update/remove | `ArrayModifications` |
+| Audit log / time-travel | auditor module |
+| Env-based config (Node) | `createSettings` |
+| Levelled logging | `Logger` |
+| Always-show log message | `logger.always()` |
+| Shared API/data types | models module |
 
 ---
 
-## File Layout (for agents)
+## Related
 
-- **`src/index.ts`** — Root exports; imports extensions for side effects, then re-exports all modules.
-- **`src/extensions/`** — `is`, `to`, `currency`, `ListItem`, plus side-effect imports that extend built-ins (`array`, `object`, `date`, etc.).
-- **`src/errors/`**, **`src/events/`**, **`src/models/`** — Errors, Event, and shared models.
-- **`src/decorators/`** — `@bind`, `@throttle`.
-- **`src/cancellationToken/`**, **`src/settings/`**, **`src/wrappers/`**, **`src/utils/`** — Cancellation, env config, `repeatOnError`, `chain`/`memoize`/`debounce`.
-- **`src/proxy/`** — `createProxyOf`, `getProxyApiFrom`, traverse, public/private models.
-- **`src/subscriptions/`** — `createSubscriber`.
-- **`src/Records/`**, **`src/Collection/`**, **`src/ArrayModifications/`**, **`src/DoubleMap/`** — Collections.
-- **`src/auditor/`** — Audit history and replay.
-- **`src/logger/`** — Logger, listeners, services.
-
-**Search tips:** Use `is.`, `to.`, `Event.`, `Records`, `createProxyOf`, `logger.`, etc. as anchors. Tests live next to source as `*.tests.ts`.
-
----
-
-This file is the single source of truth for agents and developers exploring **@anupheaus/common**. For implementation details, refer to the TypeScript sources and tests under `src/` and `tests/`.
-
+- [`src/extensions/AGENTS.md`](./src/extensions/AGENTS.md) — type guards, coercion, prototype extensions
+- [`src/errors/AGENTS.md`](./src/errors/AGENTS.md) — structured error classes
+- [`src/events/AGENTS.md`](./src/events/AGENTS.md) — typed pub/sub
+- [`src/models/AGENTS.md`](./src/models/AGENTS.md) — shared data/geometry/sort types
+- [`src/proxy/AGENTS.md`](./src/proxy/AGENTS.md) — observable proxies
+- [`src/logger/AGENTS.md`](./src/logger/AGENTS.md) — levelled logger
+- [`src/auditor/AGENTS.md`](./src/auditor/AGENTS.md) — audit history

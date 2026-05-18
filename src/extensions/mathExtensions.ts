@@ -1,6 +1,8 @@
 import './object';
 import { v4 as uuid } from 'uuid';
+import { customAlphabet } from 'nanoid';
 
+const generateNanoId = customAlphabet('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 8);
 
 export class MathExtensions {
 
@@ -12,6 +14,11 @@ export class MathExtensions {
   public uniqueId(): string;
   public uniqueId(this: Math): string {
     return uuid();
+  }
+
+  public nanoId(): string;
+  public nanoId(this: Math): string {
+    return generateNanoId();
   }
 
   public between(value: number, min: number, max: number): number;

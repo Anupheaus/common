@@ -5,8 +5,12 @@ import { Error } from './BaseError';
 interface Props extends Pick<ApiErrorProps, 'url' | 'method' | 'message' | 'body' | 'meta'> { }
 
 export class AuthenticationError extends ApiError {
-  constructor({ url, method, message, body, meta }: Props = {}) {
-    super({ url, method, statusCode: 401, title: 'Authentication Error', message: message ?? 'You need to sign in.', body, meta });
+  constructor(message: string);
+  constructor(props: Props);
+  constructor(messageOrProps: string | Props) {
+    let props = messageOrProps;
+    if (typeof (props) === 'string') props = { message: props };
+    super({ method: 'GET', ...props, statusCode: 401, title: 'Authentication Error' });
   }
 }
 
