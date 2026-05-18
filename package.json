@@ -37,9 +37,9 @@
     "just-diff": "^6.0.2",
     "just-diff-apply": "^5.5.0",
     "luxon": "^3.4.4",
+    "nanoid": "^5.0.0",
     "numeral": "^2.0.6",
     "object-hash": "^3.0.0",
-    "nanoid": "^5.0.0",
     "uuid": "^14.0.0"
   },
   "pnpm": {
@@ -60,7 +60,6 @@
     }
   },
   "devDependencies": {
-    "c8": "^11.0.0",
     "@types/chai": "^4.3.11",
     "@types/chai-as-promised": "^7.1.8",
     "@types/luxon": "^3.4.2",
@@ -70,16 +69,17 @@
     "@types/object-hash": "^3.0.6",
     "@typescript-eslint/eslint-plugin": "^6.13.0",
     "@typescript-eslint/parser": "^6.13.0",
+    "c8": "^11.0.0",
     "chai": "^4.3.10",
     "chai-as-promised": "^7.1.1",
     "eslint": "^8.57.0",
     "eslint-plugin-mocha": "10",
     "mocha": "^11.0.0",
     "ts-node": "^10.9.2",
+    "ts-toolbelt": "^9.6.0",
     "tsup": "^8.0.0",
     "tsx": "^4.22.1",
-    "ts-toolbelt": "^9.6.0",
-    "typescript": "^5.3.3"
+    "typescript": "^6.0.3"
   },
   "packageManager": "pnpm@10.33.2+sha512.a90faf6feeab71ad6c6e57f94e0fe1a12f5dcc22cd754db40ae9593eb6a3e0b6b12e3540218bb37ae083404b1f2ce6db2a4121e979829b4aff94b99f49da1cf8"
 }
