@@ -1,5 +1,5 @@
-import type { TypeEqualityComparator } from 'fast-equals';
-import { createCustomCircularEqual, sameValueZeroEqual } from 'fast-equals';
+import { createCustomEqual, sameValueZeroEqual } from 'fast-equals';
+import type { EqualityComparator } from 'fast-equals';
 import { DateTime } from 'luxon';
 
 export interface IsEqualOptions {
@@ -50,7 +50,7 @@ function getKeys(value: unknown, ignoreUndefined: boolean): (string | symbol)[] 
 }
 
 export function isEqual(value: unknown, other: unknown, isShallow: boolean, { ignoreUndefined = true }: IsEqualOptions = {}): boolean {
-  const areObjectsEqual: TypeEqualityComparator<any, undefined> = (a, b, internalValidator, meta) => {
+  const areObjectsEqual: EqualityComparator<undefined> = (a, b, state) => {
     const aKeys = getKeys(a, ignoreUndefined);
     const bKeys = getKeys(b, ignoreUndefined);
     if (aKeys.length !== bKeys.length) return false;
@@ -60,11 +60,20 @@ export function isEqual(value: unknown, other: unknown, isShallow: boolean, { ig
         compareFunctions(a[key], b[key])
         ?? compareDates(a[key], b[key])
         ?? compareReactNodes(a[key], b[key], isShallow)
-        ?? internalValidator(a[key], b[key], key, key, a, b, meta)
+        ?? state.equals(a[key], b[key], key, key, a, b, state)
       )) return false;
     }
     return true;
   };
-  const validator = createCustomCircularEqual(() => ({ areObjectsEqual, ...(isShallow ? { createIsNestedEqual: () => sameValueZeroEqual } : {}) }));
+  const validator = createCustomEqual<undefined>({
+    circular: true,
+    createCustomConfig: (config) => ({ ...config, areObjectsEqual }),
+    // For shallow equality, override the nested comparator so object properties
+    // are compared by value identity rather than recursing into them.
+    ...(isShallow ? {
+      createInternalComparator: () =>
+        (a, b, _keyA, _keyB, _parentA, _parentB, _state) => sameValueZeroEqual(a, b),
+    } : {}),
+  });
   return validator(value, other);
 }

@@ -112,9 +112,15 @@ describe('errors', () => {
   });
 
   describe('AuthenticationError', () => {
-    it('creates with default message when none provided', () => {
-      const err = new AuthenticationError({});
-      expect(err.message).to.include('sign in');
+    it('creates with a string message', () => {
+      const err = new AuthenticationError('You must sign in');
+      expect(err.message).to.equal('You must sign in');
+      expect(err.statusCode).to.equal(401);
+    });
+
+    it('creates with a props object', () => {
+      const err = new AuthenticationError({ message: 'Token expired', url: '/api/data' });
+      expect(err.message).to.equal('Token expired');
       expect(err.statusCode).to.equal(401);
     });
   });
