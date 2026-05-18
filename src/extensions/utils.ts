@@ -1,6 +1,6 @@
 import objectHash from 'object-hash';
 
-export function hash(target: object | string, options?: objectHash.NormalOption): string {
+export function computeHash(target: object | string, options?: objectHash.NormalOption): string {
   if (target == null) { return ''; }
   return objectHash(target, {
     ignoreUnknown: true,

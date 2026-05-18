@@ -1,5 +1,5 @@
 /* eslint-disable max-classes-per-file */
-import { hash } from './utils';
+import { computeHash as hash } from './utils';
 import './math';
 
 type HashOptions = Parameters<typeof hash>[1];
