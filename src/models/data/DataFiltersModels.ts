@@ -43,22 +43,18 @@ type SingleValueKeys<ValueType> = Partial<Record<typeof DataFilterOperator.singl
 type SingleValueStringKeys<ValueType> = Omit<SingleValueKeys<ValueType>, '$regex'> & { $regex?: RegExp | string; };
 type MultiValueKeys<ValueType> = Partial<Record<typeof DataFilterOperator.multiValueKeys[number], ValueType[]>>;
 type BooleanValueKeys = Partial<Record<typeof DataFilterOperator.booleanKeys[number], boolean>>;
-/* eslint-disable @typescript-eslint/indent */
 type ArrayValueKeys<ValueType extends Array<any>> = Partial<
   Record<typeof DataFilterOperator.arrayValueSingleKeys[number], ValueType[number]> &
   Record<typeof DataFilterOperator.arrayValueMultiKeys[number], ValueType> &
   { $size?: number; }
 >;
-/* eslint-enable @typescript-eslint/indent */
 
-/* eslint-disable @typescript-eslint/indent */
 type WhereClauseWrapper<ValueType> =
   NonNullable<ValueType> extends Array<any> ? ArrayValueKeys<NonNullable<ValueType>> & BooleanValueKeys
   : NonNullable<ValueType> extends string ? SingleValueStringKeys<ValueType> & MultiValueKeys<ValueType> & BooleanValueKeys
   : NonNullable<ValueType> extends PrimitiveType ? SingleValueKeys<ValueType> & MultiValueKeys<ValueType> & BooleanValueKeys
   : NonNullable<ValueType> extends DateTime<any> ? SingleValueKeys<ValueType> & BooleanValueKeys
   : NonNullable<ValueType> extends AnyObject ? DataFilters<NonNullable<ValueType>> & BooleanValueKeys : never;
-/* eslint-enable @typescript-eslint/indent */
 
 type NonArrayOf<ValueType> = ValueType extends Array<infer T> ? T : ValueType;
 

@@ -67,7 +67,7 @@ export function isEqual(value: unknown, other: unknown, isShallow: boolean, { ig
   };
   const validator = createCustomEqual<undefined>({
     circular: true,
-    createCustomConfig: (config) => ({ ...config, areObjectsEqual }),
+    createCustomConfig: config => ({ ...config, areObjectsEqual }),
     // For shallow equality, override the nested comparator so object properties
     // are compared by value identity rather than recursing into them.
     ...(isShallow ? {

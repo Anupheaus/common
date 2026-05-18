@@ -51,12 +51,10 @@ type MakeSingleResultEventDelegate<FuncType extends AnyFunction = AnyFunction> =
 /* eslint-enable max-len */
 
 type GetArgsFromEvent<EventType> = EventType extends EventDelegate<(...args: infer A) => any> ? A : never;
-/* eslint-disable @typescript-eslint/indent */
 type GetReturnValueFromEvent<EventType> =
   EventType extends ArrayResultEventDelegate<(...args: any[]) => infer A> ? (A extends Promise<infer B> ? Promise<B[]> : A[])
   : EventType extends SingleResultEventDelegate<(...args: any[]) => infer A> ? (A extends Promise<infer B> ? Promise<B> : A)
   : never;
-/* eslint-enable @typescript-eslint/indent */
 
 interface Handler<T extends AnyFunction = AnyFunction> extends EventDelegateProps {
   handler: T;

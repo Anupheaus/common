@@ -28,7 +28,6 @@ export type ConstructorOf<T = {}> = new (...args: any[]) => T;
 // helpers
 type IfAny<T, Y, N> = 0 extends (1 & T) ? Y : N;
 type IsUnknown<T> = unknown extends T ? IfAny<T, never, true> : never;
-/* eslint-disable @typescript-eslint/indent */
 type UnknownReplacer<T, K> = K extends [infer WithThis, ...infer WithRest]
   ? T extends [infer ReplaceThis, ...infer ReplaceRest]
   ? IsUnknown<ReplaceThis> extends never
@@ -36,7 +35,6 @@ type UnknownReplacer<T, K> = K extends [infer WithThis, ...infer WithRest]
   : [WithThis, ...UnknownReplacer<ReplaceRest, WithRest>]
   : []
   : T;
-/* eslint-enable @typescript-eslint/indent */
 
 
 /**
