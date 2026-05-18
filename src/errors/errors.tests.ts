@@ -146,5 +146,41 @@ describe('errors', () => {
       expect(err.message).to.include('server error');
       expect(err.statusCode).to.equal(500);
     });
+
+    it('creates with a custom message', () => {
+      const err = new ServerError({ message: 'Database unavailable' });
+      expect(err.message).to.equal('Database unavailable');
+      expect(err.statusCode).to.equal(500);
+    });
+
+    it('accepts no arguments and uses defaults', () => {
+      const err = new ServerError();
+      expect(err.statusCode).to.equal(500);
+      expect(err.message).to.be.a('string').with.length.above(0);
+    });
+  });
+
+  describe('ApiError', () => {
+    it('creates with url, method, statusCode', () => {
+      const err = new ApiError({ url: '/api', method: 'GET', statusCode: 404, message: 'Not found' });
+      expect(err.message).to.equal('Not found');
+      expect(err.statusCode).to.equal(404);
+    });
+
+    it('uses a default message when none is provided', () => {
+      const err = new ApiError({ statusCode: 400 });
+      expect(err.message).to.be.a('string').with.length.above(0);
+    });
+
+    it('defaults statusCode to 500 when not provided', () => {
+      const err = new ApiError({});
+      expect(err.statusCode).to.equal(500);
+    });
+
+    it('stores url and method in meta', () => {
+      const err = new ApiError({ url: '/things', method: 'POST', statusCode: 201 });
+      expect(err.meta?.url).to.equal('/things');
+      expect(err.meta?.method).to.equal('POST');
+    });
   });
 });
