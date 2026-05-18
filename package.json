@@ -32,7 +32,7 @@
   "types": "./dist/index.d.mts",
   "typings": "./dist/index.d.mts",
   "dependencies": {
-    "fast-equals": "^4.0.3",
+    "fast-equals": "^6.0.0",
     "inflection": "^3.0.0",
     "just-diff": "^6.0.2",
     "just-diff-apply": "^5.5.0",
