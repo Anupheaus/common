@@ -9,12 +9,10 @@ import { to } from '../extensions';
 import type { LoggerEntry, LoggerListenerSettings } from './logger-listener';
 import { LoggerListener } from './logger-listener';
 import { LoggerServices } from './logger-services';
-import { AsyncLocalStorage } from 'async_hooks';
-import * as util from 'util';
 import { writeToFile } from './nodeUtils';
 
 const defaultMinLevel = 5;
-let asyncLocalStorage: AsyncLocalStorage<Logger> | undefined;
+let asyncLocalStorage: { getStore(): Logger | undefined; run<T>(logger: Logger, delegate: () => T): T; } | undefined;
 
 interface LevelSettings {
   name: string;
@@ -168,6 +166,7 @@ export class Logger {
     if (is.browser()) throw new Error('This should not be used in the browser.');
 
     if (asyncLocalStorage == null) {
+      const { AsyncLocalStorage } = await import('async_hooks');
       asyncLocalStorage = new AsyncLocalStorage();
     }
     return (asyncLocalStorage as AnyObject).run(this, delegate);
@@ -344,7 +343,7 @@ export class Logger {
       });
     };
     parseMeta(meta);
-    return util.inspect(meta, { depth: null, colors: true });
+    return JSON.stringify(meta, undefined, 2);
   }
 }
 
