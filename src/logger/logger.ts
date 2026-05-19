@@ -9,9 +9,12 @@ import { to } from '../extensions';
 import type { LoggerEntry, LoggerListenerSettings } from './logger-listener';
 import { LoggerListener } from './logger-listener';
 import { LoggerServices } from './logger-services';
+import { AsyncLocalStorage } from 'async_hooks';
+import * as util from 'util';
+import { writeToFile } from './nodeUtils';
 
 const defaultMinLevel = 5;
-let asyncLocalStorage: { getStore(): Logger | undefined; run<T>(logger: Logger, delegate: () => T): T; } | undefined;
+let asyncLocalStorage: AsyncLocalStorage<Logger> | undefined;
 
 interface LevelSettings {
   name: string;
@@ -165,7 +168,6 @@ export class Logger {
     if (is.browser()) throw new Error('This should not be used in the browser.');
 
     if (asyncLocalStorage == null) {
-      const { AsyncLocalStorage } = require('async_hooks');
       asyncLocalStorage = new AsyncLocalStorage();
     }
     return (asyncLocalStorage as AnyObject).run(this, delegate);
@@ -208,7 +210,6 @@ export class Logger {
         console[lvlSettings.consoleMethod](fullMessage, ...[this.#sanitiseMeta(meta)].removeNull());
       }
       if (is.not.blank(settings.filename)) {
-        const { writeToFile } = require('./nodeUtils');
         writeToFile(settings.filename, this.#createNodeMessage(timestamp, lvlSettings, parentNames, message, false), meta);
       }
     } else {
@@ -329,7 +330,6 @@ export class Logger {
 
   #sanitiseMeta(meta?: AnyObject | undefined) {
     if (meta == null) return;
-    const util = require('util');
     const parseMeta = (target: AnyObject | undefined): void => {
       if (target == null) return;
       Reflect.walk(target, ({ get, set }) => {
