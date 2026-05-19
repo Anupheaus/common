@@ -109,7 +109,7 @@ To deserialise a received error object back to its typed class: `new Error(seria
 This library is used by:
 - **`react-ui`** (`@anupheaus/react-ui`) — React component library; uses `is`, `to`, `Event`, `Records`, errors, and models throughout.
 - **`socket-api`** — WebSocket API layer; uses errors, models, and events for typed message passing.
-- **`mxdb-sync`** — MongoDB sync layer; uses models (`DataRequest`/`DataResponse`/`DataFilters`) as the query contract.
+- **`mxdb`** — MongoDB sync layer; uses models (`DataRequest`/`DataResponse`/`DataFilters`) as the query contract.
 
 ## Nuances and gotchas
 

@@ -4,7 +4,7 @@ Shared value types for data APIs, geometry, sorting, arrays, and dates — used 
 
 ## Overview
 
-This module re-exports five sub-modules of pure TypeScript types and constants. There is no runtime logic here beyond the filter operator constant definitions in `data/`. These types are intended to be the shared vocabulary between consumers of this library (e.g. `react-ui`, `socket-api`, `mxdb-sync`) so that request/response shapes, filter operators, and geometry values are consistent.
+This module re-exports five sub-modules of pure TypeScript types and constants. There is no runtime logic here beyond the filter operator constant definitions in `data/`. These types are intended to be the shared vocabulary between consumers of this library (e.g. `react-ui`, `socket-api`, `mxdb`) so that request/response shapes, filter operators, and geometry values are consistent.
 
 ## Contents
 
@@ -45,7 +45,7 @@ Types used by `ArrayModifications` and related utilities.
 
 ## Decision rationale
 
-The filter operators use MongoDB-style `$`-prefixed keys (`$eq`, `$gt`, etc.) because the primary data backend (`mxdb-sync`) is MongoDB-based. Using the same operator vocabulary across the stack avoids a translation layer.
+The filter operators use MongoDB-style `$`-prefixed keys (`$eq`, `$gt`, etc.) because the primary data backend (`mxdb`) is MongoDB-based. Using the same operator vocabulary across the stack avoids a translation layer.
 
 `DataRequest.isEmpty` is a namespace function (not a standalone export) to keep it colocated with the type it operates on, following the TypeScript namespace-as-companion pattern.
 
