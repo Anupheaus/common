@@ -6,8 +6,8 @@ export async function captureConsole(delegate: () => PromiseMaybe<void>) {
   const capture = (methodName: keyof typeof console): [() => void, unknown[][]] => {
     const invocations: unknown[][] = [];
     const old = console[methodName];
-    console[methodName] = ((...args: unknown[]): void => { invocations.push(args); }) as any;
-    return [() => { console[methodName] = old as any; }, invocations];
+    (console as unknown as Record<string, unknown>)[methodName] = (...args: unknown[]): void => { invocations.push(args); };
+    return [() => { (console as unknown as Record<string, unknown>)[methodName] = old; }, invocations];
   };
 
   const [restoreLog, logs] = capture('log');

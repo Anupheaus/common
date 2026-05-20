@@ -16,6 +16,7 @@
       "ESNext",
       "DOM"
     ],
+    "skipLibCheck": true,
     "typeRoots": [
       "./node_modules/@types",
       "./types"
