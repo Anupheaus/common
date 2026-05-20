@@ -62,10 +62,10 @@ Object.addMethods(Function.prototype, [
       .map((match): IFunctionStackTraceInfo | undefined => {
         const result = new RegExp(callStackRegExp, 'gmi').exec(match);
         if (result == null) { return; }
-        const methodName = result[1];
-        const file = result[2];
-        const line = parseInt(result[3], 10);
-        const column = parseInt(result[4], 10);
+        const methodName = result[1]!;
+        const file = result[2]!;
+        const line = parseInt(result[3]!, 10);
+        const column = parseInt(result[4]!, 10);
 
         return {
           methodName,

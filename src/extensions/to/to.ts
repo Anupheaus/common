@@ -134,7 +134,7 @@ class To {
     } else {
       const typeNameAsString = typeNameOrValue instanceof Date ? 'date' : typeNameOrValue instanceof Array ? 'array' : typeNameOrValue as string;
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
-      const mappingFunction: Function = standardDataTypesMapping[typeNameAsString];
+      const mappingFunction: Function = standardDataTypesMapping[typeNameAsString]!;
       return mappingFunction(value, defaultValue);
     }
   }

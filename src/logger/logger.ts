@@ -199,7 +199,7 @@ export class Logger {
     const shouldLogToConsole = alwaysLog.includes(level);
     if (!ignoreLevel && level < settings.minLevel && !shouldLogToConsole) return;
     const timestamp = DateTime.local();
-    const lvlSettings = levelSettings[level];
+    const lvlSettings = levelSettings[level]!;
     const parentNames = this.allNames;
     if (settings.globalMeta) meta = { ...settings.globalMeta, ...meta };
     if (is.node()) {

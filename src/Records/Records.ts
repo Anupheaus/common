@@ -158,7 +158,7 @@ export class Records<T extends Record = Record> {
     if (args.length > 1 && !is.string(id)) throw new Error('Unable to listen for updates. No valid id provided.');
     if (callback == null) throw new Error('Unable to listen for updates. No valid callback provided.');
     return this.onModified(records => {
-      if (args.length > 1) callback(records[0]); else callback(records);
+      if (args.length > 1) callback(records[0]!); else callback(records);
     }, { acceptableIds: [id], acceptableReasons: ['update'] });
   }
 

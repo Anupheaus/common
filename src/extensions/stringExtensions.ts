@@ -73,7 +73,7 @@ export class StringExtensions {
     minimum = Math.max(minimum, 0);
     percentage = Math.between(percentage, 0, 100) / 100;
     if (minimum === 0 && percentage === 0) { return this; }
-    character = character.length === 0 ? '*' : character[0];
+    character = character.length === 0 ? '*' : character[0]!;
 
     if (this.length <= minimum) { return character.repeat(minimum); }
     let hiddenCount = Math.max(Math.floor(this.length * percentage), minimum);
@@ -112,8 +112,8 @@ function editDistance(s1: string, s2: string): number {
         costs[j] = j;
       } else {
         if (j > 0) {
-          let newValue = costs[j - 1];
-          if (s1.charAt(i - 1) != s2.charAt(j - 1)) newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+          let newValue = costs[j - 1]!;
+          if (s1.charAt(i - 1) != s2.charAt(j - 1)) newValue = Math.min(Math.min(newValue, lastValue), costs[j]!) + 1;
           costs[j - 1] = lastValue;
           lastValue = newValue;
         }
@@ -121,7 +121,7 @@ function editDistance(s1: string, s2: string): number {
     }
     if (i > 0) costs[s2.length] = lastValue;
   }
-  return costs[s2.length];
+  return costs[s2.length]!;
 }
 
 export class StringConstructorExtensions {
@@ -149,7 +149,7 @@ export class StringConstructorExtensions {
         } else if (values instanceof Array) {
           const keyIndex = getKeyIndex(values.length);
           if (keyIndex == null) { return; }
-          result.push(values[keyIndex]);
+          result.push(values[keyIndex]!);
         }
       });
       return result.join('').replace(/\$\$/g, value.toString());

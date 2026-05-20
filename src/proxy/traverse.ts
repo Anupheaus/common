@@ -28,9 +28,9 @@ function internalTraverse({ target, isSet: targetIsSet, remainingPath, traversed
   }
   if (remainingPath.length === 0) return { isSet: true, value: target };
   if (typeof (target) !== 'object') return emptyResult;
-  const isSet = Reflect.has(target as object, remainingPath[0]);
-  const value = Reflect.get(target as object, remainingPath[0]);
-  return internalTraverse({ target: value, isSet, remainingPath: remainingPath.slice(1), traversedPath: [...traversedPath, remainingPath[0]], set, onEmptyProperty });
+  const isSet = Reflect.has(target as object, remainingPath[0]!);
+  const value = Reflect.get(target as object, remainingPath[0]!);
+  return internalTraverse({ target: value, isSet, remainingPath: remainingPath.slice(1), traversedPath: [...traversedPath, remainingPath[0]!], set, onEmptyProperty });
 }
 
 export interface TraverseProps extends CommonTraverseProps { }

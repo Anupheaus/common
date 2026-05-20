@@ -5,7 +5,7 @@ export default defineConfig({
   format: ['esm'],
   // ignoreDeprecations silences the TS6 baseUrl warning that tsup injects into
   // its DTS worker (it defaults baseUrl to "." when the tsconfig omits it).
-  dts: { compilerOptions: { skipLibCheck: true, declarationMap: true, ignoreDeprecations: '6.0', types: ['node'] } },
+  dts: { compilerOptions: { skipLibCheck: true, ignoreDeprecations: '6.0', types: ['node'], module: 'ESNext', moduleResolution: 'node' } },
   sourcemap: true,
   clean: true,
   treeshake: true,

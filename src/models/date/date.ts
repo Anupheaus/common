@@ -117,7 +117,7 @@ export namespace DateRange {
       const gaps: DateRange[] = [];
       sortedRanges.forEach((range, index) => {
         if (index === 0) return;
-        const previousRange = sortedRanges[index - 1];
+        const previousRange = sortedRanges[index - 1]!;
         if (previousRange.to < range.from) gaps.push({ from: previousRange.to, to: range.from });
       });
       return gaps;

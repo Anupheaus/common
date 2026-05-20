@@ -10,7 +10,7 @@ import { InternalError } from '../errors';
 
 type FilterDelegate<T> = (item: T, index: number) => boolean;
 type UpdateDelegate<T> = MapDelegate<T, DeepPartial<T>>;
-type CalculationDelegate<T> = (item: T, index: number, prevItem: T, nextItem: T) => number;
+type CalculationDelegate<T> = (item: T, index: number, prevItem: T | undefined, nextItem: T | undefined) => number;
 type DiffMatcherDelegate<T, P> = (sourceItem: T, targetItem: P, sourceIndex: number, targetIndex: number) => boolean;
 type RemoveNull<T> = Exclude<T, null | undefined>;
 
@@ -32,8 +32,8 @@ function performUpsert<T>(target: T[], foundIndex: number, found: UpdateDelegate
   const array = target.slice();
   let item: T = undefined as unknown as T;
   if (foundIndex !== -1) {
-    const originalItem = target[foundIndex];
-    const partialItem = found(target[foundIndex], foundIndex);
+    const originalItem = target[foundIndex]!;
+    const partialItem = found(target[foundIndex]!, foundIndex);
     const isPrimitive = ['string', 'number', 'boolean'].includes(typeof (originalItem));
     const isIndexChanged = !(index == null || foundIndex === index);
     if (isPrimitive) {
@@ -186,7 +186,7 @@ export class ArrayExtensions<T> {
     if (typeof (filter) !== 'function') { throw new ArgumentInvalidError('filter'); }
     let hasRemovedItem = false;
     const clone = this.slice();
-    for (let index = clone.length - 1; index >= 0; index--) { if (filter(clone[index], index)) { clone.splice(index, 1); hasRemovedItem = true; } }
+    for (let index = clone.length - 1; index >= 0; index--) { if (filter(clone[index]!, index)) { clone.splice(index, 1); hasRemovedItem = true; } }
     return hasRemovedItem ? clone : this;
   }
 
@@ -262,7 +262,7 @@ export class ArrayExtensions<T> {
       let hasUpdated = false;
       let array = undefined as unknown as T[];
       for (let index = 0; index < this.length; index++) {
-        if (filter(this[index], index)) {
+        if (filter(this[index]!, index)) {
           hasUpdated = true;
           array = array ?? this.slice();
           array = performUpsert(array, index, (update ?? (item => item)) as UpdateDelegate<T>, undefined, index);
@@ -306,7 +306,7 @@ export class ArrayExtensions<T> {
   public move(this: T[], from: number, to: number): T[] {
     const clone = this.slice();
     const items = clone.splice(from, 1);
-    clone.splice(to, 0, items[0]);
+    clone.splice(to, 0, items[0]!);
     return clone;
   }
 
@@ -440,7 +440,7 @@ export class ArrayExtensions<T> {
     if (typeof (delegate) !== 'function') { delegate = item => item as unknown as number; }
     const values: number[] = [];
     for (let index = 0; index < this.length; index++) {
-      const item = this[index];
+      const item = this[index]!;
       const value = delegate(item, index, this[index - 1], this[index + 1]);
       if (typeof (value) === 'number') { values.push(value); }
     }
@@ -472,7 +472,7 @@ export class ArrayExtensions<T> {
   public any(): T;
   public any(this: T[]): T {
     const random = Math.floor(Math.random() * this.length);
-    return this[random];
+    return this[random]!;
   }
 
   public takeUntil(this: T[], delegate: FilterDelegate<T>): T[];
@@ -480,7 +480,7 @@ export class ArrayExtensions<T> {
   public takeUntil(this: T[], delegate: FilterDelegate<T>, andIncluding = false): T[] {
     const results: T[] = [];
     for (let index = 0; index < this.length; index++) {
-      const item = this[index];
+      const item = this[index]!;
       if (delegate(item, index)) {
         if (andIncluding) { results.push(item); }
         break;
@@ -632,7 +632,7 @@ export class ArrayExtensions<T> {
   public findMap<R>(predicate: (item: T, index: number) => R | undefined): R | undefined;
   public findMap<R>(this: T[], predicate: (item: T, index: number) => R | undefined): R | undefined {
     for (let i = 0; i < this.length; i++) {
-      const result = predicate(this[i], i);
+      const result = predicate(this[i]!, i);
       if (result !== undefined) { return result; }
     }
   }

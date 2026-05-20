@@ -33,7 +33,7 @@ interface FullInternalProxyApi<T extends object = object> {
 }
 
 function getProxyApi(cache: Map<PropertyKey, () => ProxyApi>, context: ProxyContext, fullApi: FullInternalProxyApi): ProxyApi {
-  let propertyKey = context.path[context.path.length - 1];
+  let propertyKey = context.path[context.path.length - 1]!;
   if (propertyKey === null) propertyKey = rootKey;
   if (cache.has(propertyKey)) return cache.get(propertyKey)!();
   const proxyApi = (): ProxyApi => ({
