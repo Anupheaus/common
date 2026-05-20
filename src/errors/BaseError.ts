@@ -66,6 +66,8 @@ export class Error extends global.Error {
     if (error instanceof Error) return error;
   }
 
+  declare message: string;
+  declare name: string;
   #props: InternalProps;
   #hasBeenHandled: boolean;
 
