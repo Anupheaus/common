@@ -88,8 +88,8 @@ importers:
         specifier: ^10.0.0
         version: 10.4.0
       eslint-plugin-mocha:
-        specifier: ^11.0.0
-        version: 11.2.0(eslint@10.4.0)
+        specifier: ^11.3.0
+        version: 11.3.0(eslint@10.4.0)
       globals:
         specifier: ^16.0.0
         version: 16.5.0
@@ -938,8 +938,8 @@ packages:
     resolution: {integrity: sha512-TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA==}
     engines: {node: '>=10'}
 
-  eslint-plugin-mocha@11.2.0:
-    resolution: {integrity: sha512-nMdy3tEXZac8AH5Z/9hwUkSfWu8xHf4XqwB5UEQzyTQGKcNlgFeciRAjLjliIKC3dR1Ex/a2/5sqgQzvYRkkkA==}
+  eslint-plugin-mocha@11.3.0:
+    resolution: {integrity: sha512-anENwrIwmdvunmmssjMn5a4nTd+mYMkqBlwjksxOECcIThLNhefWJIiTWY7pY/arMQFjNwHQjVOZb6pQ9PrLjg==}
     peerDependencies:
       eslint: '>=9.0.0'
 
@@ -2182,7 +2182,7 @@ snapshots:
 
   escape-string-regexp@4.0.0: {}
 
-  eslint-plugin-mocha@11.2.0(eslint@10.4.0):
+  eslint-plugin-mocha@11.3.0(eslint@10.4.0):
     dependencies:
       '@eslint-community/eslint-utils': 4.9.1(eslint@10.4.0)
       eslint: 10.4.0
