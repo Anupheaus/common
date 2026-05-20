@@ -61,8 +61,8 @@ importers:
         specifier: ^10.0.6
         version: 10.0.10
       '@types/node':
-        specifier: ^25.0.0
-        version: 25.8.0
+        specifier: ^25.9.1
+        version: 25.9.1
       '@types/numeral':
         specifier: ^2.0.5
         version: 2.0.5
@@ -70,10 +70,10 @@ importers:
         specifier: ^3.0.6
         version: 3.0.6
       '@typescript-eslint/eslint-plugin':
-        specifier: ^8.59.4
+        specifier: ^8.0.0
         version: 8.59.4(@typescript-eslint/parser@8.59.4(eslint@10.4.0)(typescript@6.0.3))(eslint@10.4.0)(typescript@6.0.3)
       '@typescript-eslint/parser':
-        specifier: ^8.59.4
+        specifier: ^8.0.0
         version: 8.59.4(eslint@10.4.0)(typescript@6.0.3)
       c8:
         specifier: ^11.0.0
@@ -88,17 +88,17 @@ importers:
         specifier: ^10.0.0
         version: 10.4.0
       eslint-plugin-mocha:
-        specifier: ^11.0.0
-        version: 11.2.0(eslint@10.4.0)
+        specifier: ^11.3.0
+        version: 11.3.0(eslint@10.4.0)
       globals:
-        specifier: ^16.0.0
-        version: 16.5.0
+        specifier: ^17.6.0
+        version: 17.6.0
       mocha:
         specifier: ^11.0.0
         version: 11.7.5
       ts-node:
         specifier: ^10.9.2
-        version: 10.9.2(@types/node@25.8.0)(typescript@6.0.3)
+        version: 10.9.2(@types/node@25.9.1)(typescript@6.0.3)
       ts-toolbelt:
         specifier: ^9.6.0
         version: 9.6.0
@@ -106,7 +106,7 @@ importers:
         specifier: ^8.0.0
         version: 8.5.1(tsx@4.22.3)(typescript@6.0.3)
       tsx:
-        specifier: ^4.22.3
+        specifier: ^4.22.1
         version: 4.22.3
       typescript:
         specifier: ^6.0.3
@@ -689,8 +689,8 @@ packages:
   '@types/mocha@10.0.10':
     resolution: {integrity: sha512-xPyYSz1cMPnJQhl0CLMH68j3gprKZaTjG3s5Vi+fDgx+uhG9NOXwbVt52eFS8ECyXhyKcjDLCBEqBExKuiZb7Q==}
 
-  '@types/node@25.8.0':
-    resolution: {integrity: sha512-TCFSk8IZh+iLX1xtksoBVtdmgL+1IX0fC9BeU4QqFSuNdN/K+HUlhqOzEmSYYpZUVsLYcPqc9KX+60iDuninSQ==}
+  '@types/node@25.9.1':
+    resolution: {integrity: sha512-xfrlY7UD5rMJk3ZVJP8BNzS28J36YJg+xp+LPXV1TdWxr8uMH5A860QNxYDGQe/ylDSgjxE52Q9VnO7p75tJxg==}
 
   '@types/numeral@2.0.5':
     resolution: {integrity: sha512-kH8I7OSSwQu9DS9JYdFWbuvhVzvFRoCPCkGxNwoGgaPeDfEPJlcxNvEOypZhQ3XXHsGbfIuYcxcJxKUfJHnRfw==}
@@ -938,8 +938,8 @@ packages:
     resolution: {integrity: sha512-TtpcNJ3XAzx3Gq8sWRzJaVajRs0uVxA2YAkdb1jm2YkPz4G6egUFAyA3n5vtEIZefPk5Wa4UXbKuS5fKkJWdgA==}
     engines: {node: '>=10'}
 
-  eslint-plugin-mocha@11.2.0:
-    resolution: {integrity: sha512-nMdy3tEXZac8AH5Z/9hwUkSfWu8xHf4XqwB5UEQzyTQGKcNlgFeciRAjLjliIKC3dR1Ex/a2/5sqgQzvYRkkkA==}
+  eslint-plugin-mocha@11.3.0:
+    resolution: {integrity: sha512-anENwrIwmdvunmmssjMn5a4nTd+mYMkqBlwjksxOECcIThLNhefWJIiTWY7pY/arMQFjNwHQjVOZb6pQ9PrLjg==}
     peerDependencies:
       eslint: '>=9.0.0'
 
@@ -1059,8 +1059,8 @@ packages:
     resolution: {integrity: sha512-7ACyT3wmyp3I61S4fG682L0VA2RGD9otkqGJIwNUMF1SWUombIIk+af1unuDYgMm082aHYwD+mzJvv9Iu8dsgg==}
     engines: {node: '>=18'}
 
-  globals@16.5.0:
-    resolution: {integrity: sha512-c/c15i26VrJ4IRt5Z89DnIzCGDn9EcebibhAOjw5ibqEHsE1wLUgkPn9RDmNcUKyU87GeaL633nyJ+pplFR2ZQ==}
+  globals@17.6.0:
+    resolution: {integrity: sha512-sepffkT8stwnIYbsMBpoCHJuJM5l98FUF2AnE07hfvE0m/qp3R586hw4jF4uadbhvg1ooIdzuu7CsfD2jzCaNA==}
     engines: {node: '>=18'}
 
   has-flag@4.0.0:
@@ -1891,7 +1891,7 @@ snapshots:
 
   '@types/mocha@10.0.10': {}
 
-  '@types/node@25.8.0':
+  '@types/node@25.9.1':
     dependencies:
       undici-types: 7.24.6
 
@@ -2182,7 +2182,7 @@ snapshots:
 
   escape-string-regexp@4.0.0: {}
 
-  eslint-plugin-mocha@11.2.0(eslint@10.4.0):
+  eslint-plugin-mocha@11.3.0(eslint@10.4.0):
     dependencies:
       '@eslint-community/eslint-utils': 4.9.1(eslint@10.4.0)
       eslint: 10.4.0
@@ -2319,7 +2319,7 @@ snapshots:
 
   globals@15.15.0: {}
 
-  globals@16.5.0: {}
+  globals@17.6.0: {}
 
   has-flag@4.0.0: {}
 
@@ -2660,14 +2660,14 @@ snapshots:
 
   ts-interface-checker@0.1.13: {}
 
-  ts-node@10.9.2(@types/node@25.8.0)(typescript@6.0.3):
+  ts-node@10.9.2(@types/node@25.9.1)(typescript@6.0.3):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       '@tsconfig/node10': 1.0.12
       '@tsconfig/node12': 1.0.11
       '@tsconfig/node14': 1.0.3
       '@tsconfig/node16': 1.0.4
-      '@types/node': 25.8.0
+      '@types/node': 25.9.1
       acorn: 8.16.0
       acorn-walk: 8.3.5
       arg: 4.1.3
