@@ -8,6 +8,10 @@ interface IObfuscateOptions {
   percentage?: number;
   minimum?: number;
   character?: string;
+  /** Index to start hiding from (inclusive). Defaults to percentage/minimum-based start when omitted. */
+  from?: number;
+  /** Index to stop hiding at (exclusive). Negative values count from the end of the string. Defaults to percentage/minimum-based end when omitted. */
+  to?: number;
 }
 
 export class StringExtensions {
@@ -64,16 +68,26 @@ export class StringExtensions {
   public obfuscate(this: string, options?: IObfuscateOptions): string {
     if (this.length === 0) { return this; }
 
-    let { minimum, percentage, character } = {
+    const { from, to } = options ?? {};
+    const character = (options?.character?.length === 0 ? '*' : options?.character?.[0]) ?? '*';
+
+    // Explicit range mode: hide exactly the slice from..to
+    if (from !== undefined || to !== undefined) {
+      const start = Math.max(from ?? 0, 0);
+      const end = Math.min(to !== undefined ? (to < 0 ? this.length + to : to) : this.length, this.length);
+      const hiddenCount = Math.max(end - start, 0);
+      return `${this.substr(0, start)}${character.repeat(hiddenCount)}${this.substr(end)}`;
+    }
+
+    // Percentage/minimum mode (original behaviour)
+    let { minimum, percentage } = {
       minimum: 6,
       percentage: 80,
-      character: '*',
       ...options,
     };
     minimum = Math.max(minimum, 0);
     percentage = Math.between(percentage, 0, 100) / 100;
     if (minimum === 0 && percentage === 0) { return this; }
-    character = character.length === 0 ? '*' : character[0]!;
 
     if (this.length <= minimum) { return character.repeat(minimum); }
     let hiddenCount = Math.max(Math.floor(this.length * percentage), minimum);

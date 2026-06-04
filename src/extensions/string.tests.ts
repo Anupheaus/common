@@ -87,6 +87,38 @@ describe('extensions', () => {
         });
       });
 
+      describe('from/to range mode', () => {
+
+        it('hides from a given index to the end when only from is specified', () => {
+          expect('07712345678'.obfuscate({ from: 3 })).to.eq('077********');
+        });
+
+        it('hides from the start to a given index when only to is specified', () => {
+          expect('07712345678'.obfuscate({ to: 7 })).to.eq('*******5678');
+        });
+
+        it('hides a specific range with both from and to', () => {
+          expect('07712345678'.obfuscate({ from: 3, to: 8 })).to.eq('077*****678');
+        });
+
+        it('supports negative to (count from end)', () => {
+          expect('07712345678'.obfuscate({ from: 3, to: -3 })).to.eq('077*****678');
+        });
+
+        it('supports negative to with only to specified', () => {
+          expect('07712345678'.obfuscate({ to: -4 })).to.eq('*******5678');
+        });
+
+        it('returns unchanged string when range is empty', () => {
+          expect('07712345678'.obfuscate({ from: 5, to: 5 })).to.eq('07712345678');
+        });
+
+        it('respects custom character in range mode', () => {
+          expect('07712345678'.obfuscate({ from: 3, to: -3, character: '#' })).to.eq('077#####678');
+        });
+
+      });
+
     });
 
     describe('pluralize', () => {
