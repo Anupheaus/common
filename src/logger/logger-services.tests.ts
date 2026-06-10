@@ -1,4 +1,7 @@
 import '../extensions/array';
+import fs from 'fs/promises';
+import os from 'os';
+import path from 'path';
 import { LoggerServices } from './logger-services';
 import { DateTime } from 'luxon';
 import type { LoggerEntry } from './logger-listener';
@@ -18,19 +21,21 @@ describe('logger > LoggerServices', () => {
   let originalFetch: typeof globalThis.fetch;
   let capturedUrl: string;
   let capturedInit: RequestInit;
-  let fetchResponse: { ok: boolean; statusText: string };
+  let fetchResponse: { ok: boolean; status: number; statusText: string; body?: string };
 
   beforeEach(() => {
     originalFetch = globalThis.fetch;
     capturedUrl = '';
     capturedInit = {};
-    fetchResponse = { ok: true, statusText: 'OK' };
+    fetchResponse = { ok: true, status: 200, statusText: 'OK' };
     globalThis.fetch = async (url: RequestInfo | URL, init?: RequestInit) => {
       capturedUrl = url.toString();
       capturedInit = init ?? {};
       return {
         ok: fetchResponse.ok,
+        status: fetchResponse.status,
         statusText: fetchResponse.statusText,
+        text: async () => fetchResponse.body ?? '',
       } as Response;
     };
   });
@@ -87,7 +92,7 @@ describe('logger > LoggerServices', () => {
     });
 
     it('does not throw when fetch returns a non-ok response', async () => {
-      fetchResponse = { ok: false, statusText: 'Bad Gateway' };
+      fetchResponse = { ok: false, status: 502, statusText: 'Bad Gateway' };
       const handler = LoggerServices.useGrafanaLoki('u', 'p');
       await expect(handler([makeEntry()])).to.not.be.rejectedWith(Error);
     });
@@ -152,7 +157,7 @@ describe('logger > LoggerServices', () => {
     });
 
     it('does not throw when fetch returns a non-ok response', async () => {
-      fetchResponse = { ok: false, statusText: 'Forbidden' };
+      fetchResponse = { ok: false, status: 403, statusText: 'Forbidden' };
       const handler = LoggerServices.useNewRelic('key');
       await expect(handler([makeEntry()])).to.not.be.rejectedWith(Error);
     });
@@ -161,6 +166,53 @@ describe('logger > LoggerServices', () => {
       globalThis.fetch = async () => { throw new Error('network error'); };
       const handler = LoggerServices.useNewRelic('key');
       await expect(handler([makeEntry()])).to.not.be.rejectedWith(Error);
+    });
+
+  });
+
+  describe('useClippedFileLog', () => {
+
+    const tempDir = path.join(os.tmpdir(), `logger-services-clipped-${process.pid}`);
+    let logFilePath: string;
+
+    beforeEach(async () => {
+      await fs.mkdir(tempDir, { recursive: true });
+      logFilePath = path.join(tempDir, 'test.log');
+    });
+
+    afterEach(async () => {
+      await fs.rm(tempDir, { recursive: true, force: true });
+    });
+
+    it('appends formatted entries to the file', async () => {
+      const handler = LoggerServices.useClippedFileLog(logFilePath);
+      await handler([makeEntry({ message: 'first line' })]);
+      await handler([makeEntry({ message: 'second line' })]);
+
+      const content = await fs.readFile(logFilePath, 'utf8');
+      expect(content).to.include('first line');
+      expect(content).to.include('second line');
+      expect(content.split('\n').filter(Boolean)).to.have.length(2);
+    });
+
+    it('clips the file to maxBytes keeping the newest lines', async () => {
+      const handler = LoggerServices.useClippedFileLog(logFilePath, { maxBytes: 120 });
+      await handler([makeEntry({ message: 'aaaaaaaaaa' })]);
+      await handler([makeEntry({ message: 'bbbbbbbbbb' })]);
+      await handler([makeEntry({ message: 'cccccccccc' })]);
+
+      const content = await fs.readFile(logFilePath, 'utf8');
+      const stat = await fs.stat(logFilePath);
+      expect(stat.size).to.be.at.most(120);
+      expect(content).to.not.include('aaaaaaaaaa');
+      expect(content).to.include('cccccccccc');
+    });
+
+    it('does not throw when the directory is missing', async () => {
+      const nestedPath = path.join(tempDir, 'nested', 'test.log');
+      const handler = LoggerServices.useClippedFileLog(nestedPath);
+      await expect(handler([makeEntry()])).to.not.be.rejectedWith(Error);
+      await expect(fs.stat(nestedPath)).to.not.be.rejectedWith(Error);
     });
 
   });

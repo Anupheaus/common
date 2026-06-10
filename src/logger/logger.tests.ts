@@ -141,6 +141,83 @@ describe('logger', () => {
 
   });
 
+  describe('min level resolution', () => {
+
+    // Unique logger name so tests don't collide with any other LOGGING_ env var that may be set
+    const loggerName = 'MinLevelResolutionTest';
+    const specificKey = `LOG_LEVEL_${loggerName.toUpperCase()}`;
+
+    let savedSpecific: string | undefined;
+    let savedGlobal: string | undefined;
+
+    beforeEach(() => {
+      savedSpecific = process.env[specificKey];
+      savedGlobal = process.env['LOG_LEVEL'];
+      delete process.env[specificKey];
+      delete process.env['LOG_LEVEL'];
+    });
+
+    afterEach(() => {
+      if (savedSpecific === undefined) delete process.env[specificKey];
+      else process.env[specificKey] = savedSpecific;
+      if (savedGlobal === undefined) delete process.env['LOG_LEVEL'];
+      else process.env['LOG_LEVEL'] = savedGlobal;
+      Logger.setMinLevel(undefined);
+    });
+
+    function captureWithEnv(fn: (logger: Logger) => void): LoggerEntry | undefined {
+      // No explicit minLevel in settings — forces env var / global / default resolution
+      const logger = new Logger(loggerName);
+      let entry: LoggerEntry | undefined;
+      const unsub = logger.onLog(e => { entry = e; });
+      fn(logger);
+      unsub();
+      return entry;
+    }
+
+    it('defaults to level 5 when neither env var is set, passing error', () => {
+      const entry = captureWithEnv(l => l.error('should pass'));
+      expect(entry).not.to.be.undefined;
+      expect(entry!.message).to.equal('should pass');
+    });
+
+    it('LOG_LEVEL global allows info through when set to 3', () => {
+      process.env['LOG_LEVEL'] = '3';
+      const entry = captureWithEnv(l => l.info('global info'));
+      expect(entry).not.to.be.undefined;
+      expect(entry!.message).to.equal('global info');
+    });
+
+    it('LOG_LEVEL_<NAME> specific allows debug through when set to 2', () => {
+      process.env[specificKey] = '2';
+      const entry = captureWithEnv(l => l.debug('specific debug'));
+      expect(entry).not.to.be.undefined;
+      expect(entry!.message).to.equal('specific debug');
+    });
+
+    it('LOG_LEVEL_<NAME> specific overrides global — specific=2 allows debug even when global=5', () => {
+      process.env['LOG_LEVEL'] = '5'; // would filter debug
+      process.env[specificKey] = '2'; // specific wins — allows debug
+      const entry = captureWithEnv(l => l.debug('specific wins'));
+      expect(entry).not.to.be.undefined;
+      expect(entry!.message).to.equal('specific wins');
+    });
+
+    it('setMinLevel override is used when no env vars are set', () => {
+      Logger.setMinLevel(2);
+      const entry = captureWithEnv(l => l.debug('override allows debug'));
+      expect(entry).not.to.be.undefined;
+      expect(entry!.message).to.equal('override allows debug');
+    });
+
+    it('listeners receive all entries regardless of minLevel — debug is delivered even with default level 5', () => {
+      const entry = captureWithEnv(l => l.debug('always delivered to listeners'));
+      expect(entry).not.to.be.undefined;
+      expect(entry!.message).to.equal('always delivered to listeners');
+    });
+
+  });
+
   describe('getLevelAsString', () => {
 
     it('returns "silly" for LogLevels.silly', () => {

@@ -12,6 +12,7 @@ Importing from `@anupheaus/common` (the package root) automatically triggers all
 
 ### Type guards and checks
 - `is` — Singleton with type-narrowing checks: `is.null`, `is.string`, `is.number`, `is.boolean`, `is.array`, `is.promise`, `is.guid`, `is.function`, `is.class`, `is.object`, `is.equal`, `is.production`, and more. Use `is.not.*` for negated variants.
+- `sameInstant` (`datetime.ts`) — Luxon `DateTime` same-instant check (`valueOf()`). Used by `is.deepEqual` / `isEqual` for `DateTime` fields (zone/locale ignored). Use `DateTime#equals` when zone and locale must match.
 
 ### Coercion and formatting
 - `to` — Singleton for converting values between types: `to.string`, `to.number`, `to.boolean`, `to.date`, `to.type`. Also provides `serialise`/`deserialise` and `diff` (JSON patch). See [`to/AGENTS.md`](./to/AGENTS.md) for full detail.

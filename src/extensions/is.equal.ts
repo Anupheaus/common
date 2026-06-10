@@ -1,6 +1,7 @@
 import { createCustomEqual, sameValueZeroEqual } from 'fast-equals';
 import type { EqualityComparator } from 'fast-equals';
 import { DateTime } from 'luxon';
+import { sameInstant } from './datetime';
 
 export interface IsEqualOptions {
   ignoreUndefined?: boolean;
@@ -19,7 +20,7 @@ function compareDates(valA: unknown, valB: unknown): boolean | undefined {
   }
   if (DateTime.isDateTime(valA) || DateTime.isDateTime(valB)) {
     if (!(DateTime.isDateTime(valA)) || !(DateTime.isDateTime(valB))) return false;
-    return valA.equals(valB);
+    return sameInstant(valA, valB);
   }
 }
 
@@ -50,6 +51,9 @@ function getKeys(value: unknown, ignoreUndefined: boolean): (string | symbol)[] 
 }
 
 export function isEqual(value: unknown, other: unknown, isShallow: boolean, { ignoreUndefined = true }: IsEqualOptions = {}): boolean {
+  const topLevelDateCompare = compareDates(value, other);
+  if (topLevelDateCompare != null) return topLevelDateCompare;
+
   const areObjectsEqual: EqualityComparator<undefined> = (a, b, state) => {
     const aKeys = getKeys(a, ignoreUndefined);
     const bKeys = getKeys(b, ignoreUndefined);

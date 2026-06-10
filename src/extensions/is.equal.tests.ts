@@ -93,6 +93,13 @@ describe('isEqual', () => {
       expect(isEqual(a, b, false)).to.be.true;
     });
 
+    it('considers DateTimes equal when the instant matches but zones differ', () => {
+      const london = DateTime.fromISO('2026-06-04T10:00:00+01:00', { zone: 'Europe/London' });
+      const utc = london.toUTC();
+      expect(london.equals(utc)).to.be.false;
+      expect(isEqual(london, utc, false)).to.be.true;
+    });
+
     it('considers two different DateTime instances not equal', () => {
       const a = DateTime.fromISO('2024-01-15T12:00:00Z');
       const b = DateTime.fromISO('2024-01-16T12:00:00Z');

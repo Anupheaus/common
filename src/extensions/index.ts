@@ -11,6 +11,7 @@ import './set';
 import './weakMap';
 
 export * from './is';
+export * from './datetime';
 export * from './global';
 export * from './to';
 export * from './promise';

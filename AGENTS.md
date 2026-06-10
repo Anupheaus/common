@@ -1,5 +1,13 @@
 # @anupheaus/common — Agent Guide
 
+## Before making changes
+
+<EXTREMELY_IMPORTANT>
+You MUST read `C:\code\personal\agents\agents.md` before doing anything else in this repo. This is non-negotiable and cannot be skipped under any circumstances.
+</EXTREMELY_IMPORTANT>
+
+---
+
 A TypeScript utility and data-structure library providing extensions, errors, events, collections, proxy utilities, and more.
 
 ---

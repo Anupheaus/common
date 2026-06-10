@@ -50,6 +50,8 @@ interface InternalLoggerSettings extends Omit<Required<LoggerSettings>, 'globalM
   filename: string | undefined;
 }
 
+let globalMinLevelOverride: number | undefined;
+
 const registeredListeners = new Set<LoggerListener>();
 function sendToListeners(entry: LoggerEntry): void {
   registeredListeners.forEach(listener => listener.addEntry(entry));
@@ -59,7 +61,6 @@ export class Logger {
   constructor(name: string, settings?: LoggerSettings) {
     this.#name = name;
     this.#settings = settings;
-    this.#hasStatedLevelInNode = false;
     this.#callbacks = new Set();
   }
 
@@ -83,12 +84,16 @@ export class Logger {
     return getLevelAsStringFromUtils(level);
   }
 
+  /** Sets a global minimum log level override — takes precedence over the default but is overridden by env vars and localStorage. Passing `undefined` clears the override. */
+  public static setMinLevel(level: number | undefined): void {
+    globalMinLevelOverride = level;
+  }
+
   protected parent: Logger | undefined;
 
   #callbacks: Set<(details: LoggerEntry) => void>;
   #name: string;
   #settings?: LoggerSettings;
-  #hasStatedLevelInNode: boolean;
 
 
   public silly(message: string, meta?: AnyObject): void {
@@ -196,32 +201,34 @@ export class Logger {
 
   protected report(level: number, message: string, meta?: AnyObject, ignoreLevel = false): void {
     const settings = this.settings;
-    const shouldLogToConsole = alwaysLog.includes(level);
-    if (!ignoreLevel && level < settings.minLevel && !shouldLogToConsole) return;
+    const passesLevelCheck = ignoreLevel || level >= settings.minLevel || alwaysLog.includes(level);
     const timestamp = DateTime.local();
     const lvlSettings = levelSettings[level]!;
     const parentNames = this.allNames;
     if (settings.globalMeta) meta = { ...settings.globalMeta, ...meta };
-    if (is.node()) {
-      const useColors = this.settings.useColors;
-      const fullMessage = `${this.#createNodeMessage(timestamp, lvlSettings, parentNames, message, useColors)}${meta == null ? '' : '\n'}`;
-      if (is.blank(settings.filename) || shouldLogToConsole) {
-        console[lvlSettings.consoleMethod](fullMessage, ...[this.#sanitiseMeta(meta)].removeNull());
+    // Console/file output is gated by the level check; listeners always receive every entry.
+    if (passesLevelCheck) {
+      if (is.node()) {
+        const useColors = this.settings.useColors;
+        const fullMessage = `${this.#createNodeMessage(timestamp, lvlSettings, parentNames, message, useColors)}${meta == null ? '' : '\n'}`;
+        if (is.blank(settings.filename) || alwaysLog.includes(level)) {
+          console[lvlSettings.consoleMethod](fullMessage, ...[this.#sanitiseMeta(meta)].removeNull());
+        }
+        if (is.not.blank(settings.filename)) {
+          writeToFile(settings.filename, this.#createNodeMessage(timestamp, lvlSettings, parentNames, message, false), meta);
+        }
+      } else {
+        const parts: string[] = [];
+        const css: string[] = [];
+        if (settings.includeTimestamp) { parts.push(`%c[${timestamp.toFormat('dd/MM/yyyy HH:mm:ss:SSS')}]`); css.push('color:#999;'); }
+        parts.push(`%c[${lvlSettings.name.toUpperCase().padEnd(5)}]`);
+        css.push(`color:${lvlSettings.levelColors.browserTextColor ?? '#fff'};background-color:${lvlSettings.levelColors.browserBackgroundColor ?? 'transparent'};`);
+        parts.push(`%c[${parentNames.join(' > ')}]`); css.push('color:#fff;');
+        parts.push(`%c${message}`); css.push('color:#f5d42d;');
+        const allCss = css.map(part => [part, 'color:unset;background-color:unset;']).flatten();
+        allCss.pop();
+        console.log(`${parts.join('%c ')}\n`, ...allCss, ...[meta].removeNull());
       }
-      if (is.not.blank(settings.filename)) {
-        writeToFile(settings.filename, this.#createNodeMessage(timestamp, lvlSettings, parentNames, message, false), meta);
-      }
-    } else {
-      const parts: string[] = [];
-      const css: string[] = [];
-      if (settings.includeTimestamp) { parts.push(`%c[${timestamp.toFormat('dd/MM/yyyy HH:mm:ss:SSS')}]`); css.push('color:#999;'); }
-      parts.push(`%c[${lvlSettings.name.toUpperCase().padEnd(5)}]`);
-      css.push(`color:${lvlSettings.levelColors.browserTextColor ?? '#fff'};background-color:${lvlSettings.levelColors.browserBackgroundColor ?? 'transparent'};`);
-      parts.push(`%c[${parentNames.join(' > ')}]`); css.push('color:#fff;');
-      parts.push(`%c${message}`); css.push('color:#f5d42d;');
-      const allCss = css.map(part => [part, 'color:unset;background-color:unset;']).flatten();
-      allCss.pop();
-      console.log(`${parts.join('%c ')}\n`, ...allCss, ...[meta].removeNull());
     }
     this.#invokeCallbacks({ timestamp, names: parentNames, level, message, meta });
   }
@@ -253,30 +260,37 @@ export class Logger {
   protected getMinLevel(): number {
     if (this.parent?.settings.minLevel != null) return this.parent.settings.minLevel;
     if (this.#settings?.minLevel != null) return this.#settings.minLevel;
-    let name = this.allNames.join('_').replace(/-/g, '_').replace(/\s/g, '_');
+
+    const baseName = this.allNames.join('_').replace(/-/g, '_').replace(/\s/g, '_');
+
     const parseLevel = (value: string | null | undefined): number | undefined => {
       if (value == null) return undefined;
       const level = parseInt(value);
       if (!isNaN(level)) return Math.between(level, 0, 7);
     };
+
     if (is.browser()) {
-      name = `Logging.${name.replace(/_/g, '.')}`;
+      const specificKey = `LogLevel.${baseName.replace(/_/g, '.')}`;
       const localStorage = window.localStorage;
       if (localStorage) {
-        const level = parseLevel(localStorage.getItem(name));
-        if (level != null) return level;
-        localStorage.setItem(name, defaultMinLevel.toString());
+        const specificLevel = parseLevel(localStorage.getItem(specificKey));
+        if (specificLevel != null) return specificLevel;
+        const globalLevel = parseLevel(localStorage.getItem('LogLevel'));
+        if (globalLevel != null) return globalLevel;
+        // Place a visible placeholder so developers can find and configure the key
+        localStorage.setItem(specificKey, defaultMinLevel.toString());
       }
     }
+
     if (is.node() && process && process.env) {
-      name = `LOGGING_${name.toUpperCase()}`;
-      const level = parseLevel(process.env[name]);
-      if (!this.#hasStatedLevelInNode) {
-        this.#hasStatedLevelInNode = true;
-        if (level == null) this.report(3, `No level set for logger '${this.#name}' in environment variable '${name}'. Defaulting to ${defaultMinLevel}.`, undefined, true);
-      }
-      if (level != null) return level;
+      const specificLevel = parseLevel(process.env[`LOG_LEVEL_${baseName.toUpperCase()}`]);
+      if (specificLevel != null) return specificLevel;
+      const globalLevel = parseLevel(process.env['LOG_LEVEL']);
+      if (globalLevel != null) return globalLevel;
     }
+
+    if (globalMinLevelOverride != null) return globalMinLevelOverride;
+
     return defaultMinLevel;
   }
 

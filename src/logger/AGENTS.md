@@ -21,6 +21,7 @@ This module provides the `Logger` class and supporting infrastructure for struct
 ### Remote sinks (`logger-services.ts`, not exported from index)
 - `useGrafanaLoki(userName, password, server?)` — Returns an `onTrigger` callback that pushes entries to Grafana Loki.
 - `useNewRelic(apiKey, server?)` — Returns an `onTrigger` callback that pushes entries to New Relic.
+- `useClippedFileLog(filePath, options?)` — Appends formatted entries to a local file and clips to `maxBytes` (default 200 MB), keeping the newest tail. Serialized writes; creates parent directories as needed.
 
 These are not exported from `index.ts`; import directly from `./logger-services` if needed.
 
@@ -47,6 +48,6 @@ Sub-loggers share the parent's `LoggerSettings` and broadcast to the same global
 
 - **`logger.always` is not for every message**: it is for critical messages that should never be filtered (e.g. startup confirmation, fatal shutdown notice). Overusing it defeats filtering entirely.
 - **`names` is an array**: single loggers have `names: ['LoggerName']`; sub-loggers have `names: ['Parent', 'Child']`. Sinks that format entries should `names.join(' > ')` rather than assuming a single name.
-- **`logger-services.ts` is not in the index**: `useGrafanaLoki` and `useNewRelic` are available but must be imported explicitly. They hardcode `'app': 'vision'` and `'env': 'dev'` in the stream labels — these may need updating for other projects.
+- **`logger-services.ts` is not in the index**: `useGrafanaLoki`, `useNewRelic`, and `useClippedFileLog` are available via `Logger.services`. Grafana Loki and New Relic hardcode `'app': 'vision'` and `'env': 'dev'` in the stream labels — these may need updating for other projects.
 - **File output is Node-only**: the `filename` setting in `LoggerSettings` routes entries to `nodeUtils.writeToFile`, which uses `fs`. This will throw in browser environments.
 - **`nodeTest.ts` is not a test suite**: it is a scratch script for manually verifying log output format. It is not run by the test runner.
