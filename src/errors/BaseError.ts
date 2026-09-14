@@ -45,7 +45,10 @@ export class Error extends global.Error {
         const errorTypeAsString = anyError['@error'];
         if (errorTypeAsString != null) {
           const errorType = errorTypes.get(errorTypeAsString as string);
-          if (errorType) return new errorType(props);
+          // Pass the unwrapped error object (which carries @error/message/etc at the
+          // top level) to the typed constructor — not the { error } wrapper, which
+          // hides `message` and causes typed errors to lose it (or recurse).
+          if (errorType && errorType !== new.target) return new errorType(anyError);
         }
         if (typeof anyError.message === 'string' && anyError.message.length > 0) props.message = anyError.message;
         if (typeof anyError.name === 'string' && anyError.name.length > 0) props.title = anyError.name;

@@ -103,6 +103,13 @@ describe('serialisation', () => {
       expect((result as BaseError).message).to.equal('something broke');
     });
 
+    it('preserves the message when deserialising a registered typed error', () => {
+      const errObj = { '@error': 'InternalError', message: 'boom', title: 'Internal Error', name: 'InternalError' };
+      const result = deserialise(errObj) as BaseError;
+      expect(result).to.be.instanceOf(BaseError);
+      expect(result.message).to.equal('boom');
+    });
+
     it('recursively deserialises nested object values', () => {
       const obj = { timestamp: '2024-06-01T08:00:00.000Z', label: 'hello' };
       const result = deserialise(obj) as Record<string, unknown>;

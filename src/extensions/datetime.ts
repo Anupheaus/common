@@ -1,4 +1,4 @@
-import { DateTime } from 'luxon';
+import type { DateTime } from 'luxon';
 
 /**
  * True when both values are valid Luxon DateTimes for the same instant (epoch ms).
