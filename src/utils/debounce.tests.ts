@@ -65,4 +65,37 @@ describe('debounce', () => {
     await Promise.all([p1, p2]);
     expect(execCount).to.equal(1);
   });
+
+  it('cancel prevents a pending call from executing', async () => {
+    let called = false;
+    const fn = debounce(() => { called = true; }, 20);
+    fn();
+    fn.cancel();
+    await Promise.delay(40);
+    expect(called).to.be.false;
+  });
+
+  it('cancel resolves the pending promise cleanly without running func', async () => {
+    let called = false;
+    const fn = debounce(() => { called = true; }, 20);
+    const p = fn();
+    fn.cancel();
+    await p; // must resolve rather than hang or reject
+    expect(called).to.be.false;
+  });
+
+  it('cancel is a no-op when nothing is pending', () => {
+    const fn = debounce(() => {}, 20);
+    expect(() => fn.cancel()).to.not.throw();
+  });
+
+  it('can debounce again after cancel', async () => {
+    let count = 0;
+    const fn = debounce(() => count++, 20);
+    fn();
+    fn.cancel();
+    fn();
+    await Promise.delay(40);
+    expect(count).to.equal(1);
+  });
 });
