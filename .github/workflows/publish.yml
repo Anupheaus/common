@@ -7,11 +7,17 @@ on:
 
 jobs:
   Prepare:
+    concurrency:
+      group: prepare-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     steps:
       - uses: Anupheaus/ci-templates/.github/actions/pnpm-setup@v1
 
   Validate:
+    concurrency:
+      group: validate-${{ github.ref }}
+      cancel-in-progress: true
     needs: Prepare
     runs-on: ubuntu-latest
     steps:
@@ -38,6 +44,9 @@ jobs:
           exit-code: 1
 
   Test:
+    concurrency:
+      group: test-${{ github.ref }}
+      cancel-in-progress: true
     needs: Prepare
     runs-on: ubuntu-latest
     steps:
@@ -51,6 +60,9 @@ jobs:
           fail_ci_if_error: false
 
   Publish:
+    concurrency:
+      group: publish-${{ github.ref }}
+      cancel-in-progress: false
     needs: [Validate, Test]
     runs-on: ubuntu-latest
     if: github.repository_owner == 'Anupheaus'
