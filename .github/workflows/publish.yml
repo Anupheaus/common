@@ -49,10 +49,21 @@ jobs:
       cancel-in-progress: true
     needs: Prepare
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      statuses: write
     steps:
       - uses: Anupheaus/ci-templates/.github/actions/pnpm-setup@v1
       - name: Run tests with coverage
-        run: pnpm exec c8 --reporter=lcov --reporter=text mocha --config ./tests/mocha.js
+        run: pnpm exec c8 --reporter=lcov --reporter=text --reporter=json-summary mocha --config ./tests/mocha.js
+      - name: Publish coverage status
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PCT="$(node -e "const fs=require('fs');const files=['coverage/coverage-summary.json','coverage/vitest/coverage-summary.json'];const file=files.find(p=>fs.existsSync(p));if(!file)process.exit(1);const pct=Math.round(JSON.parse(fs.readFileSync(file,'utf8')).total.lines.pct);if(!Number.isFinite(pct)||pct<0||pct>100)process.exit(1);process.stdout.write(String(pct));")" || exit 0
+          gh api "repos/${{ github.repository }}/statuses/${{ github.sha }}" -f state=success -f context=coverage -f description="${PCT}%"
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:

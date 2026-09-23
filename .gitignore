@@ -15,6 +15,7 @@ node_modules
 
 # generated code
 dist
+coverage/
 
 # Claude Code local settings
 .claude/settings.local.json
