@@ -1,0 +1,11 @@
+{
+  "all": true,
+  "src": ["src"],
+  "extension": [".ts", ".tsx"],
+  "exclude": [
+    "**/*.tests.ts",
+    "**/*.tests.tsx",
+    "**/*.d.ts"
+  ],
+  "reporter": ["text", "json-summary", "lcov"]
+}

@@ -56,7 +56,7 @@ jobs:
     steps:
       - uses: Anupheaus/ci-templates/.github/actions/pnpm-setup@v1
       - name: Run tests with coverage
-        run: pnpm exec c8 --reporter=lcov --reporter=text --reporter=json-summary mocha --config ./tests/mocha.js
+        run: pnpm exec c8 mocha --config ./tests/mocha.js
       - name: Publish coverage status
         if: always()
         env:
