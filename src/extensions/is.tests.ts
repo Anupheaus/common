@@ -762,21 +762,24 @@ describe('is', () => {
 
   describe('not.blank', () => {
 
-    it('returns true for non-empty strings (including whitespace-only)', () => {
+    it('returns true for strings with visible text, however it is padded', () => {
       expect(is.not.blank('hello')).to.be.true;
       expect(is.not.blank('  x  ')).to.be.true;
-      // whitespace-only has length > 0 so is.not.blank considers it non-blank
-      expect(is.not.blank('   ')).to.be.true;
     });
 
-    it('returns false for empty string and non-strings', () => {
+    it('returns false for empty and whitespace-only strings, mirroring is.blank', () => {
       expect(is.not.blank('')).to.be.false;
+      expect(is.not.blank('   ')).to.be.false;
+      expect(is.not.blank('\t\n')).to.be.false;
+    });
+
+    it('returns false for non-strings', () => {
       expect(is.not.blank(null)).to.be.false;
       expect(is.not.blank(undefined)).to.be.false;
     });
 
-    it('can be used in an array filter — filters out empty strings and non-strings', () => {
-      const values: unknown[] = ['hello', '', null, 'world'];
+    it('can be used in an array filter — filters out empty, whitespace-only and non-string values', () => {
+      const values: unknown[] = ['hello', '', '   ', null, 'world'];
       const result = (values as string[]).filter(is.not.blank);
       expect(result).to.deep.equal(['hello', 'world']);
     });

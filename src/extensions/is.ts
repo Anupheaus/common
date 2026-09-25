@@ -252,7 +252,8 @@ export class IsNot {
   public blank(...values: unknown[]): boolean {
     // check if being used in a array.filter (value, index, array)
     if (values.length === 3 && typeof (values[1]) === 'number' && values[2] instanceof Array) { values = [values[0]]; }
-    return values.every(item => typeof (item) === 'string' && item.length > 0);
+    // Mirrors `is.blank`: whitespace-only text is blank, so it is not "not blank" either.
+    return values.every(item => typeof (item) === 'string' && item.trim().length > 0);
   }
 
   public object(value: unknown): boolean {
