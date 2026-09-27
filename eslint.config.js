@@ -34,6 +34,10 @@ module.exports = [
       'no-console': 'warn',
       'no-alert': 'warn',
       'no-unused-labels': 'error',
+      // This package ships to browsers as well as Node, and the globals above include Node's, so
+      // nothing objected to `global` until a browser loaded the published build and threw on it.
+      // `globalThis` means the same thing in both and is available everywhere we target.
+      'no-restricted-globals': ['error', { name: 'global', message: 'Use globalThis: `global` does not exist in a browser, and this package runs in one.' }],
       'sort-imports': 'off',
       'no-unused-vars': 'off',
       'no-shadow': 'off',

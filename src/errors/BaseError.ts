@@ -15,7 +15,10 @@ interface InternalProps {
 
 interface Props extends Partial<InternalProps> { }
 
-export class Error extends global.Error {
+// `globalThis`, not `global`: this package runs in browsers too, where `global` does not exist. Bundling
+// from source hid that — a bundler shims the name — but the published build is a strict ES module, where
+// `global` is simply an undefined free variable, so importing this threw on load and took the app with it.
+export class Error extends globalThis.Error {
   constructor(props: Props) {
     super('');
     this.#props = {
