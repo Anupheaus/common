@@ -37,6 +37,13 @@
     "Agents.md"
   ],
   "types": "./dist/index.d.mts",
+  "typesVersions": {
+    "*": {
+      "node": [
+        "./dist/node.d.mts"
+      ]
+    }
+  },
   "typings": "./dist/index.d.mts",
   "dependencies": {
     "fast-equals": "^6.0.0",
