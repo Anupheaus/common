@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import type { LoggerEntry } from './logger-listener';
 import { getLevelAsString } from './logger-utils';
+import { useAxiom } from './logger-axiom';
 
 const defaultClippedFileMaxBytes = 200 * 1024 * 1024;
 
@@ -62,15 +63,21 @@ function useGrafanaLoki(userName: string, password: string, server: string = 'lo
   };
 }
 
-function useNewRelic(apiKey: string, server: string = 'log-api.eu.newrelic.com') {
+/** Labels a sink puts on every entry, so production and development logs are told apart. */
+export interface LogLabels {
+  app: string;
+  env: string;
+}
+
+function useNewRelic(apiKey: string, server: string = 'log-api.eu.newrelic.com', labels: LogLabels = { app: 'vision', env: 'dev' }) {
   const url = `https://${server}/log/v1`;
   return async (entries: LoggerEntry[]) => {
     try {
       const body = entries.groupBy(entry => entry.level).toArray().map(([level, levelEntries]) => ({
         common: {
           attributes: {
-            'app': 'vision',
-            'env': 'dev',
+            'app': labels.app,
+            'env': labels.env,
             'level': getLevelAsString(level),
           },
         },
@@ -130,6 +137,7 @@ function useClippedFileLog(filePath: string, options: ClippedFileLogOptions = {}
 export type LoggerService = (entries: LoggerEntry[]) => Promise<void>;
 
 export const LoggerServices = {
+  useAxiom,
   useClippedFileLog,
   useGrafanaLoki,
   useNewRelic,
