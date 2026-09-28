@@ -20,7 +20,7 @@ This module provides the `Logger` class and supporting infrastructure for struct
 
 ### Remote sinks (`logger-services.ts`, not exported from index)
 - `useGrafanaLoki(userName, password, server?)` — Returns an `onTrigger` callback that pushes entries to Grafana Loki.
-- `useAxiom({ token, dataset, app, env, url?, maxAttempts?, retryDelayMs?, maxQueueEntries?, warn?, fetch? })` (`logger-axiom.ts`) — ships entries to Axiom's ingest API (`<url>/v1/datasets/<dataset>/ingest`, default `https://api.axiom.co`) as gzipped JSON events.
+- `useAxiom({ token, dataset, app, env, url?, maxAttempts?, retryDelayMs?, maxQueueEntries?, warn?, fetch? })` (`logger-axiom.ts`) — **Node-only: import it from `@anupheaus/common/node`**, not the main entry. Ships entries to Axiom's ingest API (`<url>/v1/datasets/<dataset>/ingest`, default `https://api.axiom.co`) as gzipped JSON events.
   - Every event carries `_time`, the configured `app` and `env`, its `level` name, its `logger` names, the `message` and `meta`. An `Error` in the meta is sent as name, message and stack.
   - A 429, a 5xx or a network failure is retried with backoff (1s, 2s, 4s; 4 attempts). Any other refusal, or the last failure, drops that batch with one warning.
   - One send at a time; the queue is bounded (10,000 entries, oldest dropped first) so an outage cannot exhaust memory.
@@ -29,6 +29,12 @@ This module provides the `Logger` class and supporting infrastructure for struct
 - `useClippedFileLog(filePath, options?)` — Appends formatted entries to a local file and clips to `maxBytes` (default 200 MB), keeping the newest tail. Serialized writes; creates parent directories as needed.
 
 These are not exported from `index.ts`; import directly from `./logger-services` if needed.
+
+### Browser safety
+
+The main entry (`dist/index.mjs`) is bundled into browser apps, so it imports **no Node built-in**, statically or dynamically.
+- Code needing one either lives in the Node-only entry `src/node.ts` (`@anupheaus/common/node`, e.g. `useAxiom`, which needs `zlib`), or loads the built-in at call time with `nodeBuiltin(id)` (`nodeBuiltins.ts`, via `process.getBuiltinModule`, which bundlers never see). The Logger's file output, `useClippedFileLog` and `Logger.provide`'s `AsyncLocalStorage` do the latter.
+- `scripts/check-browser-entry.mjs` (`pnpm run check:browser-entry`) fails the build when the main entry imports a built-in. CI runs it in Validate and before every publish. Common 0.2.10 shipped `zlib`, `fs` and `util` in the main entry and broke every browser build.
 
 ### Internal / Node-only files (not exported)
 - `logger-utils.ts` — Defines `LogLevels` constant and `getLevelAsString(level)` helper. Re-exported via `logger.ts`.

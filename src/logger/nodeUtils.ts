@@ -1,6 +1,5 @@
-import fs from 'fs';
-import path from 'path';
 import type { AnyObject } from '../extensions';
+import { nodeBuiltin } from './nodeBuiltins';
 
 function stripToOnlyPrintableCharacters(str: string) {
   // eslint-disable-next-line no-useless-escape
@@ -14,6 +13,8 @@ export function writeToFile(filename: string, message: string, meta: AnyObject |
   message = stripToOnlyPrintableCharacters(message);
   const fullMessage = `${message}\n${meta != null ? `${JSON.stringify(meta, undefined, 2)}\n` : ''}`;
   try {
+    const fs = nodeBuiltin('fs');
+    const path = nodeBuiltin('path');
     if (!checkedFiles.has(filename)) {
       checkedFiles.add(filename);
       if (!fs.existsSync(path.dirname(filename))) fs.mkdirSync(path.dirname(filename), { recursive: true });

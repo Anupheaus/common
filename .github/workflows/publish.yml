@@ -26,6 +26,9 @@ jobs:
         run: pnpm exec eslint src --ext .ts,.tsx
       - name: Type check
         run: pnpm exec tsc -p tsconfig.build.json --noEmit
+      # The main entry is bundled into browser apps: it must import no Node built-in (common 0.2.10 did, and broke them).
+      - name: Browser-safe main entry
+        run: pnpm run build && pnpm run check:browser-entry
       - name: Security audit
         run: pnpm audit --audit-level high
       - name: Secret scan
@@ -93,6 +96,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Build
         run: pnpm run build
+      - name: Browser-safe main entry
+        run: pnpm run check:browser-entry
       - name: Pack
         run: pnpm pack
       - name: Publish

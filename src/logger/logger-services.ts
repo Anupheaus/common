@@ -1,8 +1,6 @@
-import fs from 'fs/promises';
-import path from 'path';
 import type { LoggerEntry } from './logger-listener';
+import { nodeBuiltin } from './nodeBuiltins';
 import { getLevelAsString } from './logger-utils';
-import { useAxiom } from './logger-axiom';
 
 const defaultClippedFileMaxBytes = 200 * 1024 * 1024;
 
@@ -20,6 +18,7 @@ function formatLogEntryForFile(entry: LoggerEntry): string {
 }
 
 async function clipFileToMaxBytes(filePath: string, maxBytes: number): Promise<void> {
+  const fs = nodeBuiltin('fs/promises');
   const stat = await fs.stat(filePath);
   if (stat.size <= maxBytes) return;
 
@@ -119,6 +118,8 @@ function useClippedFileLog(filePath: string, options: ClippedFileLogOptions = {}
     const text = entries.map(formatLogEntryForFile).join('');
     writeChain = writeChain.then(async () => {
       try {
+        const fs = nodeBuiltin('fs/promises');
+        const path = nodeBuiltin('path');
         if (!directoryEnsured) {
           await fs.mkdir(path.dirname(filePath), { recursive: true });
           directoryEnsured = true;
@@ -137,7 +138,6 @@ function useClippedFileLog(filePath: string, options: ClippedFileLogOptions = {}
 export type LoggerService = (entries: LoggerEntry[]) => Promise<void>;
 
 export const LoggerServices = {
-  useAxiom,
   useClippedFileLog,
   useGrafanaLoki,
   useNewRelic,
