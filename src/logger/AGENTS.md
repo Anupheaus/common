@@ -20,7 +20,12 @@ This module provides the `Logger` class and supporting infrastructure for struct
 
 ### Remote sinks (`logger-services.ts`, not exported from index)
 - `useGrafanaLoki(userName, password, server?)` — Returns an `onTrigger` callback that pushes entries to Grafana Loki.
-- `useNewRelic(apiKey, server?)` — Returns an `onTrigger` callback that pushes entries to New Relic.
+- `useAxiom({ token, dataset, app, env, url?, maxAttempts?, retryDelayMs?, maxQueueEntries?, warn?, fetch? })` (`logger-axiom.ts`) — ships entries to Axiom's ingest API (`<url>/v1/datasets/<dataset>/ingest`, default `https://api.axiom.co`) as gzipped JSON events.
+  - Every event carries `_time`, the configured `app` and `env`, its `level` name, its `logger` names, the `message` and `meta`. An `Error` in the meta is sent as name, message and stack.
+  - A 429, a 5xx or a network failure is retried with backoff (1s, 2s, 4s; 4 attempts). Any other refusal, or the last failure, drops that batch with one warning.
+  - One send at a time; the queue is bounded (10,000 entries, oldest dropped first) so an outage cannot exhaust memory.
+  - It reports its own failures through `warn` (default `console.warn`), never through the logger it ships for.
+- `useNewRelic(apiKey, server?, labels?)` — Returns an `onTrigger` callback that pushes entries to New Relic, labelled with `labels.app` / `labels.env` (default `vision` / `dev`, the old hard-coded values).
 - `useClippedFileLog(filePath, options?)` — Appends formatted entries to a local file and clips to `maxBytes` (default 200 MB), keeping the newest tail. Serialized writes; creates parent directories as needed.
 
 These are not exported from `index.ts`; import directly from `./logger-services` if needed.
