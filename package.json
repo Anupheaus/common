@@ -8,6 +8,12 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.mjs",
       "default": "./dist/index.mjs"
+    },
+    "./node": {
+      "types": "./dist/node.d.mts",
+      "import": "./dist/node.mjs",
+      "require": "./dist/node.mjs",
+      "default": "./dist/node.mjs"
     }
   },
   "repository": "https://github.com/Anupheaus/common.git",
@@ -23,7 +29,8 @@
     "build:dev": "anux build dev",
     "test": "mocha --config ./tests/mocha.js --watch",
     "test-ci": "mocha --config ./tests/mocha.js",
-    "findDeclarationErrors": "tsc -p tsconfig.build.json"
+    "findDeclarationErrors": "tsc -p tsconfig.build.json",
+    "check:browser-entry": "node scripts/check-browser-entry.mjs"
   },
   "files": [
     "dist",

@@ -10,6 +10,7 @@ import type { LoggerEntry, LoggerListenerSettings } from './logger-listener';
 import { LoggerListener } from './logger-listener';
 import { LoggerServices } from './logger-services';
 import { writeToFile } from './nodeUtils';
+import { nodeBuiltin } from './nodeBuiltins';
 
 const defaultMinLevel = 5;
 let asyncLocalStorage: { getStore(): Logger | undefined; run<T>(logger: Logger, delegate: () => T): T; } | undefined;
@@ -171,7 +172,7 @@ export class Logger {
     if (is.browser()) throw new Error('This should not be used in the browser.');
 
     if (asyncLocalStorage == null) {
-      const { AsyncLocalStorage } = await import('async_hooks');
+      const { AsyncLocalStorage } = nodeBuiltin('async_hooks');
       asyncLocalStorage = new AsyncLocalStorage();
     }
     return (asyncLocalStorage as AnyObject).run(this, delegate);
