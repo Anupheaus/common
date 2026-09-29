@@ -116,6 +116,44 @@ describe('isEqual', () => {
     it('considers a Date not equal to a non-Date', () => {
       expect(isEqual(new Date('2024-01-15'), '2024-01-15', false)).to.be.false;
     });
+
+    it('considers two invalid Dates equal, and an invalid Date not equal to a valid one', () => {
+      expect(isEqual(new Date('not a date'), new Date('nor this'), false)).to.be.true;
+      expect(isEqual(new Date('not a date'), new Date('2024-01-15'), false)).to.be.false;
+    });
+
+    it('considers two invalid DateTimes equal only when they are invalid for the same reason', () => {
+      expect(isEqual(DateTime.invalid('bad input'), DateTime.invalid('bad input'), false)).to.be.true;
+      expect(isEqual({ at: DateTime.invalid('bad input') }, { at: DateTime.invalid('bad input') }, false)).to.be.true;
+      expect(isEqual(DateTime.invalid('bad input'), DateTime.invalid('another reason'), false)).to.be.false;
+      expect(isEqual(DateTime.invalid('bad input'), DateTime.fromISO('2024-01-15T12:00:00Z'), false)).to.be.false;
+    });
+  });
+
+  describe('DateTimes inside arrays', () => {
+    const noon = () => DateTime.fromISO('2024-01-15T12:00:00Z', { zone: 'utc' });
+
+    it('compares DateTimes in an array by instant, whatever their zone', () => {
+      expect(isEqual([noon()], [noon().setZone('Europe/London')], false)).to.be.true;
+      expect(isEqual([noon()], [noon().plus({ minutes: 1 })], false)).to.be.false;
+    });
+
+    it('ignores what luxon caches on a DateTime once it is read (its week data)', () => {
+      const read = noon();
+      void read.weekNumber;
+      expect(isEqual([read], [noon()], false)).to.be.true;
+      expect(isEqual({ records: [{ at: read }] }, { records: [{ at: noon() }] }, false)).to.be.true;
+    });
+
+    it('compares DateTimes in an array by instant in a shallow comparison too', () => {
+      expect(isEqual([noon()], [noon().setZone('Europe/London')], true)).to.be.true;
+      expect(isEqual([noon()], [noon().plus({ minutes: 1 })], true)).to.be.false;
+    });
+
+    it('compares invalid DateTimes in an array by their reason', () => {
+      expect(isEqual([DateTime.invalid('bad input')], [DateTime.invalid('bad input')], false)).to.be.true;
+      expect(isEqual([DateTime.invalid('bad input')], [DateTime.invalid('another reason')], false)).to.be.false;
+    });
   });
 
   describe('deep equality (isShallow = false)', () => {
