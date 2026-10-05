@@ -66,7 +66,7 @@
       "micromatch": ">=4.0.8",
       "serialize-javascript": ">=7.0.5",
       "js-yaml": ">=4.3.2",
-      "brace-expansion": ">=5.0.9",
+      "brace-expansion": ">=5.0.11",
       "diff": ">=5.2.2",
       "minimatch": ">=9.0.0",
       "flatted": ">=3.4.2",
