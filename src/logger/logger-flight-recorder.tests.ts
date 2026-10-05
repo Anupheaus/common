@@ -286,6 +286,82 @@ describe('logger flight recorder', () => {
     });
   });
 
+  describe('scope meta', () => {
+    const metaOf = (entries: LoggerEntry[]) => entries.map(({ meta }) => meta);
+
+    it('adds the meta a scope is opened with to every entry logged inside it, by any logger', () => {
+      const received = listen({ minLevel: 0 });
+      const moduleLevel = createLogger('module-level');
+      const other = createLogger('other').createSubLogger('sub');
+      Logger.runInScope(() => { moduleLevel.info('one'); other.info('two', { step: 2 }); }, { meta: { requestId: 'r1', userId: 'u1' } });
+      expect(metaOf(received)).to.deep.equal([{ requestId: 'r1', userId: 'u1' }, { requestId: 'r1', userId: 'u1', step: 2 }]);
+    });
+
+    it('adds meta set part-way through to the entries that follow, not those before', () => {
+      const received = listen({ minLevel: 0 });
+      const logger = createLogger();
+      Logger.runInScope(() => {
+        logger.info('before');
+        Logger.setScopeMeta({ userId: 'u1' });
+        logger.info('after');
+        expect(Logger.getScopeMeta()).to.deep.equal({ requestId: 'r1', userId: 'u1' });
+      }, { meta: { requestId: 'r1' } });
+      expect(metaOf(received)).to.deep.equal([{ requestId: 'r1' }, { requestId: 'r1', userId: 'u1' }]);
+    });
+
+    it("lets an entry's own meta win over the scope's", () => {
+      const received = listen({ minLevel: 0 });
+      Logger.runInScope(() => createLogger().info('x', { userId: 'explicit' }), { meta: { userId: 'scope' } });
+      expect(metaOf(received)).to.deep.equal([{ userId: 'explicit' }]);
+    });
+
+    it('merges into lazy meta when it is built', () => {
+      const received = listen({ minLevel: 0 });
+      Logger.runInScope(() => createLogger().info('x', () => ({ built: true })), { meta: { requestId: 'r1' } });
+      expect(metaOf(received)).to.deep.equal([{ requestId: 'r1', built: true }]);
+    });
+
+    it("gives a nested scope its parent's meta, and never leaks the child's back", () => {
+      const received = listen({ minLevel: 0 });
+      const logger = createLogger();
+      Logger.runInScope(() => {
+        Logger.runInScope(() => {
+          Logger.setScopeMeta({ jobId: 'j1' });
+          logger.info('child');
+        });
+        logger.info('parent');
+      }, { meta: { requestId: 'r1' } });
+      expect(metaOf(received)).to.deep.equal([{ requestId: 'r1', jobId: 'j1' }, { requestId: 'r1' }]);
+    });
+
+    it("never leaks one concurrent scope's meta into another's entries", async () => {
+      const received = listen({ minLevel: 0 });
+      const logger = createLogger();
+      const run = (tenantId: string) => Logger.runInScope(async () => {
+        await wait(2);
+        Logger.setScopeMeta({ tenantId });
+        await wait(2);
+        logger.info(tenantId);
+      });
+      await Promise.all([run('tenant-a'), run('tenant-b')]);
+      expect(received.map(({ message, meta }) => [message, meta?.tenantId])).to.deep.equal([['tenant-a', 'tenant-a'], ['tenant-b', 'tenant-b']]);
+    });
+
+    it('redacts secrets in scope meta', () => {
+      const received = listen({ minLevel: 0 });
+      Logger.runInScope(() => createLogger().info('x'), { meta: { sessionToken: 'abc', userId: 'u1' } });
+      expect(metaOf(received)).to.deep.equal([{ sessionToken: '[redacted]', userId: 'u1' }]);
+    });
+
+    it('does nothing outside a scope', () => {
+      const received = listen({ minLevel: 0 });
+      Logger.setScopeMeta({ userId: 'nowhere' });
+      createLogger().info('outside');
+      expect(Logger.getScopeMeta()).to.be.undefined;
+      expect(metaOf(received)).to.deep.equal([undefined]);
+    });
+  });
+
   describe('without async context (the browser)', () => {
     const originalGetBuiltinModule = process.getBuiltinModule;
     beforeEach(() => { (process as { getBuiltinModule: unknown }).getBuiltinModule = undefined; });
@@ -306,6 +382,13 @@ describe('logger flight recorder', () => {
       expect(result).to.equal('ran');
       expect(messages(received)).to.deep.equal(['a debug', 'a child debug', 'a failed']);
       expect(Logger.getCurrentScopeId()).to.be.undefined;
+    });
+
+    it('ignores scope meta, which has no request to belong to', () => {
+      const received = listen({ minLevel: 0 });
+      Logger.runInScope(() => { Logger.setScopeMeta({ userId: 'u1' }); createLogger('browser-meta').info('x'); }, { meta: { requestId: 'r1' } });
+      expect(received.map(({ meta }) => meta)).to.deep.equal([undefined]);
+      expect(Logger.getScopeMeta()).to.be.undefined;
     });
   });
 });

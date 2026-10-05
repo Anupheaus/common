@@ -12,7 +12,7 @@ import { LoggerServices } from './logger-services';
 import { writeToFile } from './nodeUtils';
 import { nodeBuiltin } from './nodeBuiltins';
 import type { FlightRecorderSettings, LogMessage, LogMeta, LogScopeOptions, RecordedEntry } from './logger-flight-recorder';
-import { configureFlightRecorder, getActiveBuffer, getCurrentScopeId, redactMeta, resolveEntry, runInLogScope } from './logger-flight-recorder';
+import { configureFlightRecorder, getActiveBuffer, getCurrentScopeId, getScopeMeta, redactMeta, resolveEntry, runInLogScope, setScopeMeta } from './logger-flight-recorder';
 
 const defaultMinLevel = 5;
 let asyncLocalStorage: { getStore(): Logger | undefined; run<T>(logger: Logger, delegate: () => T): T; } | undefined;
@@ -82,6 +82,20 @@ export class Logger {
   /** The id of the scope being logged in, if any. */
   public static getCurrentScopeId(): string | undefined {
     return getCurrentScopeId();
+  }
+
+  /**
+   * Adds meta (ids only) to every entry logged from here on in the current scope, by any logger, module-level ones
+   * included: e.g. the user once a request is authenticated. An entry's own meta wins on a clash. Concurrent scopes never
+   * see each other's; a nested scope starts with a copy of its parent's. A no-op outside a scope and in the browser.
+   */
+  public static setScopeMeta(meta: AnyObject): void {
+    setScopeMeta(meta);
+  }
+
+  /** The current scope's meta, if any. */
+  public static getScopeMeta(): AnyObject | undefined {
+    return getScopeMeta();
   }
 
   /** Sets the flight recorder's buffer sizes and redacted meta keys. Applies to scopes opened after the call. */
@@ -233,7 +247,9 @@ export class Logger {
     // Every entry goes into its scope's flight recorder, redacted, with its message and meta still unbuilt: they are
     // built only if the console, an `onLog` callback or a listener actually takes the entry.
     const buffer = getActiveBuffer(this.root);
-    const recorded = buffer.push({ timestamp, level, names: parentNames, message: rawMessage, meta: redactMeta(this.#withGlobalMeta(settings.globalMeta, rawMeta)) });
+    // Scope meta first, then the logger's global meta, then the entry's own: the most specific wins.
+    const baseMeta = buffer.meta == null ? settings.globalMeta : { ...buffer.meta, ...settings.globalMeta };
+    const recorded = buffer.push({ timestamp, level, names: parentNames, message: rawMessage, meta: redactMeta(this.#withGlobalMeta(baseMeta, rawMeta)) });
     // Console/file output is gated by the level check; listeners decide for themselves (their `minLevel`).
     if (passesLevelCheck) {
       const { message, meta } = resolveEntry(recorded);

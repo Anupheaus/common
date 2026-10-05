@@ -39,11 +39,18 @@ export interface LogScopeOptions {
   id?: string;
   /** Overrides `bufferSize` for this scope. */
   bufferSize?: number;
+  /**
+   * Meta merged into every entry logged inside the scope (ids only: a request, user, client, tenant). Added to what the
+   * enclosing scope already has; `Logger.setScopeMeta` adds more later.
+   */
+  meta?: AnyObject;
 }
 
 /** The last N entries of every level for one scope. */
 export interface ScopeBuffer {
   readonly id: string | undefined;
+  /** The scope's meta, merged into each entry as it is logged. Replaced, never mutated, so an entry keeps its own. */
+  meta: AnyObject | undefined;
   /** Adds an entry, dropping the oldest once full, and returns it with its sequence number. */
   push(entry: Omit<RecordedEntry, 'seq' | 'scopeId'>): RecordedEntry;
   /** Oldest first. */
@@ -77,13 +84,14 @@ export function redactMeta(meta: LogMeta | undefined): LogMeta | undefined {
   return redact(meta);
 }
 
-export function createScopeBuffer(id: string | undefined, size: number): ScopeBuffer {
+export function createScopeBuffer(id: string | undefined, size: number, meta?: AnyObject): ScopeBuffer {
   const capacity = Math.max(1, Math.floor(size));
   const slots: (RecordedEntry | undefined)[] = new Array(capacity).fill(undefined);
   let nextSeq = 1;
 
   return {
     id,
+    meta,
     push: entry => {
       const recorded: RecordedEntry = { ...entry, seq: nextSeq, ...(id != null ? { scopeId: id } : {}) };
       slots[(nextSeq - 1) % capacity] = recorded;
@@ -120,10 +128,25 @@ function getScopeStorage(): ScopeStorage | undefined {
  * Runs `delegate` in its own logging scope: its entries (and those of everything it awaits) get their own buffer, so an
  * error's trail is that request's and nobody else's. Without async context (the browser) it just runs `delegate`.
  */
-export function runInLogScope<T>(delegate: () => T, { id = uuid(), bufferSize }: LogScopeOptions = {}): T {
+export function runInLogScope<T>(delegate: () => T, { id = uuid(), bufferSize, meta }: LogScopeOptions = {}): T {
   const storage = getScopeStorage();
   if (storage == null) return delegate();
-  return storage.run(createScopeBuffer(id, bufferSize ?? settings.bufferSize), delegate);
+  // A nested scope starts with its parent's meta: a job run inside a request still carries the request's ids.
+  const parentMeta = storage.getStore()?.meta;
+  const scopeMeta = parentMeta == null && meta == null ? undefined : { ...parentMeta, ...meta };
+  return storage.run(createScopeBuffer(id, bufferSize ?? settings.bufferSize, scopeMeta), delegate);
+}
+
+/** Adds `meta` to the current scope, for the entries logged after this; a no-op outside a scope (and in the browser). */
+export function setScopeMeta(meta: AnyObject): void {
+  const scope = getScopeStorage()?.getStore();
+  if (scope == null) return;
+  scope.meta = { ...scope.meta, ...meta };
+}
+
+/** The current scope's meta, if any. */
+export function getScopeMeta(): AnyObject | undefined {
+  return getScopeStorage()?.getStore()?.meta;
 }
 
 export function getCurrentScopeId(): string | undefined {
