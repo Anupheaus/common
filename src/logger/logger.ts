@@ -11,6 +11,8 @@ import { LoggerListener } from './logger-listener';
 import { LoggerServices } from './logger-services';
 import { writeToFile } from './nodeUtils';
 import { nodeBuiltin } from './nodeBuiltins';
+import type { FlightRecorderSettings, LogMessage, LogMeta, LogScopeOptions, RecordedEntry } from './logger-flight-recorder';
+import { configureFlightRecorder, getActiveBuffer, getCurrentScopeId, redactMeta, resolveEntry, runInLogScope } from './logger-flight-recorder';
 
 const defaultMinLevel = 5;
 let asyncLocalStorage: { getStore(): Logger | undefined; run<T>(logger: Logger, delegate: () => T): T; } | undefined;
@@ -54,9 +56,6 @@ interface InternalLoggerSettings extends Omit<Required<LoggerSettings>, 'globalM
 let globalMinLevelOverride: number | undefined;
 
 const registeredListeners = new Set<LoggerListener>();
-function sendToListeners(entry: LoggerEntry): void {
-  registeredListeners.forEach(listener => listener.addEntry(entry));
-}
 
 export class Logger {
   constructor(name: string, settings?: LoggerSettings) {
@@ -69,6 +68,25 @@ export class Logger {
     const listener = new LoggerListener(settings);
     registeredListeners.add(listener);
     return () => { registeredListeners.delete(listener); };
+  }
+
+  /**
+   * Runs `delegate` in its own logging scope (a socket action, a REST request, a job). The scope keeps its own flight
+   * recorder buffer, so what a listener receives ahead of an error is that scope's trail and nobody else's. Entries
+   * logged inside it, by any logger, carry the scope's `scopeId`. A no-op in the browser, which has no async context.
+   */
+  public static runInScope<T>(delegate: () => T, options?: LogScopeOptions): T {
+    return runInLogScope(delegate, options);
+  }
+
+  /** The id of the scope being logged in, if any. */
+  public static getCurrentScopeId(): string | undefined {
+    return getCurrentScopeId();
+  }
+
+  /** Sets the flight recorder's buffer sizes and redacted meta keys. Applies to scopes opened after the call. */
+  public static configureFlightRecorder(settings: FlightRecorderSettings): void {
+    configureFlightRecorder(settings);
   }
 
   public static get services(): typeof LoggerServices {
@@ -97,23 +115,23 @@ export class Logger {
   #settings?: LoggerSettings;
 
 
-  public silly(message: string, meta?: AnyObject): void {
+  public silly(message: LogMessage, meta?: LogMeta): void {
     this.report(LogLevels.silly, message, meta);
   }
 
-  public trace(message: string, meta?: AnyObject): void {
+  public trace(message: LogMessage, meta?: LogMeta): void {
     this.report(LogLevels.trace, message, meta);
   }
 
-  public debug(message: string, meta?: AnyObject): void {
+  public debug(message: LogMessage, meta?: LogMeta): void {
     this.report(LogLevels.debug, message, meta);
   }
 
-  public info(message: string, meta?: AnyObject): void {
+  public info(message: LogMessage, meta?: LogMeta): void {
     this.report(LogLevels.info, message, meta);
   }
 
-  public warn(message: string, meta?: AnyObject): void {
+  public warn(message: LogMessage, meta?: LogMeta): void {
     this.report(LogLevels.warn, message, meta);
   }
 
@@ -130,7 +148,7 @@ export class Logger {
   }
 
   /** Logs a message that is always shown regardless of the current logging level. */
-  public always(message: string, meta?: AnyObject): void {
+  public always(message: LogMessage, meta?: LogMeta): void {
     this.report(LogLevels.always, message, meta);
   }
 
@@ -200,15 +218,25 @@ export class Logger {
     };
   }
 
-  protected report(level: number, message: string, meta?: AnyObject, ignoreLevel = false): void {
+  protected get root(): Logger {
+    let root = this as Logger;
+    while (root.parent != null) root = root.parent;
+    return root;
+  }
+
+  protected report(level: number, rawMessage: LogMessage, rawMeta?: LogMeta, ignoreLevel = false): void {
     const settings = this.settings;
     const passesLevelCheck = ignoreLevel || level >= settings.minLevel || alwaysLog.includes(level);
     const timestamp = DateTime.local();
     const lvlSettings = levelSettings[level]!;
     const parentNames = this.allNames;
-    if (settings.globalMeta) meta = { ...settings.globalMeta, ...meta };
-    // Console/file output is gated by the level check; listeners always receive every entry.
+    // Every entry goes into its scope's flight recorder, redacted, with its message and meta still unbuilt: they are
+    // built only if the console, an `onLog` callback or a listener actually takes the entry.
+    const buffer = getActiveBuffer(this.root);
+    const recorded = buffer.push({ timestamp, level, names: parentNames, message: rawMessage, meta: redactMeta(this.#withGlobalMeta(settings.globalMeta, rawMeta)) });
+    // Console/file output is gated by the level check; listeners decide for themselves (their `minLevel`).
     if (passesLevelCheck) {
+      const { message, meta } = resolveEntry(recorded);
       if (is.node()) {
         const useColors = this.settings.useColors;
         const fullMessage = `${this.#createNodeMessage(timestamp, lvlSettings, parentNames, message, useColors)}${meta == null ? '' : '\n'}`;
@@ -231,7 +259,8 @@ export class Logger {
         console.log(`${parts.join('%c ')}\n`, ...allCss, ...[meta].removeNull());
       }
     }
-    this.#invokeCallbacks({ timestamp, names: parentNames, level, message, meta });
+    registeredListeners.forEach(listener => listener.accept(recorded, buffer));
+    this.#invokeCallbacks(recorded);
   }
 
   protected parseErrorStack(stack: string | undefined): string[] {
@@ -321,8 +350,15 @@ export class Logger {
     }
   }
 
-  #invokeCallbacks(details: LoggerEntry): void {
-    sendToListeners(details);
+  #withGlobalMeta(globalMeta: AnyObject | undefined, meta: LogMeta | undefined): LogMeta | undefined {
+    if (globalMeta == null) return meta;
+    if (typeof meta === 'function') return () => ({ ...globalMeta, ...meta() });
+    return { ...globalMeta, ...meta };
+  }
+
+  #invokeCallbacks(recorded: RecordedEntry): void {
+    if (this.#callbacks.size === 0) return;
+    const details = resolveEntry(recorded);
     this.#callbacks.forEach(callback => {
       try {
         callback(details);

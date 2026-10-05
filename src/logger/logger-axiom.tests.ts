@@ -61,6 +61,14 @@ describe('logger > useAxiom', () => {
     }]);
   });
 
+  it('sends the scope id and the preceding flag, so a trail can be found with its error', async () => {
+    const axiom = fakeAxiom();
+
+    await useAxiom({ ...OPTIONS, fetch: axiom.fetch })([makeEntry({ level: 2, scopeId: 'req-1', preceding: true })]);
+
+    expect(axiom.requests[0]?.events[0]).to.include({ scopeId: 'req-1', preceding: true });
+  });
+
   it('sends an Error in the meta as its name, message and stack', async () => {
     const axiom = fakeAxiom();
     const error = new Error('Mongo down');

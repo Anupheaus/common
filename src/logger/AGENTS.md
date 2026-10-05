@@ -13,15 +13,26 @@ This module provides the `Logger` class and supporting infrastructure for struct
 - `LogLevels` — Constant map of level name to numeric value (`silly: 0` … `always: 7`). Re-exported from `logger-utils.ts`.
 - `always` — Level 7; bypasses `minLevel` filtering and is always emitted regardless of settings.
 
+### Flight recorder (`logger-flight-recorder.ts`, `logger-redaction.ts`)
+
+Every entry of every level goes into a ring buffer for its **scope**, so a listener can take info and above as it happens and still get the debug trail ahead of an error, without raising the log level.
+
+- **Scope**: `Logger.runInScope(delegate, { id?, bufferSize? })` opens one (a socket action, REST request or job) on its own `AsyncLocalStorage`; everything the delegate awaits logs into that buffer, by any logger (module-level ones too), and each entry carries the scope's `scopeId`. `Logger.getCurrentScopeId()` reads it. Scopes never share a buffer, so one tenant's lines cannot appear in another's trail. Code outside any scope uses a small shared buffer (`sharedBufferSize`, default 50). In the browser there is no async context: `runInScope` just calls the delegate, and each root logger keeps one buffer (`bufferSize`).
+- **Listener options** (`Logger.registerListener`): `minLevel` (default 0, every entry, as before) is the lowest level delivered as it happens; `flushLevel` (default error) is the level that flushes; `flushIntervalMs` (default 10,000) is the storm guard.
+- **Flush**: when an entry at or above `flushLevel` is delivered, that listener first gets the scope's entries below `minLevel` that it has not had since its last flush, oldest first, as `{ ...entry, preceding: true }` with the error's `scopeId`; then the error. Entries already delivered (at or above `minLevel`) are not resent. Within `flushIntervalMs` of a flush for that scope, an error ships alone, and the next flush carries what came since the last one.
+- **Lazy**: `silly`, `trace`, `debug`, `info`, `warn` and `always` take `message` and `meta` as a value or a function. The function runs only when the console, an `onLog` callback or a listener takes the entry, and once however many take it. A throwing function becomes `[log message failed: …]`, never an exception.
+- **Redaction** at write time, before the entry is buffered: `Logger.configureFlightRecorder({ bufferSize?, sharedBufferSize?, redactedKeys? })`. A meta key whose name (ignoring case, `-`, `_`) equals or ends with one of `password, token, authorization, cookie, credential, privateKey, prf, secret` has its value replaced with `[redacted]`, at any depth in plain objects and arrays. The caller's object is never changed; `Error`s and class instances are passed through unwalked. Lazy meta is redacted when it is built. The console sees the redacted meta too. `configureFlightRecorder` applies to scopes opened after it and resets the out-of-scope buffers.
+
 ### Entry types and listener infrastructure
-- `LoggerEntry` — `{ timestamp: DateTime; level: number; names: string[]; message: string; meta?: AnyObject }` — the shape of a captured log entry. `names` is an array to support sub-loggers (e.g. `['App', 'Auth']`).
+- `LoggerEntry` — `{ timestamp: DateTime; level: number; names: string[]; message: string; meta?: AnyObject; scopeId?: string; preceding?: true }` — the shape of a captured log entry. `names` is an array to support sub-loggers (e.g. `['App', 'Auth']`).
 - `LoggerListener` — Collects log entries and batches them, calling `onTrigger(entries)` on an interval or when `maxEntries` is reached. Used internally by the Logger's global listener registry.
-- `LoggerListenerSettings` — `{ sendInterval?, maxEntries?, onTrigger }` — configuration for a `LoggerListener`.
+- `LoggerListenerSettings` — `{ sendInterval?, maxEntries?, minLevel?, flushLevel?, flushIntervalMs?, onTrigger }` — configuration for a `LoggerListener`.
 
 ### Remote sinks (`logger-services.ts`, not exported from index)
 - `useGrafanaLoki(userName, password, server?)` — Returns an `onTrigger` callback that pushes entries to Grafana Loki.
 - `useAxiom({ token, dataset, app, env, url?, maxAttempts?, retryDelayMs?, maxQueueEntries?, warn?, fetch? })` (`logger-axiom.ts`) — **Node-only: import it from `@anupheaus/common/node`**, not the main entry. Ships entries to Axiom's ingest API (`<url>/v1/datasets/<dataset>/ingest`, default `https://api.axiom.co`) as gzipped JSON events.
   - Every event carries `_time`, the configured `app` and `env`, its `level` name, its `logger` names, the `message` and `meta`. An `Error` in the meta is sent as name, message and stack.
+  - An entry from a logging scope also carries `scopeId`, and a flight-recorder trail entry `preceding: true` (see Flight recorder).
   - A 429, a 5xx or a network failure is retried with backoff (1s, 2s, 4s; 4 attempts). Any other refusal, or the last failure, drops that batch with one warning.
   - One send at a time; the queue is bounded (10,000 entries, oldest dropped first) so an outage cannot exhaust memory.
   - It reports its own failures through `warn` (default `console.warn`), never through the logger it ships for.
@@ -43,7 +54,7 @@ The main entry (`dist/index.mjs`) is bundled into browser apps, so it imports **
 
 ## Architecture
 
-A global `registeredListeners: Set<LoggerListener>` in `logger.ts` receives every log entry that any `Logger` instance emits. Individual `Logger` instances do not own their listener sets — they broadcast to the shared global set.
+A global `registeredListeners: Set<LoggerListener>` in `logger.ts` is offered every log entry that any `Logger` instance emits (each listener's `minLevel` decides whether it takes it as it happens). Individual `Logger` instances do not own their listener sets — they broadcast to the shared global set.
 
 `asyncLocalStorage` (dynamically imported from `async_hooks`) enables async-context-based logger resolution — if code runs within a `Logger.run(logger, fn)` context, `asyncLocalStorage.getStore()` returns that logger. This is used for implicit logger propagation in async call trees.
 
