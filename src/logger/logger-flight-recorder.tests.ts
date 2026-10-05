@@ -165,6 +165,47 @@ describe('logger flight recorder', () => {
     });
   });
 
+  describe('a minimum level decided per entry', () => {
+    it('asks for the level for each entry, with its level, logger names and scope id', () => {
+      const asked: unknown[] = [];
+      listen({ minLevel: ({ level, names, scopeId }) => { asked.push({ level, names, scopeId }); return LogLevels.info; } });
+      const logger = createLogger('per-entry');
+      Logger.runInScope(() => logger.debug('hello'), { id: 'scope-a' });
+      expect(asked).to.deep.equal([{ level: LogLevels.debug, names: ['per-entry'], scopeId: 'scope-a' }]);
+    });
+
+    it('delivers an entry only when it is at or above the level decided for it', () => {
+      const received = listen({ minLevel: ({ names }) => (names.includes('chatty') ? LogLevels.debug : LogLevels.info) });
+      createLogger('chatty').debug('kept');
+      createLogger('quiet').debug('held back');
+      expect(messages(received)).to.deep.equal(['kept']);
+    });
+
+    it('asks in the logging caller\'s async context, so a level can follow request state', async () => {
+      const received = listen({ minLevel: () => (Logger.getCurrentScopeId() === 'raised' ? LogLevels.debug : LogLevels.info) });
+      const logger = createLogger();
+      await Promise.all([
+        Logger.runInScope(async () => { await wait(1); logger.debug('raised scope'); }, { id: 'raised' }),
+        Logger.runInScope(async () => { await wait(1); logger.debug('normal scope'); }, { id: 'normal' }),
+      ]);
+      expect(messages(received)).to.deep.equal(['raised scope']);
+    });
+
+    it('flushes the trail below the level decided for the error', () => {
+      const received = listen({ minLevel: () => LogLevels.warn });
+      const logger = createLogger();
+      Logger.runInScope(() => { logger.info('context'); logger.error('boom'); });
+      expect(messages(received)).to.deep.equal(['context', 'boom']);
+      expect(received[0].preceding).to.be.true;
+    });
+
+    it('treats a level function that throws as every entry delivered, so a broken resolver never loses logs', () => {
+      const received = listen({ minLevel: () => { throw new Error('resolver broke'); } });
+      createLogger().debug('still delivered');
+      expect(messages(received)).to.deep.equal(['still delivered']);
+    });
+  });
+
   describe('lazy messages', () => {
     it('does not build a message nothing delivers', () => {
       const received = listen();
