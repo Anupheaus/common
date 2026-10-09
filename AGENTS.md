@@ -155,3 +155,7 @@ The library is built with TypeScript, exports from `./dist/index.js` with typing
 - [`src/proxy/AGENTS.md`](./src/proxy/AGENTS.md) — observable proxies
 - [`src/logger/AGENTS.md`](./src/logger/AGENTS.md) — levelled logger
 - [`src/auditor/AGENTS.md`](./src/auditor/AGENTS.md) — audit history
+
+## Architecture docs
+
+Read [docs/README.md](docs/README.md) before architecture-sensitive work. It lists every decision, pattern and coding standard with a one-line summary; open only the docs relevant to your task. Don't edit files under `docs/` by hand: architectural decisions go to the Architect agent, which updates them.
