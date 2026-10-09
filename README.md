@@ -133,3 +133,7 @@ The subclass was not registered. Call `Error.register(MyErrorClass)` after defin
 You have `import { Error }` from this package in scope, which shadows `globalThis.Error`. Rename the import: `import { Error as CommonError } from '@anupheaus/common'`.
 
 For detailed module documentation, see [AGENTS.md](./AGENTS.md).
+
+## Documentation
+
+Architecture decisions, patterns and coding standards are indexed in [docs/README.md](docs/README.md).
