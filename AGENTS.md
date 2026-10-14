@@ -97,6 +97,7 @@ The library is built with TypeScript, exports from `./dist/index.js` with typing
 
 ## Conventions
 
+- **Repo-file guard tests** (e.g. CI workflow assertions) live under `src/ci/*.tests.ts` so mocha's `src/**/*.tests.ts` spec picks them up; they parse YAML by line/indentation because the repo has no YAML dependency.
 - **`Record`**: entities with at least an `id: string` field. Used by `Records`, `ArrayModifications`, and `auditor`.
 - **`Unsubscribe`**: a `() => void` returned by any subscribe call. Store and call to remove the listener.
 - **`PromiseMaybe<T>`**: `T | Promise<T>` — used in events and extensions for functions that may or may not be async.

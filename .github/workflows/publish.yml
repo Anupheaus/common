@@ -3,6 +3,8 @@ name: Publish Package
 on:
   push:
     branches: [master]
+  pull_request:
+    branches: [master]
   workflow_dispatch:
 
 jobs:
@@ -21,7 +23,11 @@ jobs:
     needs: Prepare
     runs-on: ubuntu-latest
     steps:
+      # Full history: the secret scan below diffs from a base commit (github.event.before on a push, or the PR
+      # base sha) which the default shallow clone does not contain, leaving nothing to scan.
       - uses: Anupheaus/agents/ci-templates/actions/pnpm-setup@v1
+        with:
+          fetch-depth: '0'
       - name: Lint
         run: pnpm exec eslint src --ext .ts,.tsx
       - name: Type check
@@ -35,7 +41,7 @@ jobs:
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-          base: ${{ github.event.before }}
+          base: ${{ github.event.before || github.event.pull_request.base.sha }}
           head: HEAD
           extra_args: --only-verified
       - name: Vulnerability scan
@@ -79,7 +85,7 @@ jobs:
       cancel-in-progress: false
     needs: [Validate, Test]
     runs-on: ubuntu-latest
-    if: github.repository_owner == 'Anupheaus'
+    if: github.ref == 'refs/heads/master' && github.repository_owner == 'Anupheaus'
     permissions:
       contents: write
       packages: write
