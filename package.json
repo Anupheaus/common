@@ -27,7 +27,8 @@
   "scripts": {
     "build": "tsup",
     "build:dev": "anux build dev",
-    "test": "mocha --config ./tests/mocha.js --watch",
+    "test": "mocha --config ./tests/mocha.js",
+    "test:watch": "mocha --config ./tests/mocha.js --watch",
     "test-ci": "mocha --config ./tests/mocha.js",
     "findDeclarationErrors": "tsc -p tsconfig.build.json",
     "check:browser-entry": "node scripts/check-browser-entry.mjs"
