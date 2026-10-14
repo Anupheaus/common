@@ -20,7 +20,7 @@ A TypeScript utility and data-structure library providing extensions, errors, ev
 - **License:** Apache-2.0
 - **Runtime:** Node.js and browser (where applicable). `createSettings` and file-based logger output assume a Node environment.
 
-The library is built with TypeScript, exports from `./dist/index.js` with typings at `dist/index`, and is organised into focused modules under `src/`. Test files follow `*.tests.ts`; run with `pnpm run test-ci`.
+The library is built with TypeScript, exports from `./dist/index.js` with typings at `dist/index`, and is organised into focused modules under `src/`. Test files follow `*.tests.ts`; run once with `pnpm run test` (CI uses `pnpm run test-ci`, watch mode is `pnpm run test:watch`).
 
 ---
 
