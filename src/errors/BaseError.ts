@@ -15,6 +15,22 @@ interface InternalProps {
 
 interface Props extends Partial<InternalProps> { }
 
+/**
+ * Rebuilds a serialised error (`toJSON()`, as it arrives from the server) as its registered type (sc-3993).
+ *
+ * The typed constructors are written for the code that throws them — `new ValidationError(message, path)`,
+ * `new ArgumentInvalidError(name, value)`, `new NotImplementedError(message, meta)` — so handing one the serialised
+ * object made that object its message ("[object Object]", or "message.startsWith is not a function" on the screen that
+ * read it). The base constructor alone knows how to read the serialised form, so it is run with the registered type as
+ * `new.target`: the result is an instance of that type, with its name, prototype (getters such as an API error's
+ * `statusCode`) and everything that was sent, without calling a constructor that expects something else. The typed
+ * constructors add no state of their own — they only shape the props they pass up — which is what makes this safe;
+ * a registered error type that does keep its own state must read it from what was sent.
+ */
+function rebuildAs(errorType: ConstructorOf<Error>, serialised: unknown): Error {
+  return Reflect.construct(Error, [serialised], errorType) as Error;
+}
+
 // `globalThis`, not `global`: this package runs in browsers too, where `global` does not exist. Bundling
 // from source hid that — a bundler shims the name — but the published build is a strict ES module, where
 // `global` is simply an undefined free variable, so importing this threw on load and took the app with it.
@@ -37,7 +53,7 @@ export class Error extends globalThis.Error {
     }
     if (typeof (anyProps['@error']) === 'string') {
       const errorType = errorTypes.get(anyProps['@error']);
-      if (errorType && errorType !== new.target) return new errorType(props);
+      if (errorType && errorType !== new.target) return rebuildAs(errorType, props);
     }
     const { error } = props;
     if (error != null) {
@@ -48,10 +64,10 @@ export class Error extends globalThis.Error {
         const errorTypeAsString = anyError['@error'];
         if (errorTypeAsString != null) {
           const errorType = errorTypes.get(errorTypeAsString as string);
-          // Pass the unwrapped error object (which carries @error/message/etc at the
-          // top level) to the typed constructor — not the { error } wrapper, which
-          // hides `message` and causes typed errors to lose it (or recurse).
-          if (errorType && errorType !== new.target) return new errorType(anyError);
+          // Rebuild from the unwrapped error object (which carries @error/message/etc at the
+          // top level) — not the { error } wrapper, which hides `message` and causes typed
+          // errors to lose it (or recurse).
+          if (errorType && errorType !== new.target) return rebuildAs(errorType, anyError);
         }
         if (typeof anyError.message === 'string' && anyError.message.length > 0) props.message = anyError.message;
         if (typeof anyError.name === 'string' && anyError.name.length > 0) props.title = anyError.name;
