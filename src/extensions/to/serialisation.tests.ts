@@ -154,4 +154,200 @@ describe('serialisation', () => {
 
   });
 
+  describe('output of the round trip', () => {
+
+    it('writes nested dates, errors, nulls and missing values exactly as before', () => {
+      const dt = DateTime.fromISO('2024-01-15T12:00:00.000Z');
+      const date = new Date('2024-02-01T09:30:00.000Z');
+      const err = new BaseError({ message: 'nested boom', title: 'Nested' });
+      const value = { a: { b: [dt, { c: date, d: null, e: undefined }, undefined], f: 'x' }, g: 1, err };
+      const parsed = JSON.parse(serialise(value));
+      expect(parsed.a).to.deep.equal({ b: ['2024-01-15T12:00:00.000Z', { c: '2024-02-01T09:30:00.000Z', d: null }, null], f: 'x' });
+      expect(parsed.g).to.equal(1);
+      expect(parsed.err).to.be.a('string');
+      expect(JSON.parse(parsed.err).message).to.equal('nested boom');
+    });
+
+    it('lets a replacer at a nested key see the value already converted, as before', () => {
+      const dt = DateTime.fromISO('2024-01-15T12:00:00.000Z');
+      const seen: unknown[] = [];
+      serialise({ outer: { when: dt } }, (key, keyValue) => { if (key === 'when') seen.push(keyValue); });
+      expect(seen).to.deep.equal(['2024-01-15T12:00:00.000Z']);
+    });
+
+    it('keeps a "__proto__" key as an ordinary entry and never changes the prototype', () => {
+      const parsedInput = JSON.parse('{"__proto__":{"polluted":true},"ok":1}');
+      const serialised = serialise(parsedInput);
+      expect(JSON.parse(serialised)).to.have.own.property('__proto__');
+      const result = deserialise(parsedInput) as Record<string, unknown>;
+      expect(Object.getPrototypeOf(result)).to.equal(Object.prototype);
+      expect(Object.prototype.hasOwnProperty.call(result, '__proto__')).to.be.true;
+      expect((result as { polluted?: boolean }).polluted).to.be.undefined;
+      expect(({} as { polluted?: boolean }).polluted).to.be.undefined;
+    });
+
+    it('revives dates and errors at every depth of an object passed in directly', () => {
+      const value = { a: { b: [{ c: '2024-01-15T12:00:00.000Z' }] }, err: { '@error': 'Error', message: 'deep', title: 'Error', name: 'Error' } };
+      const result = deserialise(value) as { a: { b: { c: unknown }[] }; err: unknown };
+      expect(DateTime.isDateTime(result.a.b[0].c)).to.be.true;
+      expect(result.err).to.be.instanceOf(BaseError);
+    });
+
+  });
+
+  describe('matches the previous implementation on generated values (sc-5052)', () => {
+    const CASES = 300;
+    const MAX_DEPTH = 4;
+    const MAX_ENTRIES = 5;
+
+    // ─── The implementation before sc-5052, kept verbatim as the oracle for "output unchanged" ───
+    const isOldDateTime = (value: unknown) => DateTime.isDateTime(value) || value instanceof Date;
+    const isOldError = (value: unknown) => BaseError.isErrorObject(value) || value instanceof globalThis.Error;
+    const oldSerialiseDateTime = (value: DateTime | Date): string => DateTime.isDateTime(value) ? value.toUTC().toISO() ?? '' : oldSerialiseDateTime(DateTime.fromJSDate(value));
+    const oldSerialiseValue = (value: unknown): unknown => {
+      if (isOldDateTime(value)) return oldSerialiseDateTime(value as DateTime | Date);
+      if (isOldError(value)) return JSON.stringify(value);
+      if (Array.isArray(value)) return value.map(oldSerialiseValue);
+      if (typeof value === 'object' && value != null) {
+        return Object.entries(value).reduce((map, [key, entry]) => ({ ...map, [key]: oldSerialiseValue(entry) }), {});
+      }
+      return value;
+    };
+    const oldSerialise = (value: unknown, replacer?: (key: string, value: unknown) => unknown) => JSON.stringify(value, (key, keyValue) => {
+      if (replacer) {
+        const newValue = replacer(key, keyValue);
+        if (newValue !== undefined) return newValue;
+      }
+      return oldSerialiseValue(keyValue);
+    });
+
+    /** A class instance (not a plain object), optionally carrying an `@error` key, which only the copy turns into an error object. */
+    class Holder {
+      constructor(public label: string, errorType?: string) {
+        if (errorType != null) Object.defineProperty(this, '@error', { value: errorType, enumerable: true });
+      }
+    }
+
+    /** A small deterministic random number generator (mulberry32), so a failing case can be reproduced. */
+    const createRandom = (seed: number) => () => {
+      seed = (seed + 0x6D2B79F5) | 0;
+      let mixed = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      mixed = (mixed + Math.imul(mixed ^ (mixed >>> 7), 61 | mixed)) ^ mixed;
+      return ((mixed ^ (mixed >>> 14)) >>> 0) / 4_294_967_296;
+    };
+
+    const KEYS = ['a', 'b', '__proto__', 'when', 'items', '@error', 'message', 'toJSON', '0', 'emoji \u{1F600}'];
+
+    const generate = (random: () => number, depth: number): unknown => {
+      const pick = Math.floor(random() * (depth >= MAX_DEPTH ? 9 : 13));
+      switch (pick) {
+        case 0: return null;
+        case 1: return undefined;
+        case 2: return Math.floor(random() * 1_000) - 500;
+        case 3: return 'plain text';
+        case 4: return '2024-01-15T12:00:00.000Z';
+        case 5: return DateTime.fromISO('2024-03-10T08:00:00.000+05:00');
+        case 6: return new Date('2024-02-01T09:30:00.000Z');
+        case 7: return new BaseError({ message: 'generated', title: 'Generated' });
+        case 8: return random() < 0.5;
+        case 9: return new Holder('held', random() < 0.5 ? 'Error' : undefined);
+        case 10: return Array.from({ length: Math.floor(random() * MAX_ENTRIES) }, () => generate(random, depth + 1));
+        default: {
+          const result: Record<string, unknown> = {};
+          const entryCount = Math.floor(random() * MAX_ENTRIES);
+          for (let entryIndex = 0; entryIndex < entryCount; entryIndex++) {
+            Object.defineProperty(result, KEYS[Math.floor(random() * KEYS.length)], { value: generate(random, depth + 1), enumerable: true, writable: true, configurable: true });
+          }
+          return result;
+        }
+      }
+    };
+
+    it('serialises every generated value to exactly the same JSON', () => {
+      const random = createRandom(5052);
+      for (let caseIndex = 0; caseIndex < CASES; caseIndex++) {
+        const value = { root: generate(random, 0) };
+        expect(serialise(value), `case ${caseIndex}`).to.equal(oldSerialise(value));
+      }
+    });
+
+    it('gives a replacer exactly the same keys and values, in the same order', () => {
+      const random = createRandom(4409);
+      for (let caseIndex = 0; caseIndex < CASES; caseIndex++) {
+        const value = { root: generate(random, 0) };
+        const seenNow: string[] = [];
+        const seenBefore: string[] = [];
+        const replaceDates = (seen: string[]) => (key: string, keyValue: unknown) => {
+          seen.push(`${key}=${typeof keyValue === 'object' && keyValue != null ? Object.keys(keyValue).join(',') : String(keyValue)}`);
+          if (key === 'when') return 'replaced';
+        };
+        expect(serialise(value, replaceDates(seenNow)), `case ${caseIndex}`).to.equal(oldSerialise(value, replaceDates(seenBefore)));
+        expect(seenNow, `case ${caseIndex}`).to.deep.equal(seenBefore);
+      }
+    });
+
+  });
+
+  describe('time taken grows in proportion to the size of the value (sc-5052)', () => {
+    const RUNS = 5;
+    /** Linear work doubles when the size doubles; quadratic work quadruples. 3 sits between, with room for noise. */
+    const MAX_GROWTH_WHEN_DOUBLED = 3;
+    const MAX_MS_FOR_50_000_KEYS = 1_000;
+
+    const wideObject = (keyCount: number) => {
+      const result: Record<string, unknown> = {};
+      for (let keyIndex = 0; keyIndex < keyCount; keyIndex++) result[`key${keyIndex}`] = keyIndex % 2 === 0 ? keyIndex : '2024-01-15T12:00:00.000Z';
+      return result;
+    };
+
+    /** A chain `levels` deep, each level holding `leavesPerLevel` plain values beside the next level. */
+    const deepObject = (levels: number, leavesPerLevel: number) => {
+      let result: Record<string, unknown> = {};
+      for (let level = 0; level < levels; level++) {
+        const parent: Record<string, unknown> = { child: result };
+        for (let leafIndex = 0; leafIndex < leavesPerLevel; leafIndex++) parent[`leaf${leafIndex}`] = leafIndex;
+        result = parent;
+      }
+      return result;
+    };
+
+    /** The median of several timed runs, after one warm-up run, so a single slow run does not decide the test. */
+    const medianMs = (delegate: () => void) => {
+      delegate();
+      const timings: number[] = [];
+      for (let run = 0; run < RUNS; run++) {
+        const startedAt = performance.now();
+        delegate();
+        timings.push(performance.now() - startedAt);
+      }
+      timings.sort((first, second) => first - second);
+      return timings[Math.floor(RUNS / 2)];
+    };
+
+    const roundTrip = (value: unknown) => () => { deserialise(serialise(value)); };
+
+    it('a round trip of 20,000 keys at one level takes about twice as long as 10,000, not four times', () => {
+      const small = medianMs(roundTrip(wideObject(10_000)));
+      const large = medianMs(roundTrip(wideObject(20_000)));
+      expect(large / Math.max(small, 1)).to.be.lessThan(MAX_GROWTH_WHEN_DOUBLED);
+    }).timeout(60_000);
+
+    it('deserialising an object passed in directly grows in proportion to its key count', () => {
+      const small = medianMs(() => { deserialise(wideObject(10_000)); });
+      const large = medianMs(() => { deserialise(wideObject(20_000)); });
+      expect(large / Math.max(small, 1)).to.be.lessThan(MAX_GROWTH_WHEN_DOUBLED);
+    }).timeout(60_000);
+
+    it('a round trip of 50,000 keys at one level finishes in well under a second', () => {
+      expect(medianMs(roundTrip(wideObject(50_000)))).to.be.lessThan(MAX_MS_FOR_50_000_KEYS);
+    }).timeout(60_000);
+
+    it('walks each level of a deeply nested object once, not once per level above it', () => {
+      const small = medianMs(roundTrip(deepObject(400, 20)));
+      const large = medianMs(roundTrip(deepObject(800, 20)));
+      expect(large / Math.max(small, 1)).to.be.lessThan(MAX_GROWTH_WHEN_DOUBLED);
+    }).timeout(60_000);
+
+  });
+
 });

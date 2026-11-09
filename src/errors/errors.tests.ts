@@ -183,4 +183,69 @@ describe('errors', () => {
       expect(err.meta?.method).to.equal('POST');
     });
   });
+
+  // sc-3993: a refusal the server sends travels as `error.toJSON()` and is rebuilt on the client by `new Error(...)`. A typed
+  // error whose own constructor takes (message, path) instead of props used to be handed the whole object as its message, so
+  // the screen showed "[object Object]" or failed with "message.startsWith is not a function".
+  describe('rebuilding an error that was sent from the server', () => {
+    const SENT: Array<[string, () => BaseError]> = [
+      ['ValidationError', () => new ValidationError('Say why you are correcting it.', 'reason')],
+      ['ArgumentInvalidError', () => new ArgumentInvalidError('userId', 'bad')],
+      ['NotImplementedError', () => new NotImplementedError('That is not available yet.', { feature: 'x' })],
+      ['ObjectDisposedError', () => new ObjectDisposedError('This visit is already closed.')],
+      ['InternalError', () => new InternalError('something broke')],
+      ['AuthenticationError', () => new AuthenticationError('You must sign in')],
+      ['ServerError', () => new ServerError({ message: 'The server fell over.' })],
+      ['ApiError', () => new ApiError({ message: 'The request failed.', url: '/things' })],
+    ];
+
+    /** What the client receives: the error as JSON, through the wire. */
+    const throughTheWire = (error: BaseError) => JSON.parse(JSON.stringify(error)) as ReturnType<BaseError['toJSON']>;
+
+    for (const [name, make] of SENT) {
+      describe(name, () => {
+        it('comes back as the same kind of error with its message as text', () => {
+          const original = make();
+
+          const rebuilt = new BaseError(throughTheWire(original));
+
+          expect(rebuilt.constructor.name).to.equal(name);
+          expect(rebuilt.message).to.be.a('string').and.to.equal(original.message);
+          expect(rebuilt.message.startsWith(original.message.slice(0, 5))).to.be.true;
+          expect(rebuilt.title).to.equal(original.title);
+          expect(rebuilt.meta).to.deep.equal(throughTheWire(original).meta);
+        });
+
+        it('comes back the same when the sent error is carried in { error } (how nexus hands it over)', () => {
+          const original = make();
+
+          const rebuilt = new BaseError({ error: throughTheWire(original) });
+
+          expect(rebuilt.constructor.name).to.equal(name);
+          expect(rebuilt.message).to.be.a('string').and.to.equal(original.message);
+        });
+      });
+    }
+
+    it('keeps the plain words a screen shows: a ValidationError is not "[object Object]"', () => {
+      const rebuilt = new BaseError(throughTheWire(new ValidationError('Say why you are correcting it.', 'reason')));
+
+      expect(rebuilt).to.be.instanceOf(ValidationError);
+      expect(`${rebuilt.message}`).to.equal('Say why you are correcting it.');
+      expect(rebuilt.meta).to.deep.equal({ path: 'reason' });
+    });
+
+    it('keeps the status code of an API error so a screen can tell a sign-in refusal from a not-valid one', () => {
+      const rebuilt = new BaseError(throughTheWire(new AuthenticationError('You must sign in'))) as AuthenticationError;
+
+      expect(rebuilt).to.be.instanceOf(AuthenticationError);
+      expect(rebuilt.statusCode).to.equal(401);
+    });
+
+    it('still rebuilds a plain error of a type nobody registered as an ordinary error with the message', () => {
+      const rebuilt = new BaseError({ '@error': 'NotARegisteredType', message: 'odd', title: 'Odd' } as never);
+
+      expect(rebuilt.message).to.equal('odd');
+    });
+  });
 });
